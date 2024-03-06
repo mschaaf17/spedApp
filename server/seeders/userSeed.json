@@ -1,0 +1,25 @@
+[
+    {
+        "username": "maddy17",
+        "studentId": "123",
+        "password": "password",
+        "isAdmin": false
+    },
+    {
+        "username": "kev",
+        "studentId": "1234",
+        "isAdmin": false,
+        "password": "password"
+    },
+    {
+        "username": "mike",
+        "isAdmin": true,
+        "password": "password"
+    },
+    {
+        "username": "tracy",
+        "studentId": "12345",
+        "isAdmin": false,
+        "password": "password"
+    }
+]

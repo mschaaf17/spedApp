@@ -1,0 +1,19 @@
+[
+    {
+        "_id": "accommodationId1",
+        "title" : "Reading Aloud",
+        "image" : "https://us.123rf.com/450wm/alyonazuuuu/alyonazuuuu2103/alyonazuuuu210300035/165235514-girl-holding-a-paper-book-in-her-hands-reading-aloud-a-girl-reads-a-book.jpg?ver=6",
+        "description": "read aloud to the student"
+    },
+    {
+        "_id": "accommodationId2",
+        "title" : "Minimized Distraction",
+        "image" : "https://media.istockphoto.com/vectors/attention-focus-sticker-vector-id1312436351?k=20&m=1312436351&s=612x612&w=0&h=3bOYRT6-A88IAM7C47SxCFEssB6rFdcrCGOr9ASa-14=",
+        "description": "read aloud to the student"
+    },
+    {
+        "_id": "accommodationId3",
+        "title" : "Visual Schedule",
+        "image" : "https://th.bing.com/th/id/OIP.2qIvzT9RPx8B3GvT1pDkHgHaFV?pid=ImgDet&rs=1"
+    }
+]
