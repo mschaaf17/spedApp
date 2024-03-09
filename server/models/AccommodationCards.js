@@ -16,7 +16,8 @@ const AccommodationCardSchema = new Schema({
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
-    }
+    },
+  
   });
 
 

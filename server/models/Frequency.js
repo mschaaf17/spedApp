@@ -1,6 +1,4 @@
-const { Schema, model} = require('mongoose')
-
-
+const { Schema, model} = require('mongoose');
 
 // Frequency Model Schema
 const FrequencySchema = new Schema({
@@ -19,6 +17,10 @@ const FrequencySchema = new Schema({
     type: Date,
     required: true
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
   createdBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -29,6 +31,12 @@ const FrequencySchema = new Schema({
     ref: 'User',
     required: true
   },
+  log: [{
+    time: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   averageCountByDay: {
     type: Number
   },
@@ -40,7 +48,5 @@ const FrequencySchema = new Schema({
   }
 });
 
-
-
-const Frequency = model('Frequency', FrequencySchema)
-module.exports = Frequency
+const Frequency = model('Frequency', FrequencySchema);
+module.exports = Frequency;

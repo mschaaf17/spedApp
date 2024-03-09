@@ -1,13 +1,13 @@
 [
     {
         "username": "maddy17",
-        "studentId": "123",
+        "studentSchoolId": "123",
         "password": "password",
         "isAdmin": false
     },
     {
         "username": "kev",
-        "studentId": "1234",
+        "studentSchoolId": "1234",
         "isAdmin": false,
         "password": "password"
     },
@@ -18,7 +18,7 @@
     },
     {
         "username": "tracy",
-        "studentId": "12345",
+        "studentSchoolId": "12345",
         "isAdmin": false,
         "password": "password"
     }

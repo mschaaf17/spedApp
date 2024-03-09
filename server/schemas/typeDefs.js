@@ -3,11 +3,11 @@
  const typeDefs = gql `
 
 type User {
-  id: ID!
+  _id: ID!
   isAdmin: Boolean!
   username: String!
   password: String!
-  studentId: String!
+  studentSchoolId: String!
   students: [User!]!
   accommodations: [AccommodationCards!]!
   behaviorFrequencies: [Frequency!]!
@@ -16,7 +16,7 @@ type User {
 }
 
 type AccommodationCards {
-  id: ID!
+  _id: ID!
   title: String!
   image: String!
   description: String!
@@ -24,20 +24,26 @@ type AccommodationCards {
 }
 
 type Frequency {
-  id: ID!
+  _id: ID!
   count: Int!
   behaviorTitle: String!
   operationalDefinition: String!
   createdAt: String! 
+  updatedAt: String!
   createdBy: [User!]!
   createdFor: [User!]!
+  log: [LogEntry!]
   averageCountByDay: Float
   totalCount: Int
   mostFrequentTime: String
 }
 
+type LogEntry {
+  time: String!
+}
+
 type Duration {
-  id: ID!
+  _id: ID!
   timeLength: String!
   behaviorTitle: String!
   operationalDefinition: String!
@@ -51,7 +57,7 @@ type Duration {
 }
 
 type InterventionList {
-  id: ID!
+  _id: ID!
   title: String!
   summary: String!
   function: String!
@@ -73,43 +79,40 @@ type Auth {
     frequency: [Frequency]
     duration: [Duration]
     interventionList: [InterventionList]
-
  }
 
 type Mutation {
-    login(studentId: String!, password: String!, isAdmin: Boolean): Auth
-    addUser(username: String!, studentId: String!, password: String!, isAdmin: Boolean): Auth
+    login(username: String!, password: String!, isAdmin: Boolean): Auth
+    addUser(username: String!, studentSchoolId: String!, password: String!, isAdmin: Boolean): Auth
     removeUser(_id: ID): User
 
     addAccommodationCard(title: String!, image: String!, description: String!): AccommodationCards
     removeAccommodationCard(_id: ID!): AccommodationCards
 
 
-    addAccommodationForStudent(accommondationCardId: ID!, studentId: String): User
-    removeAccommodationFromStudent(accommodationCardId: ID!, studentId: String): User
+    addAccommodationForStudent(accommodationCardId: ID!, studentId: ID!): User
+    removeAccommodationFromStudent(accommodationCardId: ID!, studentId: ID!): User
+
+
+    addFrequencyTitleToTrack(behaviorTitle: String!, operationalDefinition: String!, studentId: ID!): User
+    removeFrequencyTitleBeingTracked(frequencyId: ID!, studentId: ID!): User
+
+    addDurationTitleToTrack(behaviorTitle: String!, operationalDefinition: String!, studentId: ID!): User
+    removeDurationTitleBeingTracked(durationId: ID!, studentId: ID!): User
+
     
-
-    addFrequencyTrackerStudentView(behaviorTitle: String!, studentId: ID!): User
-    removeFrequencyTrackerStudentView(frequencyId: ID!, studentId: ID!): User
-
-
-    addDurationTrackerStudentView(behaviorTitle: String!, studentId: ID!): User
-    removeDurationTrackerStudentView(durationId: ID! studentId: ID!): User
+    frequencyIncreased(frequencyId: ID!, studentId: ID!): User
+    removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): User
 
 
-    addFrequencyTrackerAdminView(behaviorTitle: String!, studentId: ID!): User
-    removeFrequencyTrackerAdminView(frequencyId: ID!, studentId: ID!): User
-
-
-    addDurationTrackerAdminView(behaviorTitle: String!, studentId: ID!): User
-    removeDurationTrackerAdminView(durationId: ID!, studentId: ID!): User
-
-
-    addInterventionForStudent(interventionId: ID!, studentId: ID!): User
-    removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
+    durationTimerAdded(id: ID!, studentId: ID!): User
+    removeLastDurationTimer(durationId: ID! studentId: ID!): User
 
     addToInterventionList(title: String!, summary: String!, function: String!): InterventionList
     removedInterventionFromList(interventionId: ID!): InterventionList
+
+    addInterventionForStudent(interventionId: ID!, studentId: ID!): User
+    removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
 
 }
  `;

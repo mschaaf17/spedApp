@@ -1,8 +1,10 @@
-const { AuthenticationError } = require('apollo-server-express')
-const { User, AccommodationCards, InterventionList, Frequency} = require('../models');
+const { AuthenticationError, UserInputError, ApolloError } = require('apollo-server-express')
+const { User, AccommodationCards, InterventionList, Frequency, Duration} = require('../models');
 const { signToken } = require('../utils/auth');
 const moment = require('moment')
 const { startOfDay, endOfDay, isEqual } = require('date-fns');
+const mongoose = require('mongoose');
+
 
 
 const resolvers = {
@@ -12,7 +14,7 @@ const resolvers = {
                 const userData = await User.findOne({_id: context.user._id})
                 .select('-__v -password')
                 .populate('isAdmin')
-                .populate('studentId')
+                .populate('studentSchoolId')
                 .populate('students')
                 .populate('accommodations')
                 .populate('behaviorFrequencies')
@@ -33,7 +35,7 @@ const resolvers = {
         const user = await User.findOne({ username })
         .select('-__v -password')
         .populate('isAdmin')
-        .populate('studentId')
+        .populate('studentSchoolId')
         .populate('students')
         .populate('accommodations')
         .populate('behaviorFrequencies')
@@ -101,8 +103,8 @@ const resolvers = {
             return { token, user };
           },
 
-          login: async (parent, { studentId, password }) => {
-            const user = await User.findOne({ studentId });
+          login: async (parent, {username, password }) => {
+            const user = await User.findOne({ username });
       
             if (!user) {
               throw new AuthenticationError('Incorrect credentials');
@@ -117,31 +119,49 @@ const resolvers = {
             const token = signToken(user);
             return { token, user };
           },
+
+          removeUser: async (parent, args, context) => {
+
+            if (!context.user || !context.user.isAdmin) {
+              throw new AuthenticationError('You need to be logged in as an admin!');
+            }
+            
+            try {
+              const user = await User.findByIdAndDelete(args.id);
+          
+              if (!user) {
+                throw new Error('Accommodation card not found');
+              }
+          
+              console.log(user);
+              
+              return user;
+            } catch (error) {
+
+              throw new ApolloError('Failed to delete accommodation card', 'DELETE_ACCOMMODATION_CARD_ERROR', { originalError: error });
+            }
+          },
           
           addAccommodationCard: async (parent, args, context) => {
-            // Check if there is a logged-in user in the context
+
             if (!context.user || !context.user.isAdmin) {
               throw new AuthenticationError('You must be logged in as an admin to perform this action.');
             }
-            
-            // Set createdBy to the currently logged-in user
+          
             args.createdBy = context.user._id;
             
-            // Create the AccommodationCard with createdBy set to the logged-in user
             const accommodationCard = await AccommodationCards.create(args);
             
             return accommodationCard;
           },
       
         removeAccommodationCard: async (parent, args, context) => {
-          // Check if the user is authenticated and an admin
           if (!context.user || !context.user.isAdmin) {
             throw new AuthenticationError('You need to be logged in as an admin!');
           }
           
           try {
-            // Attempt to delete the accommodation card
-            const accommodationCard = await AccommodationCards.findByIdAndDelete(args.id);
+            const accommodationCard = await AccommodationCards.findByIdAndDelete(args._id);
         
             if (!accommodationCard) {
               throw new Error('Accommodation card not found');
@@ -151,32 +171,484 @@ const resolvers = {
             
             return accommodationCard;
           } catch (error) {
-            // Handle any errors that occur during deletion
+
             throw new ApolloError('Failed to delete accommodation card', 'DELETE_ACCOMMODATION_CARD_ERROR', { originalError: error });
           }
-        }
+        },
+        addAccommodationForStudent: async (_, args, context) => {
+          console.log("Starting addAccommodationForStudent resolver");
+          console.log("Received arguments:", args);
+      
+          if (!context.user || !context.user.isAdmin) {
+              throw new AuthenticationError('You must be logged in as an administrator!');
+          }
+      
+          const { accommodationCardId, studentId } = args;
+      
+          if (!studentId) {
+              throw new UserInputError('Student ID is required');
+          }
+      
+          try {
+              console.log("Finding accommodation card with ID:", accommodationCardId);
+      
+              const objectIdAccommodationCardId = mongoose.Types.ObjectId(accommodationCardId);
+      
+              const accommodationCard = await AccommodationCards.findById(objectIdAccommodationCardId);
+      
+              if (!accommodationCard) {
+                  throw new Error('Accommodation card not found');
+              }
+      
+              console.log("Found accommodation card:", accommodationCard);
+      
+              accommodationCard.createdBy = context.user._id;
+      
+              await accommodationCard.save();
+      
+              console.log("Finding user with ID:", studentId);
+              const user = await User.findById(studentId);
+      
+              if (!user) {
+                  throw new Error('User not found');
+              }
+      
+              console.log("Found user:", user);
+      
+              console.log("Adding accommodation card to user's accommodations array");
+              user.accommodations.push(objectIdAccommodationCardId);
+      
+              console.log("Saving updated user");
+              await user.save();
+      
+              console.log("User successfully updated:", user);
+      
+              return user;
+          } catch (error) {
+              console.error("Error occurred:", error);
+              throw new ApolloError('Failed to add accommodation for student', 'ADD_ACCOMMODATION_ERROR', { originalError: error });
+          }
       },
+      
+        removeAccommodationFromStudent: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You need to be logged in as an admin!');
+          }
+          
+          const { accommodationCardId, studentId } = args;
+          
+          if (!studentId) {
+            throw new UserInputError('Student ID is required')
+          }
+          
+          try {
+            const user = await User.findById(studentId);
 
-      //needed for referencing
-          //may need to do this for areas referencing User schema for createdBy
-          AccommodationCards: {
+            if (!user) {
+              throw new UserInputError('Student not found')
+            }
+
+            const index = user.accommodations.indexOf(accommodationCardId);
+            if (index === -1) {
+              throw new UserInputError('Accommodation card not found for this student!');
+            }
+
+            user.accommodations.splice(index, 1);
+            await user.save();
+
+            return user;
+
+          } catch (error) {
+         
+            throw new ApolloError('Failed to remove accommodation from student', 'REMOVE_ACCOMMODATION_ERROR', { originalError: error });
+          }
+        },
+    
+        addFrequencyTitleToTrack: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+              throw new AuthenticationError('You must be logged in as an administrator!');
+          }
+      
+          const { behaviorTitle, operationalDefinition, studentId } = args;
+      
+          if (!studentId) {
+              throw new UserInputError('Student ID is required');
+          }
+      
+          try {
+              // Create a new Frequency document
+              const newFrequency = await Frequency.create({
+                  behaviorTitle,
+                  operationalDefinition,
+                  count: 0,
+                  createdAt: new Date(),
+                  createdBy: context.user._id, 
+                  createdFor: studentId 
+              });
+      
+              const user = await User.findById(studentId);
+              if (!user) {
+                  throw new UserInputError('Student not found');
+              }
+      
+              user.behaviorFrequencies.push(newFrequency._id);
+              await user.save();
+      
+              return user;
+          } catch (error) {
+              throw new ApolloError('Failed to add frequency of behavior for student', 'ADD_FREQUENCY_ERROR', { originalError: error });
+          }
+        },
+
+        removeFrequencyTitleBeingTracked: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You need to be logged in as an admin!');
+          }
+          
+          const { frequencyId, studentId } = args;
+          
+          if (!studentId) {
+            throw new UserInputError('Student ID is required')
+          }
+          
+          try {
+            const user = await User.findById(studentId);
+
+            if (!user) {
+              throw new UserInputError('Student not found')
+            }
+
+            const index = user.behaviorFrequencies.indexOf(frequencyId);
+            if (index === -1) {
+              throw new UserInputError('Accommodation card not found for this student!');
+            }
+
+            user.behaviorFrequencies.splice(index, 1);
+            await user.save();
+
+            return user;
+
+          } catch (error) {
+        
+            throw new ApolloError('Failed to remove accommodation from student', 'REMOVE_ACCOMMODATION_ERROR', { originalError: error });
+          }
+
+        },
+
+        addDurationTitleToTrack: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+              throw new AuthenticationError('You must be logged in as an administrator!');
+          }
+      
+          const { behaviorTitle, operationalDefinition, studentId } = args;
+      
+          if (!studentId) {
+              throw new UserInputError('Student ID is required');
+          }
+      
+          try {
+              const newDuration = await Frequency.create({
+                  behaviorTitle,
+                  operationalDefinition,
+                  createdBy: context.user._id, 
+                  createdFor: studentId
+
+              });
+      
+              const user = await User.findById(studentId);
+              if (!user) {
+                  throw new UserInputError('Student not found');
+              }
+      
+              user.behaviorDurations.push(newDuration._id);
+              await user.save();
+      
+              return user;
+          } catch (error) {
+              throw new ApolloError('Failed to add duration of behavior for student', 'ADD_DURATION_ERROR', { originalError: error });
+          }
+        },
+
+        removeDurationTitleBeingTracked: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You need to be logged in as an admin!');
+          }
+          
+          const { durationId, studentId } = args;
+          
+          if (!studentId) {
+            throw new UserInputError('Student ID is required')
+          }
+          
+          try {
+            const user = await User.findById(studentId);
+
+            if (!user) {
+              throw new UserInputError('Student not found')
+            }
+
+            const index = user.behaviorDurations.indexOf(durationId);
+            if (index === -1) {
+              throw new UserInputError('Duration not found for this student!');
+            }
+
+            user.behaviorDurations.splice(index, 1);
+            await user.save();
+
+            return user;
+
+          } catch (error) {
+        
+            throw new ApolloError('Failed to remove duration from student', 'REMOVE_DURATION_ERROR', { originalError: error });
+          }
+
+        },
+
+
+        frequencyIncreased: async (parent, args, context) => {
+            if (!context.user) {
+                throw new AuthenticationError('You must be logged in!');
+            }
+        
+            const { frequencyId, studentId } = args;
+        
+            if (!frequencyId || !studentId) {
+                throw new UserInputError('Frequency ID and Student ID are required');
+            }
+        
+            try {
+                const frequency = await Frequency.findById(frequencyId);
+                const user = await User.findById(studentId);
+        
+                if (!frequency) {
+                    throw new UserInputError('Frequency not found');
+                }
+        
+                if (!user) {
+                    throw new UserInputError('Student not found');
+                }
+      
+                frequency.count++;
+                frequency.updatedAt = new Date(); 
+                frequency.log.push({ time: new Date() }); 
+                await frequency.save();
+        
+                return frequency;
+            } catch (error) {
+                throw new ApolloError('Failed to increase frequency count', 'FREQUENCY_INCREASE_ERROR', { originalError: error });
+            }
+        },
+
+        removeFrequencyIncrement: async (parent, args, context) => {
+            if (!context.user) {
+                throw new AuthenticationError('You must be logged in!');
+            }
+        
+            const { frequencyId, studentId } = args;
+        
+            if (!frequencyId || !studentId) {
+                throw new UserInputError('Frequency ID and Student ID are required');
+            }
+            try {
+                const frequency = await Frequency.findById(frequencyId);
+                const user = await User.findById(studentId);
+        
+                if (!frequency) {
+                    throw new UserInputError('Frequency not found');
+                }
+                if (!user) {
+                    throw new UserInputError('Student not found');
+                }
+                frequency.count--;
+                 frequency.log.pop(); 
+                await frequency.save();
+        
+                return frequency;
+            } catch (error) {
+                throw new ApolloError('Failed to increase frequency count', 'FREQUENCY_INCREASE_ERROR', { originalError: error });
+            }
+        },
+        durationTimerAdded: async (parent, args, context) => {
+
+        },
+        removeLastDurationTimer: async (parent, args, context) => {
+
+        },
+
+        addToInterventionList: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You must be logged in as an admin')
+          }
+          args.createdBy = context.user._id;
+          const interventionItem= await InterventionList.create(args);
+          return interventionItem;
+        },
+
+        removedInterventionFromList: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You need to be logged in as an admin')
+          }
+          try {
+            const interventionItem = await InterventionList.findByIdAndDelete(args._id);
+            if (!interventionItem) {
+              throw new Error('Intervention was not found')
+            }
+            console.log(interventionItem);
+            return interventionItem;
+          } catch (error) {
+            throw new ApolloError('Failed to delete intervention item', 'DELETE_INTERVENTION_LIST_ERROR', {originalError: error});
+          }
+        },
+
+        addInterventionForStudent: async (parent, args, context) => {
+          console.log("Starting addInterventionForStudent resolver");
+          console.log("Received arguments:", args);
+      
+          if (!context.user || !context.user.isAdmin) {
+              throw new AuthenticationError('You must be logged in as an administrator!');
+          }
+      
+          const { interventionId, studentId } = args;
+      
+          if (!studentId) {
+              throw new UserInputError('Student ID is required');
+          }
+      
+          try {
+              console.log("Finding accommodation card with ID:", interventionId);
+      
+              const objectIdinterventionId = mongoose.Types.ObjectId(interventionId);
+      
+              const interventionItem= await AccommodationCards.findById(objectIdinterventionId);
+      
+              if (!interventionItem) {
+                  throw new Error('Accommodation card not found');
+              }
+      
+              console.log("Found accommodation card:", interventionItem);
+      
+              interventionItem.createdBy = context.user._id;
+      
+              await interventionItem.save();
+      
+              console.log("Finding user with ID:", studentId);
+              const user = await User.findById(studentId);
+      
+              if (!user) {
+                  throw new Error('User not found');
+              }
+      
+              console.log("Found user:", user);
+      
+              console.log("Adding intervention item to user's interventions array");
+              user.interventions.push(objectIdinterventionId);
+      
+              console.log("Saving updated user");
+              await user.save();
+      
+              console.log("User successfully updated:", user);
+      
+              return user;
+          } catch (error) {
+              console.error("Error occurred:", error);
+              throw new ApolloError('Failed to add intervention for student', 'ADD_INTERVENTION_ERROR', { originalError: error });
+          }
+        },
+
+        removeInterventionForStudent: async (parent, args, context) => {
+          if (!context.user || !context.user.isAdmin) {
+            throw new AuthenticationError('You need to be logged in as an admin!');
+          }
+          
+          const { interventionId, studentId } = args;
+          
+          if (!studentId) {
+            throw new UserInputError('Student ID is required')
+          }
+          
+          try {
+            const user = await User.findById(studentId);
+
+            if (!user) {
+              throw new UserInputError('Student not found')
+            }
+
+            const index = user.interventions.indexOf(interventionId);
+            if (index === -1) {
+              throw new UserInputError('Intervention item not found for this student!');
+            }
+
+            user.interventions.splice(index, 1);
+            await user.save();
+
+            return user;
+
+          } catch (error) {
+         
+            throw new ApolloError('Failed to remove intervention from student', 'REMOVE_INTERVENTION_ERROR', { originalError: error });
+          }
+
+        }
+
+        },
+    
+
+      AccommodationCards: {
+        createdBy: async (parent, args, context) => {
+          console.log("Fetching createdBy user with ID:", parent.createdBy);
+          try {
+            const user = await User.findById(parent.createdBy);
+            return user ? [user] : []; 
+          } catch (error) {
+            console.error("Error fetching createdBy user:", error);
+            return null; 
+          }
+        }
+      },      
+          User: {
+            accommodations: async (parent, args, context) => {
+              const accommodations = await AccommodationCards.find({ _id: { $in: parent.accommodations } });
+              return accommodations ? accommodations : [];
+            },            
+            behaviorFrequencies: async (parent, args, context) => {
+              const behaviorFrequencies = await Frequency.find({_id: { $in: parent.behaviorFrequencies } });
+              return behaviorFrequencies ? behaviorFrequencies : [];
+            },
+            behaviorDurations: async (parent, args, context) => {
+              const userBehaviorDurations = await Duration.find({_id: { $in :parent.behaviorDurations } });
+              return userBehaviorDurations ? userBehaviorDurations : [];
+            },
+            interventions: async (parent, args, context) => {
+              const userInterventions  = await InterventionList.find({_id: { $in: parent.interventions } });
+              return userInterventions ? userInterventions : []
+            }
+          },
+          Duration: {
             createdBy: async (parent, args, context) => {
-              // Assuming createdBy is an ID referencing a user
+              const user = await User.findById(parent.createdBy);
+              return user ? [user] : [];
+            },
+            createdFor: async (parent, args, context) => {
+              const user = await User.findById(parent.createdFor);
+              return user ? [user] : []
+            }
+          },
+          Frequency : {
+            createdBy: async (parent, args, context) => {
+              const user = await User.findById(parent.createdBy);
+              return user ? [user] : []
+            },
+            createdFor: async(parent, args, context) => {
+              const user = await User.findById(parent.createdFor);
+              return user ? [user] : [];
+            }
+          },
+          InterventionList: {
+            createdBy: async (parent, args, context) => {
               const user = await User.findById(parent.createdBy);
               return user ? [user] : [];
             }
           }
-
-
-          
-      
-    
-
-
-
-        
-      
-
       
 
 };
@@ -184,506 +656,3 @@ const resolvers = {
 
 module.exports = resolvers;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const { AuthenticationError } = require('apollo-server-express')
-// const { User, Accommodation, AccommodationCards, Break , OutOfSeat, SeatAway, InterventionList} = require('../models');
-// const { signToken } = require('../utils/auth');
-// const moment = require('moment')
-// const { startOfDay, endOfDay, isEqual } = require('date-fns');
-
-
-// const resolvers = {
-//     Query: {
-//         me: async (parent, args, context) => {
-//             if (context.user) {
-//                 const userData = await User.findOne({_id: context.user._id})
-//                 .select('-__v -password')
-//                 .populate('accommodations')
-//                 .populate('breaks')
-//                 .populate('seatAwayTaken')
-//                 .populate('isAdmin')
-//                 .populate('students')
-//                 .populate('outOfSeat')
-//                 .populate('userInterventions')
-
-//                 return userData
-//             }
-//             throw new AuthenticationError('Not logged in')
-//         },
-       
-//        users: async () => {
-//         return User.find()
-//         .select('-__v -password')
-//        },
-//        user: async (parent, { username }) => {
-//         const user = await User.findOne({ username })
-//           .select('-__v -password')
-//           .populate('accommodations')
-//           .populate('breaks')
-//           .populate('seatAwayTaken')
-//           .populate('isAdmin')
-//           .populate('students')
-//           .populate('outOfSeat')
-//           .populate('userInterventions');
-      
-//         if (!user) {
-//           throw new Error('User not found');
-//         }
-      
-//         const outOfSeatCountByDayVirtual = user.outOfSeatCountByDayVirtual;
-      
-//         // Calculate the average count
-//         let totalCount = 0;
-//         for (const { count } of outOfSeatCountByDayVirtual) {
-//           totalCount += count;
-//         }
-//         const averageCount = totalCount / outOfSeatCountByDayVirtual.length;
-      
-//         // Add the average count to the user object
-//         user.averageOutOfSeatCount = averageCount;
-      
-//         return user;
-//       },
-      
-      
-//        accommodationCards: async () => {
-//         return AccommodationCards.find()
-//        },
-//        accommodations: async (parent, { username }) => {
-//         const params = username ? { username } : {};
-//         return Accommodation.find(params).sort({ createdAt: -1})
-//        },
-//        accommodation: async(parent, { _id}) => {
-//         return Accommodation.findOne({_id})
-//        },
-//        break: async (parent, { username }) => {
-//         const params = username ? { username } : {};
-//         return Break.find(params).sort({ createdAt: -1})
-//        },
-//        seatAway: async (parent, { username }) => {
-//         const params = username ? { username } : {};
-//         return SeatAway.find(params).sort({ createdAt: -1})
-//        },
-//       //  interventionList: async () => {
-//       //   return InterventionList.find();
-//       //  },
-
-//        interventionList: async (parent, { username }) => {
-//         const params = username ? { username } : {};
-        
-      
-//         if (!params) {
-//           throw new Error('User not found');
-//         }
-      
-    
-      
-//         return InterventionList.find(params)
-//       },
-       
-       
-      
-//     },
-    
-
-//     Mutation: {
-//         addUser: async (parent, args) => {
-//             const user = await User.create(args);
-//             const token = signToken(user);
-      
-//             return { token, user };
-//           },
-//           login: async (parent, { username, password }) => {
-//             const user = await User.findOne({ username });
-      
-//             if (!user) {
-//               throw new AuthenticationError('Incorrect credentials');
-//             }
-      
-//             const correctPw = await user.isCorrectPassword(password);
-      
-//             if (!correctPw) {
-//               throw new AuthenticationError('Incorrect credentials');
-//             }
-      
-//             const token = signToken(user);
-//             return { token, user };
-//           },
-//           //add an accommodation card for all users
-//           addAccommodationCard: async (parent, args) => {
-//             const accommodationCards = await AccommodationCards.create(args);
-      
-//             return { accommodationCards };
-//           },
-
-        
-//           addAccommodationForStudent: async (parent, { username, image, title }, context) => {
-//             if (context.user && context.user.isAdmin) {
-//               const accommodation = { title, image }; 
-//               const user = await User.findOne({ username: username });
-          
-//               // Check if the accommodation already exists for the student
-//               const accommodationExists = user.accommodations.some(
-//                 (acc) => acc.title === title
-//               );
-//               if (accommodationExists) {
-//                 throw new Error(`Accommodation '${title}' is already added for the student.`);
-//               }
-          
-//               user.accommodations.push(accommodation);
-//               const updatedUser = await user.save();
-          
-//               return updatedUser;
-//             }
-          
-//             throw new AuthenticationError('You need to be logged in as an administrator!');
-//           },
-          
-          
-//           removeAccommodationCard: async (parent, args) => {
-//               const accommodation = await AccommodationCards.findByIdAndDelete(args);
-//               console.log(accommodation)
-      
-//               return accommodation;
-      
-//             throw new AuthenticationError('Could not delete accommodation card');
-//           },
-          
-//           removeAccommodationFromStudent: async (parent, {accommodationId, username}, context) => {
-//             if (context.user && context.user.isAdmin) {
-//               const user = await User.findOneAndUpdate(
-//                 { username: username},
-//                 {$pull: {accommodations: {_id: accommodationId}}},
-//                 {new: true, runValidators: true}
-//               );
-//               if(!user){
-//                 throw new AuthenticationError('Inccorrect username')
-//               }
-//               return user;
-//             }
-      
-//             throw new AuthenticationError('You need to be logged in as an admin!');
-//           },
-
-//           addIntervention: async (parent, args) => {
-//             const interventions = await InterventionList.create(args);
-      
-//             return { interventions };
-//           },
-
-//           removeIntervention: async (parent, args) => {
-//             const intervention = await InterventionList.findByIdAndDelete(args);
-//             console.log(intervention)
-    
-//             return intervention;
-    
-//           throw new AuthenticationError('Could not delete accommodation card');
-//         },
-//         addInterventionToStudent: async (parent, { username, interventionId }, context) => {
-//           if (context.user && context.user.isAdmin) {
-//             const intervention = await InterventionList.findById(interventionId);
-//             if (!intervention) {
-//               throw new Error(`Intervention '${interventionId}' not found.`);
-//             }
-          
-//             const user = await User.findOne({ username: username });
-      
-//             if (user.userInterventions.some(i => i._id.equals(interventionId))) {
-//               throw new Error(`Intervention '${interventionId}' is already added for the student.`);
-//             }
-            
-          
-//             user.userInterventions.push(intervention);
-//             const updatedUser = await user.save();
-          
-//             return updatedUser;
-//           }
-          
-//           throw new AuthenticationError('You need to be logged in as an administrator!');
-//         },
-        
-//         // addInterventionToStudent: async (parent, { username, interventionId }, context) => {
-//         //   if (context.user && context.user.isAdmin) {
-//         //     const intervention = await InterventionList.findById(interventionId);
-//         //     if (!intervention) {
-//         //       throw new Error(`Intervention '${interventionId}' not found.`);
-//         //     }
-          
-//         //     const user = await User.findOne({ username: username });
-          
-//         //     const interventionExists = user.userInterventions.some(
-//         //       (int) => int.interventionId.toString() === interventionId
-//         //     );
-//         //     if (interventionExists) {
-//         //       throw new Error(`Intervention '${interventionId}' is already added for the student.`);
-//         //     }
-          
-//         //     user.userInterventions.push(intervention);
-//         //     const updatedUser = await user.save();
-          
-//         //     return updatedUser;
-//         //   }
-          
-//         //   throw new AuthenticationError('You need to be logged in as an administrator!');
-//         // },
-//         // addInterventionToStudent: async (parent, { username, interventionId }, context) => {
-//         //   if (context.user && context.user.isAdmin) {
-//         //     const intervention = await InterventionList.findById(interventionId);
-//         //     if (!intervention) {
-//         //       throw new Error(`Intervention '${interventionId}' not found.`);
-//         //     }
-        
-//         //     const user = await User.findOne({ username: username });
-        
-//         //     const interventionExists = user.userInterventions.some(
-//         //       (int) => int.interventionId === interventionId
-//         //     );
-//         //     if (interventionExists) {
-//         //       throw new Error(`Intervention '${interventionId}' is already added for the student.`);
-//         //     }
-        
-//         //     user.userInterventions.push(intervention);
-//         //     const updatedUser = await user.save();
-        
-//         //     return updatedUser;
-//         //   }
-        
-//         //   throw new AuthenticationError('You need to be logged in as an administrator!');
-//         // },
-        
-//         // addInterventionToStudent: async (parent, { username, interventionId }, context) => {
-//         //   if (context.user && context.user.isAdmin) {
-//         //     const user = await User.findOne({ username: username });
-        
-//         //     // Check if the intervention already exists for the student
-//         //     const interventionExists = user.userInterventions.some(
-//         //       (intervention) => intervention._id === interventionId
-//         //     );
-//         //     if (interventionExists) {
-//         //       throw new Error(`Intervention '${interventionId}' is already added for the student.`);
-//         //     }
-        
-//         //     const intervention = await InterventionList.findById(interventionId);
-//         //     if (!intervention) {
-//         //       throw new Error(`Intervention '${interventionId}' not found.`);
-//         //     }
-        
-//         //     const newIntervention = {
-//         //       interventionId: intervention._id,
-//         //       title: intervention.title,
-//         //       functions: intervention.functions,
-//         //       summary: intervention.summary,
-//         //       username: intervention.username
-//         //     };
-        
-//         //     user.userInterventions.push(newIntervention);
-//         //     const updatedUser = await user.save();
-        
-//         //     return updatedUser;
-//         //   }
-        
-//         //   throw new AuthenticationError('You need to be logged in as an administrator!');
-//         // },
-                 
-//         // addInterventionToStudent: async (parent, { username, interventionId}, context) => {
-//         //   if (context.user && context.user.isAdmin) {
-//         //     const intervention = { interventionId }; 
-//         //     const user = await User.findOne({ username: username });
-        
-//         //     // Check if the intervention already exists for the student
-//         //     const interventionExists = user.userInterventions.some(
-//         //       (int) => int._id === interventionId
-//         //     );
-//         //     if (interventionExists) {
-//         //       throw new Error(`intervention '${_id}' is already added for the student.`);
-//         //     }
-        
-//         //     user.userInterventions.push(intervention);
-//         //     const updatedUser = await user.save();
-        
-//         //     return updatedUser;
-//         //   }
-        
-//         //   throw new AuthenticationError('You need to be logged in as an administrator!');
-//         // },
-//         // addInterventionToStudent: async (parent, { title, username, functions, summary }, context) => {
-//         //   if (context.user && context.user.isAdmin) {
-//         //     const intervention = {title, functions, summary} ; 
-//         //     const user = await User.findOne({ username: username });
-        
-//         //     // Check if the intervention already exists for the student
-//         //     const interventionExists = user.userInterventions.some(
-//         //       (a) => a.title === title
-//         //     );
-//         //     if (interventionExists) {
-//         //       throw new Error(`Intervention '${title}' is already added for the student.`);
-//         //     }
-        
-//         //     user.userInterventions.push(intervention);
-//         //     const updatedUser = await user.save();
-        
-//         //     return updatedUser;
-//         //   }
-        
-//         //   throw new AuthenticationError('You need to be logged in as an administrator!');
-//         // },
-//         removeInterventionFromStudent: async (parent, {interventionId, username}, context) => {
-//           if (context.user && context.user.isAdmin) {
-//             const user = await User.findOneAndUpdate(
-//               { username: username},
-//               {$pull: {userInterventions: {_id: interventionId}}},
-//               {new: true, runValidators: true}
-//             );
-//             if(!user){
-//               throw new AuthenticationError('Inccorrect username')
-//             }
-//             return user;
-//           }
-    
-//           throw new AuthenticationError('You need to be logged in as an admin!');
-//         },
-
-//           addStudentToList: async (parent, { studentId }, context) => {
-//             if (context.user) {
-//               const updatedUser = await User.findOneAndUpdate(
-//                 { _id: context.user._id },
-//                 { $addToSet: { students: studentId } },
-//                 { new: true }
-//               ).populate('students');
-          
-//               return updatedUser;
-//             }
-          
-//             throw new AuthenticationError('You need to be logged in as an admin!');
-//           },
-//           removeStudentFromList: async (parent, { studentId }, context) => {
-//             if (context.user && context.user.isAdmin) {
-//               const updatedUser = await User.findOneAndUpdate(
-//                 { _id: context.user._id },
-//                 { $pull: { students:  studentId }},
-//                 { new: true }
-//               ).populate('students');
-          
-//               return updatedUser;
-//             }
-          
-//             throw new AuthenticationError('You need to be logged in as an admin!');
-//           },
-
-      
-//           //add break comes from the student
-//           addBreak: async (parent, args, context) => {
-//             if (context.user) {
-//               const updatedBreak = await Break.create({ ...args, username: context.user.username });
-      
-//               await User.findByIdAndUpdate(
-//                 { _id: context.user._id },
-//                 { $push: { breaks: updatedBreak._id } },
-//                 { new: true, runValidators: true }
-//               );
-//               console.log(updatedBreak)
-      
-//               return updatedBreak;
-//             }
-      
-//             throw new AuthenticationError('You need to be logged in!');
-//           },
-//           //add seat away comes from the student-- will need to be connected to accommodation card
-//           addSeatAway: async (parent, args, context) => {
-//             if (context.user && context.user.isAdmin) {
-//               const { studentId, ...seatAwayData } = args;
-          
-//               const updatedSeatAway = await SeatAway.create({
-//                 ...seatAwayData,
-//                 username: context.user.username,
-//               });
-          
-//               await User.findByIdAndUpdate(
-//                 { _id: studentId },
-//                 {
-//                   $push: { seatAwayTaken: updatedSeatAway._id },
-//                   $inc: { seatAwayTotalCount: 1 },
-//                   $inc: { 'seatAwayCountByDay.$[elem].count': 1 },
-//                 },
-//                 {
-//                   new: true,
-//                   runValidators: true,
-//                   arrayFilters: [
-//                     {
-//                       'elem.date': {
-//                         $eq: {
-//                           $dateToString: { format: '%Y-%m-%d', date: args.createdAt },
-//                         },
-//                       },
-//                     },
-//                   ],
-//                 }
-//               );
-          
-//               console.log(updatedSeatAway);
-          
-//               return updatedSeatAway;
-//             }
-          
-//             throw new AuthenticationError('You need to be logged in as an admin!');
-//           },
-          
-          
-//           addOutOfSeat: async (parent, { username, createdAt }, context) => {
-//             if (context.user) {
-//               const query = { username };
-//               const update = {
-//                 $push: { outOfSeat: { createdAt, username} },
-//                 $inc: { "outOfSeatCountByDay.$[elem].count": 1 },
-//               };
-          
-//               if (createdAt) {
-//                 const startOfDay = moment(createdAt).startOf('day');
-//                 const endOfDay = moment(createdAt).endOf('day');
-
-//                 query['outOfSeatCountByDay.createdAt'] = { $gte: startOfDay, $lte: endOfDay };
-//               }
-          
-//               const options = {
-//                 new: true,
-//                 runValidators: true,
-//                 arrayFilters: [{ "elem.createdAt": { $gte: startOfDay, $lte: endOfDay } }],
-//               };
-          
-//               const updatedOutOfSeat = await User.findOneAndUpdate(query, update, options);
-//               console.log(updatedOutOfSeat);
-          
-//               return updatedOutOfSeat;
-//             }
-          
-//             throw new AuthenticationError('You need to be logged in!');
-//           },
-          
-        
-          
-//     }
-// }
-
-// module.exports = resolvers

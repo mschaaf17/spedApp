@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const {Types} = require('mongoose')
 
 const secret = 'mysecretsshhhhh';
 const expiration = '2h';
@@ -22,7 +23,13 @@ module.exports = {
 
     try {
       const { data } = jwt.verify(token, secret, { maxAge: expiration });
-      req.user = data;
+
+      if (Types.ObjectId.isValid(data._id)) {
+        req.user = data;
+      } else {
+        console.log('Invalid ObjectId')
+      }
+    
     } catch {
       console.log('Invalid token');
     }

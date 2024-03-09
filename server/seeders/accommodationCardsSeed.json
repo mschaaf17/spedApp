@@ -14,6 +14,7 @@
     {
         "_id": "accommodationId3",
         "title" : "Visual Schedule",
-        "image" : "https://th.bing.com/th/id/OIP.2qIvzT9RPx8B3GvT1pDkHgHaFV?pid=ImgDet&rs=1"
+        "image" : "https://th.bing.com/th/id/OIP.2qIvzT9RPx8B3GvT1pDkHgHaFV?pid=ImgDet&rs=1",
+        "description" : "providing a visual schedule for student"
     }
 ]

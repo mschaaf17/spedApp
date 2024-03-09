@@ -27,7 +27,7 @@ async function seedData() {
     await seedUsers(accommodations);
 
     // Seed student accommodations
-    await seedStudentAccommodations(accommodations);
+   // await seedStudentAccommodations(accommodations);
 
     console.log('Data seeded successfully!');
     process.exit(0);
