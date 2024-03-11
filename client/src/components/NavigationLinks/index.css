@@ -1,0 +1,10 @@
+.nav-center {
+   
+    display: flex;
+    flex-wrap: wrap;
+}
+.nav-center .buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}

@@ -1,0 +1,9 @@
+.fba_form {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.fba_form input{
+ font-size: 15px;
+}

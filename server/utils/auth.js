@@ -1,20 +1,17 @@
-const jwt = require('jsonwebtoken');
-const {Types} = require('mongoose')
+const jwt = require("jsonwebtoken");
+const { Types } = require("mongoose");
 
-const secret = 'mysecretsshhhhh';
-const expiration = '2h';
+const secret = "mysecretsshhhhh";
+const expiration = "2h";
 
 module.exports = {
-  authMiddleware: function({ req }) {
+  authMiddleware: function ({ req }) {
     // allows token to be sent via req.body, req.query, or headers
     let token = req.body.token || req.query.token || req.headers.authorization;
 
     // ["Bearer", "<tokenvalue>"]
     if (req.headers.authorization) {
-      token = token
-        .split(' ')
-        .pop()
-        .trim();
+      token = token.split(" ").pop().trim();
     }
 
     if (!token) {
@@ -27,18 +24,17 @@ module.exports = {
       if (Types.ObjectId.isValid(data._id)) {
         req.user = data;
       } else {
-        console.log('Invalid ObjectId')
+        console.log("Invalid ObjectId");
       }
-    
     } catch {
-      console.log('Invalid token');
+      console.log("Invalid token");
     }
 
     return req;
   },
-  signToken: function({ username, studentId, _id, isAdmin }) {
-    const payload = { username, studentId, _id, isAdmin };
+  signToken: function ({ username, studentId, _id, firstName, lastName, isAdmin }) {
+    const payload = { username, studentId, _id, firstName, lastName, isAdmin };
 
     return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
-  }
+  },
 };

@@ -1,52 +1,54 @@
-const { Schema, model} = require('mongoose');
+const { Schema, model } = require("mongoose");
 
 // Frequency Model Schema
 const FrequencySchema = new Schema({
   count: {
     type: Number,
-    required: true
+    required: true,
   },
   behaviorTitle: {
     type: String,
-    required: true
+    required: true,
   },
   operationalDefinition: {
-    type: String
+    type: String,
   },
   createdAt: {
     type: Date,
-    required: true
+    required: true,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   createdFor: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
-  log: [{
-    time: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+  log: [
+    {
+      time: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   averageCountByDay: {
-    type: Number
+    type: Number,
   },
   totalCount: {
-    type: Number
+    type: Number,
   },
   mostFrequentTime: {
-    type: String
-  }
+    type: String,
+  },
 });
 
-const Frequency = model('Frequency', FrequencySchema);
+const Frequency = model("Frequency", FrequencySchema);
 module.exports = Frequency;

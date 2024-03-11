@@ -1,23 +1,31 @@
 [
     {
+        "firstName": "maddy",
+        "lastName": "schaaf",
         "username": "maddy17",
         "studentSchoolId": "123",
         "password": "password",
         "isAdmin": false
     },
     {
+        "firstName": "kevin",
+        "lastName": "schaaf",
         "username": "kev",
         "studentSchoolId": "1234",
         "isAdmin": false,
         "password": "password"
     },
     {
-        "username": "mike",
+        "firstName": "mike",
+        "lastName": "johnson",
+        "username": "mike1",
         "isAdmin": true,
         "password": "password"
     },
     {
-        "username": "tracy",
+        "firstName": "tracy",
+        "lastName": "johsnon",
+        "username": "tracy1",
         "studentSchoolId": "12345",
         "isAdmin": false,
         "password": "password"

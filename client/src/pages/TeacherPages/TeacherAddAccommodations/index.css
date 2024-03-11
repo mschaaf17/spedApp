@@ -1,0 +1,24 @@
+.flex {
+    display: flex;
+    flex-wrap: wrap;
+    margin: auto;
+    justify-content: space-around;
+}
+
+.flex_accomm {
+    display: flex;
+    flex-wrap: wrap;
+    margin: auto;
+    justify-content: center;
+    
+
+}
+
+.flex_accomm > div {
+    flex-basis: 33.33%; /* Add this line to distribute the width equally */
+  }
+
+.header{
+    text-align: center;
+  
+}

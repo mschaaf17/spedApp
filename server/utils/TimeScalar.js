@@ -1,9 +1,9 @@
-const { GraphQLScalarType } = require('graphql');
-const { Kind } = require('graphql/language');
+const { GraphQLScalarType } = require("graphql");
+const { Kind } = require("graphql/language");
 
 const TimeScalar = new GraphQLScalarType({
-  name: 'Time',
-  description: 'ISO 8601 formatted time string',
+  name: "Time",
+  description: "ISO 8601 formatted time string",
   serialize(value) {
     return value.toISOString(); // Convert Date object to ISO string
   },

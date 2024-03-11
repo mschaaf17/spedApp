@@ -1,0 +1,37 @@
+{
+  "name": "accom-app",
+  "version": "1.0.0",
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "engines": {
+    "node": "16.x"
+  },
+  "scripts": {
+    "start": "node server/server.js",
+    "develop": "concurrently \"cd server && npm run watch\" \"cd client && npm start\"",
+    "install": "cd server && npm i && cd ../client && npm i",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "cd client && npm run build",
+    "seed": "node server/seeders/seeds.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.22.5",
+    "@babel/node": "^7.22.5",
+    "concurrently": "^5.1.0",
+    "prettier": "3.0.3",
+    "puppeteer": "^20.7.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mschaaf17/spedApp"
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0",
+    "graphql-scalars": "^1.22.2",
+    "moment": "^2.29.4",
+    "mongodb": "^5.6.0",
+    "mongoose": "^7.1.1"
+  }
+}

@@ -1,0 +1,149 @@
+
+/* index.js dataLogging */
+.data-to-click {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+}
+.data-to-click button {
+    margin: 15px;
+    border-radius: 15px;
+}
+.view-other-pages {
+    display: flex;
+    justify-content: space-around;
+    
+
+}
+.link-to-page {
+    text-decoration: none;
+    color: black;
+}
+
+
+
+/* use for each data component in dataTracking */
+.data-logging-container {
+    border: solid 1px black;
+    padding: 15px 15px 30px 15px;
+
+}
+.red-button {
+    background-color: red;
+}
+
+/* frequency.js section */
+
+.frequency-button-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    
+}
+
+.data-logging-container button {
+    border: 1px solid black;
+    font-size: 24px;
+    border-radius: 75px;
+    padding: 25px; 
+    box-shadow: 7px 6px 28px 1px rgba(0, 0, 0, 0.24);
+    cursor: pointer;
+    outline: none;
+    transition: 0.1s all;  
+}
+.data-logging-container button:active {
+    transform: scale(0.98);
+            box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
+/* duration.js */
+.blue {
+    background-color: lightblue;
+}
+
+.modal-title {
+    font-size: 24px;
+}
+
+.modal-btn-close {
+    background-color: red;
+    font-size: 18px;
+    margin: 5px;
+    border-radius: 5px;
+}
+
+
+.modal-btn-save {
+    background-color: lightblue;
+    font-size: 18px;
+    border-radius: 5px;
+}
+
+.entire-modal {
+    border-radius: 5px;
+    background-color: darkcyan;
+    opacity: 95%;
+    display: none;
+    z-index:100000000;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    text-align: center;
+    padding-top: 80px;
+    overflow: auto;
+
+
+}
+.new_block_btn {
+    
+  display: flex;
+  align-items: right;
+  justify-content: center;
+  padding: .82%;    
+
+}
+.abc_setup {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    border: 1px solid black;
+}
+.abc_setup input {
+   margin: 1%;
+   
+}
+
+.abc_block {
+    border-bottom: 1px black solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    margin-bottom: 10px;
+}
+
+.abc_checklist {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    padding: 5px;
+}
+
+.abc_checklist label {
+    padding: 20px;
+}
+
+.abc_checklist input {
+    display:  flex;
+    align-items: center;
+    margin-bottom: 25px;
+    
+}
+.underline {
+    border-bottom: 1px solid black;
+    border-radius: 0%;
+}

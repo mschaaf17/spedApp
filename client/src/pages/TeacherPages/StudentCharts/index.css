@@ -1,0 +1,20 @@
+.print_data {
+    display: flex;
+    justify-content: flex-end;
+    margin-right: 10%;
+    margin-bottom: 10%;
+}
+.margin_auto {
+    margin: auto;
+}
+
+.graph_flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start; 
+
+}
+.graph_flex > div {
+    flex-basis: 30%; /* Add this line to distribute the width equally */
+  }
