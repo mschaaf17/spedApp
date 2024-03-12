@@ -196,6 +196,19 @@ query User($username: String!) {
   }
 }
 `;
+
+export const QUERY_STUDENT_LIST = gql`
+query Students {
+  students {
+    isAdmin
+    firstName
+    lastName
+    studentSchoolId
+    username
+    _id
+  }
+}
+`;
 export const QUERY_ACCOMMODATION_CARDS = gql`
 query accommodationCards {
   accommodationCards {

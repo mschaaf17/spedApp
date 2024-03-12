@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_USERS, QUERY_ME, QUERY_USER } from '../../../utils/queries';
+import { QUERY_STUDENT_LIST, QUERY_ME, QUERY_USER } from '../../../utils/queries';
 import { Link } from 'react-router-dom';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+//import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { Modal, Button } from 'react-bootstrap';
 import { REMOVE_STUDENT_FROM_LIST } from '../../../utils/mutations';
 import './index.css'
 import SearchBar from '../../../components/SearchBar';
 import AddIcon from '@mui/icons-material/Add';
+import StudentTable from '../../../components/Tables/studentTable'
+
+
 
 import { ADD_STUDENT_TO_LIST } from '../../../utils/mutations';
 
@@ -17,12 +20,13 @@ export default function TeacherDataTracking() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [addedStudents, setAddedStudents] = useState({});
   
-  const { loading, data } = useQuery(QUERY_USERS);
+  const { loading, data } = useQuery(QUERY_STUDENT_LIST);
   const { data: user } = useQuery(QUERY_USER);
-  const getAllUsers = data?.users || {};
+  const getAllStudents= data?.students || {};
 
   const { data: dataMe } = useQuery(QUERY_ME);
   const getMyStudentList = dataMe?.me.students || [];
+  console.log(getMyStudentList)
 
   const [removeStudentFromList, { error }] = useMutation(REMOVE_STUDENT_FROM_LIST);
 
@@ -37,7 +41,7 @@ export default function TeacherDataTracking() {
         variables: { studentId: selectedStudent },
         refetchQueries: [
           { query: QUERY_ME },
-          { query: QUERY_USERS },
+          { query: QUERY_STUDENT_LIST },
         ],
       });
       setAddedStudents((prevAddedStudents) => {
@@ -81,6 +85,10 @@ export default function TeacherDataTracking() {
 
   return (
     <div>
+      <div className='titleSection'>
+      <h1 className="title">Students</h1>
+      </div>
+       
       {/* <Link className='link-to-page logout center' to={`/addstudent/${dataMe?.me.username}`}>
         Add a Student
       </Link> */}
@@ -89,13 +97,16 @@ export default function TeacherDataTracking() {
       isStudentAdded = {isStudentAdded}
       addedStudents={addedStudents}/>
 
-      <h2>Pick a student to start logging data</h2>
+      <StudentTable
+        getMyStudentList={getMyStudentList}
+        removeStudent={removeStudent} // Passing removeStudent function as a prop
+      />
 
-      <div className='user_list'>
+      {/* <div className=''>
         {Object.values(getMyStudentList && getMyStudentList).map((student, index) => (
-          <div className='each_student' key={index}>
+          <div className='' key={index}>
             <div>
-              <Link className='link-to-page logout center' to={`/studentProfile/${student.username}`}>
+              <Link className='' to={`/studentProfile/${student.username}`}>
                 {student.username}
               </Link>
               <p onClick={() => removeStudent(student._id)} className='center'>
@@ -104,7 +115,7 @@ export default function TeacherDataTracking() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {showConfirmationModal && (
         <Modal show={showConfirmationModal} onHide={handleCancelConfirmation}>

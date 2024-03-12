@@ -4,6 +4,7 @@ import './index.css';
 import AccessAlarmOutlinedIcon from '@mui/icons-material/AccessAlarmOutlined';
 import TrendingUpOutlinedIcon from '@mui/icons-material/TrendingUpOutlined';
 import AddTaskOutlinedIcon from '@mui/icons-material/AddTaskOutlined';
+import Header from '../../components/Header';
 
 export default function Home() {
     useEffect(() => {
@@ -39,14 +40,6 @@ export default function Home() {
 
     return (
         <div id="frame">
-           <nav className ="nav-home" >
-         <div>Inclusion App</div>
-         <div className='flex-space-between'>
-         <Link className="login-signup-link" to ="/signup">Sign up</Link>
-        <Link className= "login-signup-link" to="/login">Login
-         </Link>
-         </div>
-        </nav>
             <input type="radio" name="frame" id="frame1" checked />
             <input type="radio" name="frame" id="frame2" />
             <input type="radio" name="frame" id="frame3" />

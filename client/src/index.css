@@ -1,3 +1,9 @@
+:root {
+  --blue-color: rgb(7, 154, 162);
+  --gray-color: rgb(125, 128, 130);
+}
+
+
 body {
   margin: 10;
   padding: 10;
@@ -10,7 +16,7 @@ body {
 /* .home-background {
   background: linear-gradient(rgb(12, 221, 232) 0%, transparent 100%);
 } */
-.nav-home {
+/* .nav-home {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -35,13 +41,14 @@ body {
 }
 .login-signup-link:hover {
   color: black;
-  background-color: white;
+  background-color: white; 
 }
-
+*/
 
 
  #frame {
   background: linear-gradient(rgb(7, 154, 162) 0%, transparent 100%);
+  border-radius: 10px;
   margin: 0 auto;
   /* max-width: 100%; */
   /* text-align: center; */
@@ -247,7 +254,7 @@ align-items: center;
 }
 .welcome-back {
   font-style: italic;
-  color: rgb(125, 128, 130);
+  color: var(--gray-color);
   padding-bottom: 10px;
 }
 
@@ -296,13 +303,13 @@ align-items: center;
 }
 .switch-login-signup-link {
   text-decoration: none;
-  color: rgb(7, 154, 162);
+  color:  var(--blue-color);
 
 }
 /* Login/sign up page end */
 
 
-/* navigation links */
+/* header links */
 
    /* Google Fonts Import Link */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -331,7 +338,7 @@ body{
 
 
 .nav-links li.active a {
-  color: rgb(7, 154, 162);
+  color: var(--blue-color);
 }
 
 .nav-links{
@@ -370,7 +377,7 @@ body{
   left: 0;
   height: 3px;
   width: 0%;
-  background: rgb(7, 154, 162);
+  background: var(--blue-color);
   border-radius: 12px;
   transition: all 0.4s ease;
 }
@@ -401,8 +408,91 @@ body{
   transform-origin: left;
 }
 
+/* header links end */
+
+/* Teacher Data Tracking */
+.titleSection {
+height: 20vh;
+display: flex;
+justify-content: flex-start;
+align-items: center;
+margin-left: 20px;
+
+}
+
+.title {
+  color: var(--gray-color);
+  border: none;
+}
 
 
-/* navigation links end */
+/* search bar */
+
+
+.searchInputs {
+  display: flex;
+  float: right;
+  margin-bottom: 35px;
+}
+
+.search label {
+  font-size: 20px;
+  padding-top: 8px;
+}
+
+.search input {
+  background-color: rgb(246, 243, 248);
+  font-size: 18px;
+  padding: 15px;
+  height: 30px;
+  width: 250px;
+  margin-left: 10px;
+  border-radius: 10px;
+}
+.searchIcon {
+  height: 45px;
+  width: 50px;
+  background-color: white;
+  display: grid;
+  place-items: center;
+}
+input:focus {
+  outline: none;
+}
+.searchIcon svg {
+  font-size: 35px;
+}
+.dataResult {
+  margin-top: 5px;
+  width: 300px;
+  height: 200px;
+  background-color: white;
+  box-shadow: (0, 0, 0, 0.35) 0px, 5px, 15px;
+  overflow: hidden;
+  overflow-y: auto;
+}
+.dataResult::-webkit-scrollbar {
+  display: none;
+}
+.dataResult .dataItem {
+width: 100%;
+height: 50px;
+display: flex;
+align-items: center;
+color: black;
+}
+
+.dataItem StudentList {
+  margin-left: 10px;
+}
+
+#clearBtn {
+  cursor: pointer;
+}
+
+/* search bar end */
+
+/* Teacher Data Tracking */
+
 }
 
