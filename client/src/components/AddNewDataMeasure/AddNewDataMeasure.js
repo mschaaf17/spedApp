@@ -10,10 +10,10 @@ const normFile = (e) => {
   return e?.fileList;
 };
 
-const AddNewAccommodation = ({onClose}) => {
+const AddNewDataMeasure = ({onClose}) => {
   const [componentDisabled, setComponentDisabled] = useState(false);
   const handleSubmit = () =>{
-    //need the mutation to add an accommodatioToList here
+    //need the mutation to add a duration or frequency here
   }
 
   return (
@@ -24,24 +24,23 @@ const AddNewAccommodation = ({onClose}) => {
         layout="horizontal"
         style={{ maxWidth: 600 }}
       >
-         <h4>New Accommodation</h4>
+         <h4>New Data Measure</h4>
         <Button onClick={onClose}>
           Close
         </Button>
         <Form.Item label="Title">
           <Input />
-        </Form.Item>       
-        <Form.Item label="Description">
+        </Form.Item>  
+        <Form.Item label="Select Data Type">
+          <Select>
+            <Select.Option value="frequency">Frequency</Select.Option>
+            <Select.Option value="duration">Duration</Select.Option>
+          </Select>
+        </Form.Item>     
+        <Form.Item label="Operational Definition">
           <TextArea rows={4} />
         </Form.Item>
-        <Form.Item label="Upload" valuePropName="fileList" getValueFromEvent={normFile}>
-          <Upload action="/upload.do" listType="picture-card">
-            <button style={{ border: 0, background: 'none' }} type="button">
-              <PlusOutlined />
-              <div style={{ marginTop: 8 }}>Upload</div>
-            </button>
-          </Upload>
-        </Form.Item>
+     
         <Checkbox
           checked={componentDisabled}
           onChange={(e) => setComponentDisabled(e.target.checked)}
@@ -61,4 +60,4 @@ const AddNewAccommodation = ({onClose}) => {
   );
 };
 
-export default AddNewAccommodation;
+export default AddNewDataMeasure;

@@ -15,6 +15,160 @@ const moment = require("moment");
 const { startOfDay, endOfDay, isEqual } = require("date-fns");
 const mongoose = require("mongoose");
 
+    
+const addFrequencyToTrackForStudent= async (_, { frequencyId, studentId }, context) => {
+  console.log('addFrequencyToTrackForStudent resolver called with frequencyId:', frequencyId, 'and studentId:', studentId);
+  if (!context.user || !context.user.isAdmin) {
+    throw new AuthenticationError(
+      "You must be logged in as an administrator!",
+    );
+  }
+
+  if (!studentId) {
+    throw new UserInputError("Student ID is required");
+  }
+
+  try {
+    // Find the frequency document
+    const frequency = await Frequency.findById(frequencyId);
+    if (!frequency) {
+      throw new UserInputError("Frequency not found");
+    }
+
+    // Find the user document (student)
+    const user = await User.findById(studentId);
+    if (!user) {
+      throw new UserInputError("Student not found");
+    }
+
+    // Update the user document to include the frequency
+    user.behaviorFrequencies.push(frequencyId);
+    await user.save();
+
+    return user;
+  } catch (error) {
+    throw new ApolloError(
+      "Failed to add frequency of behavior for student",
+      "ADD_FREQUENCY_ERROR",
+      { originalError: error },
+    );
+  }
+}
+
+
+// const removeFrequencyBeingTrackedForStudent= async (parent, args, context) => {
+//   if (!context.user || !context.user.isAdmin) {
+//     throw new AuthenticationError("You need to be logged in as an admin!");
+//   }
+
+//   const { frequencyId, studentId } = args;
+
+//   if (!studentId) {
+//     throw new UserInputError("Student ID is required");
+//   }
+
+//   try {
+//     const user = await User.findById(studentId);
+
+//     if (!user) {
+//       throw new UserInputError("Student not found");
+//     }
+
+//     const index = user.behaviorFrequencies.indexOf(frequencyId);
+//     if (index === -1) {
+//       throw new UserInputError(
+//         "Accommodation card not found for this student!",
+//       );
+//     }
+
+//     user.behaviorFrequencies.splice(index, 1);
+//     await user.save();
+
+//     return user;
+//   } catch (error) {
+//     throw new ApolloError(
+//       "Failed to remove accommodation from student",
+//       "REMOVE_ACCOMMODATION_ERROR",
+//       { originalError: error },
+//     );
+//   }
+// },
+
+const addDurationToTrackForStudent= async (_, { durationId, studentId }, context) => {
+  console.log('addDurationToTrackForStudent resolver called with durationId:', durationId, 'and studentId:', studentId);
+  if (!context.user || !context.user.isAdmin) {
+    throw new AuthenticationError(
+      "You must be logged in as an administrator!",
+    );
+  }
+
+  if (!studentId) {
+    throw new UserInputError("Student ID is required");
+  }
+
+  try {
+    const duration = await Duration.findById(durationId);
+    if (!duration) {
+      throw new UserInputError('Duration not found')
+    }
+    
+
+    // Find the user document (student)
+    const user = await User.findById(studentId);
+    if (!user) {
+      throw new UserInputError("Student not found");
+    }
+
+    // Update the user document to include the new duration
+    user.behaviorDurations.push(durationId);
+    await user.save();
+
+    return user;
+  } catch (error) {
+    throw new ApolloError(
+      "Failed to add duration of behavior for student",
+      "ADD_DURATION_ERROR",
+      { originalError: error },
+    );
+  }
+}
+
+// const removeDurationBeingTrackedForStudent= async (parent, args, context) => {
+//   if (!context.user || !context.user.isAdmin) {
+//     throw new AuthenticationError("You need to be logged in as an admin!");
+//   }
+
+//   const { durationId, studentId } = args;
+
+//   if (!studentId) {
+//     throw new UserInputError("Student ID is required");
+//   }
+
+//   try {
+//     const user = await User.findById(studentId);
+
+//     if (!user) {
+//       throw new UserInputError("Student not found");
+//     }
+
+//     const index = user.behaviorDurations.indexOf(durationId);
+//     if (index === -1) {
+//       throw new UserInputError("Duration not found for this student!");
+//     }
+
+//     user.behaviorDurations.splice(index, 1);
+//     await user.save();
+
+//     return user;
+//   } catch (error) {
+//     throw new ApolloError(
+//       "Failed to remove duration from student",
+//       "REMOVE_DURATION_ERROR",
+//       { originalError: error },
+//     );
+//   }
+// },
+
 const resolvers = {
   Query: {
     me: async (parent, args, context) => {
@@ -224,6 +378,72 @@ const resolvers = {
         );
       }
     },
+    addFrequencyTitleToList: async (_, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError(
+            "You must be logged in as an administrator!",
+          );
+        }
+        args.createdBy = context.user._id;
+
+        const frequency = await Frequency.create(args);
+        return frequency;
+      },
+      removeFrequencyTitleFromList: async (parent, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError("You need to be logged in as an admin")
+        }
+        try {
+          const frequency = await Frequency.findByIdAndDelete(
+            args._id,
+          )
+          if (!frequency) {
+            throw new Error ("Frequency card not found")
+          }
+          console.log(frequency);
+          return frequency;
+        } catch (error) {
+          throw new ApolloError(
+            "Failed to delete frequency title",
+            "DELETE_FREQUENCY_TITLE_ERROR",
+            { originalError: error}
+          )
+        }
+      },
+      addDurationTitleToList: async (_, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError(
+            "You must be logged in as an administrator!",
+          );
+        }
+        args.createdBy = context.user._id;
+
+        const duration = await Duration.create(args);
+        return duration;
+      },
+      removeDurationTitleFromList: async (parent, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError("You need to be logged in as an admin")
+        }
+        try {
+          const duration = await Duration.findByIdAndDelete(
+            args._id,
+          )
+          if (!duration) {
+            throw new Error ("duration card not found")
+          }
+          console.log(duration);
+          return duration;
+        } catch (error) {
+          throw new ApolloError(
+            "Failed to delete duration title",
+            "DELETE_DURATION_TITLE_ERROR",
+            { originalError: error}
+          )
+        }
+      },
+   
+   
     addAccommodationForStudent: async (_, args, context) => {
       console.log("Starting addAccommodationForStudent resolver");
       console.log("Received arguments:", args);
@@ -324,51 +544,49 @@ const resolvers = {
           { originalError: error },
         );
       }
-    },
+    }, 
+      
+    
+    // addFrequencyToTrackForStudent: async (_, { frequencyId, studentId }, context) => {
+    //   if (!context.user || !context.user.isAdmin) {
+    //     throw new AuthenticationError(
+    //       "You must be logged in as an administrator!",
+    //     );
+    //   }
+    
+    //   if (!studentId) {
+    //     throw new UserInputError("Student ID is required");
+    //   }
+    
+    //   try {
+    //     // Find the frequency document
+    //     const frequency = await Frequency.findById(frequencyId);
+    //     if (!frequency) {
+    //       throw new UserInputError("Frequency not found");
+    //     }
+    
+    //     // Find the user document (student)
+    //     const user = await User.findById(studentId);
+    //     if (!user) {
+    //       throw new UserInputError("Student not found");
+    //     }
+    
+    //     // Update the user document to include the frequency
+    //     user.behaviorFrequencies.push(frequencyId);
+    //     await user.save();
+    
+    //     return user;
+    //   } catch (error) {
+    //     throw new ApolloError(
+    //       "Failed to add frequency of behavior for student",
+    //       "ADD_FREQUENCY_ERROR",
+    //       { originalError: error },
+    //     );
+    //   }
+    // },
+    
 
-    addFrequencyTitleToTrack: async (parent, args, context) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
-      }
-
-      const { behaviorTitle, operationalDefinition, studentId } = args;
-
-      if (!studentId) {
-        throw new UserInputError("Student ID is required");
-      }
-
-      try {
-        // Create a new Frequency document
-        const newFrequency = await Frequency.create({
-          behaviorTitle,
-          operationalDefinition,
-          count: 0,
-          createdAt: new Date(),
-          createdBy: context.user._id,
-          createdFor: studentId,
-        });
-
-        const user = await User.findById(studentId);
-        if (!user) {
-          throw new UserInputError("Student not found");
-        }
-
-        user.behaviorFrequencies.push(newFrequency._id);
-        await user.save();
-
-        return user;
-      } catch (error) {
-        throw new ApolloError(
-          "Failed to add frequency of behavior for student",
-          "ADD_FREQUENCY_ERROR",
-          { originalError: error },
-        );
-      }
-    },
-
-    removeFrequencyTitleBeingTracked: async (parent, args, context) => {
+    removeFrequencyBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You need to be logged in as an admin!");
       }
@@ -406,47 +624,49 @@ const resolvers = {
       }
     },
 
-    addDurationTitleToTrack: async (parent, args, context) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
-      }
-
-      const { behaviorTitle, operationalDefinition, studentId } = args;
-
-      if (!studentId) {
-        throw new UserInputError("Student ID is required");
-      }
-
-      try {
-        const newDuration = await Duration.create({
-          behaviorTitle,
-          operationalDefinition,
-          createdAt: new Date(),
-          createdBy: context.user._id,
-          createdFor: studentId,
-        });
-
-        const user = await User.findById(studentId);
-        if (!user) {
-          throw new UserInputError("Student not found");
-        }
-
-        user.behaviorDurations.push(newDuration._id);
-        await user.save();
-
-        return user;
-      } catch (error) {
-        throw new ApolloError(
-          "Failed to add duration of behavior for student",
-          "ADD_DURATION_ERROR",
-          { originalError: error },
-        );
-      }
-    },
-
-    removeDurationTitleBeingTracked: async (parent, args, context) => {
+    // addDurationToTrackForStudent: async (_, { behaviorTitle, operationalDefinition, studentId }, context) => {
+    //   if (!context.user || !context.user.isAdmin) {
+    //     throw new AuthenticationError(
+    //       "You must be logged in as an administrator!",
+    //     );
+    //   }
+    
+    //   if (!studentId) {
+    //     throw new UserInputError("Student ID is required");
+    //   }
+    
+    //   try {
+    //     // Create a new Duration document
+    //     const newDuration = await Duration.create({
+    //       behaviorTitle,
+    //       operationalDefinition,
+    //       duration: 0,
+    //       createdAt: new Date(),
+    //       createdBy: context.user._id,
+    //       createdFor: studentId,
+    //     });
+    
+    //     // Find the user document (student)
+    //     const user = await User.findById(studentId);
+    //     if (!user) {
+    //       throw new UserInputError("Student not found");
+    //     }
+    
+    //     // Update the user document to include the new duration
+    //     user.behaviorDurations.push(newDuration._id);
+    //     await user.save();
+    
+    //     return user;
+    //   } catch (error) {
+    //     throw new ApolloError(
+    //       "Failed to add duration of behavior for student",
+    //       "ADD_DURATION_ERROR",
+    //       { originalError: error },
+    //     );
+    //   }
+    // },
+    
+    removeDurationBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You need to be logged in as an admin!");
       }
@@ -477,6 +697,52 @@ const resolvers = {
         throw new ApolloError(
           "Failed to remove duration from student",
           "REMOVE_DURATION_ERROR",
+          { originalError: error },
+        );
+      }
+    },
+
+    addDataMeasureToStudent: async (_, { dataMeasureId, studentId }, context) => {
+      console.log('addDataMeasureToStudent resolver called with dataMeasureId:', dataMeasureId, 'and studentId:', studentId);
+  
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      
+      try {
+        let frequency, duration;
+    
+        // Check if dataMeasureId matches a frequency
+        try {
+          frequency = await Frequency.findById(dataMeasureId);
+          console.log('Frequency found:', frequency);
+        } catch (frequencyError) {
+          console.error('Error finding frequency:', frequencyError);
+          // If not a frequency, try finding a duration
+        }
+          try {
+            duration = await Duration.findById(dataMeasureId);
+            console.log('Duration found:', duration);
+          } catch (durationError) {
+            console.error('Error finding duration:', durationError);
+            throw new Error("Data measure not found or does not exist");
+          }
+        
+    
+        // Proceed based on whether frequency or duration was found
+        if (frequency) {
+          console.log('Adding frequency to track for student:', frequency);
+          return await addFrequencyToTrackForStudent(_, { frequencyId: dataMeasureId, studentId }, context);
+        } else if (duration) {
+          console.log('Adding duration to track for student:', duration);
+          console.log('Passing durationId:', dataMeasureId);
+          return await addDurationToTrackForStudent(_, { durationId: dataMeasureId, studentId }, context);
+        }
+      } catch (error) {
+        console.error('Error in addDataMeasureToStudent resolver:', error);
+        throw new ApolloError(
+          "Failed to add data measure to student",
+          "ADD_DATA_MEASURE_ERROR",
           { originalError: error },
         );
       }
@@ -854,6 +1120,7 @@ const resolvers = {
       return userInterventions ? userInterventions : [];
     },
   },
+
   Duration: {
     createdBy: async (parent, args, context) => {
       const user = await User.findById(parent.createdBy);

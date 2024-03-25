@@ -3,8 +3,7 @@ const { Schema, model } = require("mongoose");
 // Frequency Model Schema
 const FrequencySchema = new Schema({
   count: {
-    type: Number,
-    required: true,
+    type: Number
   },
   behaviorTitle: {
     type: String,
@@ -14,8 +13,7 @@ const FrequencySchema = new Schema({
     type: String,
   },
   createdAt: {
-    type: Date,
-    required: true,
+    type: Date
   },
   updatedAt: {
     type: Date,
@@ -28,8 +26,7 @@ const FrequencySchema = new Schema({
   },
   createdFor: {
     type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+    ref: "User"
   },
   log: [
     {

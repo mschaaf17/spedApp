@@ -33,8 +33,7 @@ const DurationSchema = new Schema({
   },
   createdFor: {
     type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+    ref: "User"
   },
   averageTimeSpentDaily: {
     type: String,

@@ -105,26 +105,39 @@ const typeDefs = gql`
     ): AccommodationCards
     removeAccommodationCard(_id: ID!): AccommodationCards
 
+    addFrequencyTitleToList(
+      behaviorTitle: String!
+      operationalDefinition: String!
+    ): Frequency
+    removeFrequencyTitleFromList(
+      _id: ID!
+    ): Frequency
+
+    addDurationTitleToList(
+      behaviorTitle: String!
+      operationalDefinition: String!
+    ): Duration
+    removeDurationTitleFromList(
+      _id: ID!
+    ): Duration
+
     addAccommodationForStudent(accommodationCardId: ID!, studentId: ID!): User
     removeAccommodationFromStudent(
       accommodationCardId: ID!
       studentId: ID!
     ): User
+    
+  
+    removeFrequencyBeingTrackedForStudent(frequencyId: ID!, studentId: ID!): User
 
-    addFrequencyTitleToTrack(
-      behaviorTitle: String!
-      operationalDefinition: String!
+  
+    removeDurationBeingTrackedForStudent(durationId: ID!, studentId: ID!): User
+
+    addDataMeasureToStudent(
+      dataMeasureId: ID!
       studentId: ID!
     ): User
-    removeFrequencyTitleBeingTracked(frequencyId: ID!, studentId: ID!): User
-
-    addDurationTitleToTrack(
-      behaviorTitle: String!
-      operationalDefinition: String!
-      studentId: ID!
-    ): User
-    removeDurationTitleBeingTracked(durationId: ID!, studentId: ID!): User
-
+    
     frequencyIncreased(frequencyId: ID!, studentId: ID!): User
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): User
 

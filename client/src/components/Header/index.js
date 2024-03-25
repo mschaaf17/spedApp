@@ -64,17 +64,17 @@ const Header = () => {
           <li class='left-item'>
             Inclusion App Logo
           </li>
-          <li class={`center ${activeLink=== "/teacherdata/" + data?.me.username ? 'active' : ''}`} >
-            <a href={`/teacherdata/${data?.me.username}`} onClick={(event) => handleLinkClick(`/teacherdata/${data?.me.username}`)}>Students</a>
+          <li class={`center ${activeLink=== "/studentList/" + data?.me.username ? 'active' : ''}`} >
+            <a href={`/studentList/${data?.me.username}`} onClick={(event) => handleLinkClick(`/studentList/${data?.me.username}`)}>Students</a>
           </li>
           <li class={`center ${activeLink === '/dataMeasures' ? 'active' : ''}`}>
             <a href="/dataMeasures" onClick={(event) => handleLinkClick('/dataMeasures')}>Data Measures</a>
           </li>
-          <li class={`center ${activeLink === '/accommodations' ? 'active' : ''}`}>
-            <a href="/accommodations" onClick={(event) => handleLinkClick('/accommodations')}>Accommodations</a>
-          </li>
           <li class={`center ${activeLink === '/interventions' ? 'active' : ''}`}>
             <a href="/interventions" onClick={(event) => handleLinkClick('/interventions')}>Interventions</a>
+          </li>
+          <li class={`center ${activeLink === '/accommodations' ? 'active' : ''}`}>
+            <a href="/accommodations" onClick={(event) => handleLinkClick('/accommodations')}>Accommodations</a>
           </li>
           <li className="center">
             <a href="/" onClick={logout} style={{ color: 'rgb(125, 128, 130)', textDecoration: 'none' }}>Logout</a>

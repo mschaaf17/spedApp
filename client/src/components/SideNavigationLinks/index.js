@@ -18,7 +18,7 @@ export default function NavigationLinks() {
         </div>
         
         
-        <div className="student-list-link"> <Link className="link-to-page logout" to ={`/teacherdata/${data?.me.username}`}> ← Back to Student List</Link></div> 
+        <div className="student-list-link"> <Link className="link-to-page logout" to ={`/studentList/${data?.me.username}`}> ← Back to Student List</Link></div> 
   
 
     </div>

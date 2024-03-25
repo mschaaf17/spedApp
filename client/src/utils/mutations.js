@@ -27,6 +27,107 @@ mutation AddUser($username: String!, $firstName: String!, $lastName: String!, $s
   }
 }
 `;
+
+export const ADD_FREQUENCY_TITLE = gql`
+  mutation AddFrequencyTitleToList($behaviorTitle: String!, $operationalDefinition: String!) {
+  addFrequencyTitleToList(behaviorTitle: $behaviorTitle, operationalDefinition: $operationalDefinition) {
+    _id
+    behaviorTitle
+    operationalDefinition
+  }
+}
+`;
+
+ export const REMOVE_FREQUENCY_TITLE= gql`
+  mutation RemoveFrequencyTitleFromList($id: ID!) {
+  removeFrequencyTitleFromList(_id: $id) {
+    _id
+    behaviorTitle
+    operationalDefinition
+  }
+}
+ `;
+
+export const ADD_DURATION_TITLE = gql`
+  mutation AddDurationTitleToList($behaviorTitle: String!, $operationalDefinition: String!) {
+  addDurationTitleToList(behaviorTitle: $behaviorTitle, operationalDefinition: $operationalDefinition) {
+    behaviorTitle
+    _id
+    operationalDefinition
+  }
+}
+ `;
+
+ export const REMOVE_DURATION_TITLE= gql`
+  mutation RemoveDurationTitleFromList($id: ID!) {
+  removeDurationTitleFromList(_id: $id) {
+    _id
+    behaviorTitle
+    operationalDefinition
+  }
+}
+ `;
+
+//  export const ADD_FREQUENCY_TO_STUDENT = gql`
+//   mutation AddFrequencyToTrackForStudent($frequencyId: ID!, $studentId: ID!) {
+//   addFrequencyToTrackForStudent(frequencyId: $frequencyId, studentId: $studentId) {
+//     _id
+//     behaviorFrequencies {
+//       _id
+//       behaviorTitle
+//       operationalDefinition
+//     }
+//   }
+// }
+//  `;
+//remove frequency from student 
+
+//  export const ADD_DURATION_TO_STUDENT = gql`
+//  mutation AddDurationToTrackForStudent($durationId: ID!, $studentId: ID!) {
+//   addDurationToTrackForStudent(durationId: $durationId, studentId: $studentId) {
+//     _id
+//     behaviorDurations {
+//       _id
+//       behaviorTitle
+//       operationalDefinition
+//     }
+//   }
+// }
+//  `;
+ export const ADD_DATA_MEASURE_TO_STUDENT = gql`
+mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
+  addDataMeasureToStudent(dataMeasureId: $dataMeasureId, studentId: $studentId) {
+    _id
+    behaviorFrequencies {
+      _id
+      behaviorTitle
+      createdBy {
+        _id
+        firstName
+        lastName
+        username
+      }
+      operationalDefinition
+    }
+    username
+    firstName
+    lastName
+    behaviorDurations {
+      _id
+      behaviorTitle
+      operationalDefinition
+      createdBy {
+        _id
+        username
+        lastName
+        firstName
+      }
+    }
+  }
+}
+`;
+ //remove duration from student
+
 export const ADD_ACCOMMODATION_CARD = gql`
 mutation addAccommodationCard($title: String, $image: String) {
   addAccommodationCard(title: $title, image: $image) {
@@ -37,12 +138,20 @@ mutation addAccommodationCard($title: String, $image: String) {
 `;
 
 export const ADD_ACCOMMODATION_FOR_STUDENT = gql`
-mutation AddAccommodationForStudent($title: String, $image: String, $username: String) {
-  addAccommodationForStudent(title: $title, image: $image, username: $username) {
-      accommodations {
-        image
-        title
+mutation AddAccommodationForStudent($accommodationCardId: ID!, $studentId: ID!) {
+  addAccommodationForStudent(accommodationCardId: $accommodationCardId, studentId: $studentId) {
+    accommodations {
+      title
+      image
+      description
+      _id
+      createdBy {
+        _id
+        lastName
+        firstName
+        username
       }
+    }
   }
 }
 `;
@@ -58,6 +167,9 @@ mutation RemoveAccommodationFromStudent($accommodationId: ID!, $username: String
   }
 }
 `;
+
+
+
 
 export const ADD_BREAK = gql`
 mutation AddBreak {

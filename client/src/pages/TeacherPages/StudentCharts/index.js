@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import { Link, useParams } from 'react-router-dom'
-import NavigationLinks from '../../../components/NavigationLinks'
+import NavigationLinks from '../../../components/SideNavigationLinks'
 import { useQuery, useMutation } from '@apollo/client';
 import WeeklyData from '../../../components/StudentData/weekly'
 import {QUERY_USER, QUERY_INTERVENTION_LIST, QUERY_ME} from '../../../utils/queries'
@@ -436,7 +436,7 @@ const handleCancelConfirmation = () => {
         Intervention Suggestions:
         {/* if data point is three points above the aimline offer differnt intervention suggestion?? */}
       </div>
-      <div className="view-other-pages"> <Link className="link-to-page logout" to ={`/teacherdata/${userParam}`}> ← Back to Student List</Link></div>
+      <div className="view-other-pages"> <Link className="link-to-page logout" to ={`/studentList/${userParam}`}> ← Back to Student List</Link></div>
     </div>
     </>
   )

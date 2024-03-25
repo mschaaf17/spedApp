@@ -4,7 +4,7 @@ import { Navigate, useParams, Link } from 'react-router-dom'
 import {useQuery} from '@apollo/client'
 import {QUERY_USER, QUERY_ME} from '../../../utils/queries'
 import Auth from '../../../utils/auth'
-import NavigationLinks from '../../../components/NavigationLinks'
+import NavigationLinks from '../../../components/SideNavigationLinks'
 import './index.css'
 
 //props was taken out in StudentProfile(props)

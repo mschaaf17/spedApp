@@ -5,7 +5,7 @@ import {useQuery, useMutation} from '@apollo/client'
 import {ADD_INTERVENTION, REMOVE_INTERVENTION} from '../../../utils/mutations'
 import {QUERY_USER, QUERY_ME, QUERY_INTERVENTION_LIST} from '../../../utils/queries'
 import Auth from '../../../utils/auth'
-import NavigationLinks from '../../../components/NavigationLinks'
+import NavigationLinks from '../../../components/SideNavigationLinks'
 import './index.css'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { Modal, Button } from 'react-bootstrap';

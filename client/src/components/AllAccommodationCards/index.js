@@ -27,13 +27,13 @@ const AllAccommodationCards = ({ addAccommodation,
               <div className='each_student '>
               <div className='center_only'>{accommodation.title}</div>
               <p className='small-image' src={accommodation.image} />
-              <div className='center'>
+              {/* <div className='center'>
               {isAccommodationAdded(accommodation.title) ? (
                     <BookmarkAddedIcon  />
                   ) : ( 
                 <AddIcon className='center' />
                  )}
-                 </div>
+                 </div> */}
                  </div>
             </div>
           ))}

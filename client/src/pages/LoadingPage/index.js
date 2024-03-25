@@ -13,7 +13,7 @@ export default function LoadingPage() {
     const redirect = async () => {
       if (!loading && Auth.loggedIn()) {
         if (admin) {
-          window.location.href = `/teacherdata/${data?.me?.username}`;
+          window.location.href = `/studentList/${data?.me?.username}`;
         } else {
           window.location.href = "/studentAccommodations";
         }
@@ -29,7 +29,7 @@ export default function LoadingPage() {
   //     if (!loading && Auth.loggedIn() && admin !== true) {
   //       window.location.href = "/studentAccommodations";
   //     } else if (data?.me.username) {
-  //       window.location.href = `/teacherdata/${data.me.username}`;
+  //       window.location.href = `/studentList/${data.me.username}`;
   //     }
   //   };
 

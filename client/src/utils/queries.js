@@ -11,6 +11,41 @@ query Me {
       studentSchoolId
       lastName
       firstName
+      accommodations {
+        _id
+        image
+        description
+        title
+        createdBy {
+          username
+          _id
+          firstName
+          lastName
+        }
+      }
+      behaviorDurations {
+        _id
+        behaviorTitle
+        operationalDefinition
+        createdBy {
+          _id
+          username
+          firstName
+          lastName
+        }
+      }
+      behaviorFrequencies {
+        _id
+        behaviorTitle
+        operationalDefinition
+        createdBy {
+          _id
+          firstName
+          lastName
+          username
+        }
+      }
+
     }
     accommodations {
       _id
@@ -209,11 +244,49 @@ query Students {
   }
 }
 `;
+
+export const QUERY_FREQUENCY_LIST = gql`
+query Frequency {
+  frequency {
+    _id
+    behaviorTitle
+    operationalDefinition
+    createdBy {
+      _id
+      lastName
+      firstName
+      username
+    }
+  }
+}
+`;
+
+export const QUERY_DURATION_LIST = gql`
+query Duration {
+  duration {
+    _id
+    behaviorTitle
+    operationalDefinition
+    createdBy {
+      _id
+      lastName
+      firstName
+      username
+  }
+}
+}
+`;
+
 export const QUERY_ACCOMMODATION_CARDS = gql`
-query accommodationCards {
+query AccommodationCards {
   accommodationCards {
-    title
+    _id
+    createdBy {
+      username
+    }
+    description
     image
+    title
   }
 }
 `;
@@ -227,15 +300,15 @@ createdAt
 `;
 
 
-export const QUERY_ACCOMMODATIONS = gql`
-query accommodations {
-  accommodations {
-  title
-  image
-  username
-  }
-}
-`;
+// export const QUERY_ACCOMMODATIONS = gql`
+// query accommodations {
+//   accommodations {
+//   title
+//   image
+//   username
+//   }
+// }
+// `;
 
 export const QUERY_INTERVENTION_LIST = gql`
 query InterventionList($username: String) {

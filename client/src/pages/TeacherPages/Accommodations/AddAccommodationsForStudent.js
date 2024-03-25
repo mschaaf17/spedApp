@@ -9,7 +9,7 @@ import { Modal, Button } from 'react-bootstrap';
 import './index.css'
 
 
-export default function TeacherAddAccommodations() {
+export default function AddAccommodationsForStudent() {
   const { username: userParam } = useParams();
   const [updateStudentAccommodations, setUpdateStudentAccommodations] = useState([]);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
@@ -167,7 +167,7 @@ const isAccommodationAdded = (title) => {
       </div>
 
       <div className="student-list-link">
-        <Link className="link-to-page logout" to={`/teacherdata/${userParam}`}>
+        <Link className="link-to-page logout" to={`/studentList/${userParam}`}>
           ← Back to Student List
         </Link>
       </div>

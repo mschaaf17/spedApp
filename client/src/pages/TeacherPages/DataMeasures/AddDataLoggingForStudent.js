@@ -72,7 +72,7 @@ export default function DataLogging() {
       </div>
       
       <div className="view-other-pages">
-        <div> <Link className="link-to-page logout" to ={`/teacherdata/${userParam}`}> ← Back to Student List</Link></div>
+        <div> <Link className="link-to-page logout" to ={`/studentList/${userParam}`}> ← Back to Student List</Link></div>
         <div ><Link  className="link-to-page logout" to ={`/studentProfile/${userParam}/studentCharts`}>Student Charts → </Link></div>
       </div>
 

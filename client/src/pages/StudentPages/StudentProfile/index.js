@@ -5,7 +5,7 @@ import {useQuery} from '@apollo/client'
 import {QUERY_USER, QUERY_ME} from '../../../utils/queries'
 import Auth from '../../../utils/auth'
 import './index.css'
-import NavigationLinks from '../../../components/NavigationLinks'
+import NavigationLinks from '../../../components/SideNavigationLinks'
 
 //props was taken out in StudentProfile(props)
 export default function StudentProfile() {
