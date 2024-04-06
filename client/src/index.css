@@ -476,13 +476,28 @@ body{
 
 /* header links end */
 
+/* menu side bar */
+
+.menu-side-bar {
+    position: 'fixed';
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: 'width 0.3s';
+    background-color: '';
+}
+/* end menu side bar */
 /* footer */
-.footer {
-  /* padding-top: 10%; */
-  padding-left: 1%;
-  color: var(--gray-color);
-  /* display: flex; */
-  float: end;
+footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #333;
+  color: white;
+  text-align: start;
+  padding: 10px;
 }
 /* footer end */
 
@@ -595,7 +610,24 @@ input:focus {
 }
 /* accommodations page end */
 
+
+/* this is ending body for some reason???? */
 }
+
+/* AddDataLoggingForStudent page*/
+.container{
+  display:flex ;
+  justify-content: flex-end;
+}
+.centerBody {
+  flex: 1; /* Take up remaining space */
+  padding: 20px;
+
+}
+
+
+/* end AddDataLoggingForStudent page */
 
 /*   --blue-color: rgb(7, 154, 162);
   --gray-color: rgb(125, 128, 130); */
+

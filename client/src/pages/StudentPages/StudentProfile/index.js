@@ -44,7 +44,9 @@ if (loading) {
       
 
       {/* need to get ride of extra : in userparam */}
-          <h2 className='profile-name'>{` Viewing ${userParam}'s Profile `}</h2>
+          <h2 className='profile-name'>{` Viewing ${userParam}'s Profile `}
+          
+          AM I BEING USED?????</h2>
         
         {/* log data link to = log data page */}
         

@@ -133,34 +133,34 @@ query Users {
     behaviorDurations {
       behaviorTitle
       _id
-      createdAt
       operationalDefinition
-      endTimes
-      startTimes
-      startDurationId
-      createdFor {
-        username
-      }
-      createdBy {
-        username
-      }
+      # createdAt
+      # endTimes
+      # startTimes
+      # startDurationId
+      # createdFor {
+      #   username
+      # }
+      # createdBy {
+      #   username
+      # }
     }
     behaviorFrequencies {
       _id
       behaviorTitle
-      count
-      createdAt
-      createdBy {
-        username
-      }
-      createdFor {
-        username
-      }
-      log {
-        time
-      }
       operationalDefinition
-      updatedAt
+      # count
+      # createdAt
+      # createdBy {
+      #   username
+      # }
+      # createdFor {
+      #   username
+      # }
+      # log {
+      #   time
+      # }
+      # updatedAt
     }
   }
 `;
@@ -169,6 +169,15 @@ export const QUERY_USER = gql`
 query User($username: String!) {
   user(username: $username) {
     _id
+    username
+    firstName
+    isAdmin
+    lastName
+    studentSchoolId
+    students {
+      username
+      _id
+    }
     accommodations {
       createdBy {
         username
@@ -180,37 +189,36 @@ query User($username: String!) {
     }
     behaviorDurations {
       behaviorTitle
-      _id
-      createdAt
-      createdBy {
-        username
-      }
-      createdFor {
-        username
-      }
-      endTimes
       operationalDefinition
-      startDurationId
-      startTimes
-    }
+      _id
+    #   createdAt
+    #   createdBy {
+    #     username
+    #   }
+    #   createdFor {
+    #     username
+    #   }
+    #   endTimes
+    #   startDurationId
+    #   startTimes
+     }
     behaviorFrequencies {
       _id
-      behaviorTitle
-      count
-      createdAt
-      createdBy {
-        username
-      }
-      createdFor {
-        username
-      }
-      log {
-        time
-      }
       operationalDefinition
-      updatedAt
+      behaviorTitle
+      # count
+      # createdAt
+      # createdBy {
+      #   username
+      # }
+      # createdFor {
+      #   username
+      # }
+      # log {
+      #   time
+      # }
+      # updatedAt
     }
-    firstName
     interventions {
       _id
       createdBy {
@@ -220,14 +228,6 @@ query User($username: String!) {
       summary
       title
     }
-    isAdmin
-    lastName
-    studentSchoolId
-    students {
-      username
-      _id
-    }
-    username
   }
 }
 `;

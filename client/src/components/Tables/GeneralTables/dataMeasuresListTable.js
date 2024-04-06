@@ -13,7 +13,7 @@ import SaveIcon from '@mui/icons-material/Save';
 
 
 
-const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, onDataMeasureClick, submitDataMeasureForStudent, selectedStudent, setSelectedStudent}) => {
+const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, onDataMeasureClick, submitDataMeasureForStudent, selectedStudent, setSelectedStudent, handleDelete}) => {
 
   const { loading: loadingMe, error, data } = useQuery(QUERY_ME); 
   const [filteredData, setFilteredData] = useState([]);
@@ -195,7 +195,7 @@ const displaySelect = (rowId) => {
             </>
            )} 
           <div className='tooltip'>
-            <DeleteForeverIcon danger className="deleteIcon"/>
+            <DeleteForeverIcon danger className="deleteIcon" onClick={() => handleDelete(record)}/>
             <span className='tooltipText'>Remove data measure from list</span>
           </div>
         </Space>

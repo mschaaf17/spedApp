@@ -7,26 +7,25 @@ import ABC from '../../../components/DataTrackingMeasures/ABC'
 import Frequency from '../../../components/DataTrackingMeasures/frequency'
 import Observation from '../../../components/DataTrackingMeasures/observation'
 import Contracts from '../../../components/DataTrackingMeasures/Contracts'
+import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar'
 
 
 export default function DataLogging() {
 
   const { username: userParam } = useParams()
-  // const {loading, data} = useQuery(QUERY_USER, {
-  //   variables: {username: userParam}
-  // })
   
   const { loading, data } = useQuery(userParam ? QUERY_USER : QUERY_ME, {
     variables: { username: userParam },
   });
   
   const user = data?.me || data?.user || {};
-
+  
+  const [selectedForm, setSelectedForm] = useState(null)
 
     // use effect for on click display frequency
     const forms = {
-      frequency: <Frequency/>,
-      duration: <Duration />,
+      '1': <Frequency/>,
+      '2': <Duration />,
       abc: <ABC/>,
       observation: <Observation/>,
       contracts: <Contracts/>
@@ -40,10 +39,14 @@ export default function DataLogging() {
         observation: false,
         contracts: false
       }
-      const [state, setState] = useState(initalState)
+     
+
+      const handleMenuItemClick = (formName) => {
+        setSelectedForm(formName);
+      }
 
     const toggleElement = (el) => {
-      setState((prevState)=> ({
+      setSelectedForm((prevState)=> ({
         ...prevState,
         [el]:!prevState[el]
       }))
@@ -54,29 +57,30 @@ export default function DataLogging() {
     }
 
   return (
-    <div>
-      <h2>Logging for {userParam}</h2>
-      
-      <div className="data-to-click">
-        {Object.keys(state).map((el) => (
-          <div key={el}>
-            <button
-              className="logout"
-              onClick={() => toggleElement(el)}
-            >
-              {el.toUpperCase()}
-            </button>
-            {state[el] ? forms[el] : null}
-          </div>
-        ))}
-      </div>
-      
-      <div className="view-other-pages">
-        <div> <Link className="link-to-page logout" to ={`/studentList/${userParam}`}> ← Back to Student List</Link></div>
-        <div ><Link  className="link-to-page logout" to ={`/studentProfile/${userParam}/studentCharts`}>Student Charts → </Link></div>
+    <div className='container'>
+      {/* menu side bar */}
+      <MenuSideBar userParam = {userParam} onItemClick={handleMenuItemClick}/>
+      <div className='centerBody'>
+        <div className='titleSection'>
+      <h1 className ="title"> Logging for {userParam}</h1>
       </div>
 
+      {/* will render all specific components based on what is clicked on the left side for the stuent */}
+      
+      
+        {/* possibly default to whatever has at least one data measure */}
+        <div>
+          {selectedForm ? (
+            forms[selectedForm]
+          ) : (
+            <div>Select Data type from menu side bar</div>
+          )}
+        </div>
+        {/* <Frequency/> */}
+  
+      
 
+      </div>
     </div>
 
     

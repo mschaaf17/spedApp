@@ -42,8 +42,6 @@ export const ADD_FREQUENCY_TITLE = gql`
   mutation RemoveFrequencyTitleFromList($id: ID!) {
   removeFrequencyTitleFromList(_id: $id) {
     _id
-    behaviorTitle
-    operationalDefinition
   }
 }
  `;
@@ -62,8 +60,6 @@ export const ADD_DURATION_TITLE = gql`
   mutation RemoveDurationTitleFromList($id: ID!) {
   removeDurationTitleFromList(_id: $id) {
     _id
-    behaviorTitle
-    operationalDefinition
   }
 }
  `;
