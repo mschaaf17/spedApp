@@ -73,7 +73,7 @@ export default function DataLogging() {
           {selectedForm ? (
             forms[selectedForm]
           ) : (
-            <div>Select Data type from menu side bar</div>
+            <div className='secondHeading'>Select Data type from menu side bar</div>
           )}
         </div>
         {/* <Frequency/> */}

@@ -26,7 +26,7 @@ const typeDefs = gql`
 
   type Frequency {
     _id: ID!
-    count: Int!
+    count: Int
     behaviorTitle: String!
     operationalDefinition: String!
     createdAt: String!
@@ -74,7 +74,7 @@ const typeDefs = gql`
   type Query {
     me: User
     users: [User]
-    user(username: String!): User
+    user(identifier: String!, isUsername: Boolean!): User
     admins: [User]
     students: [User]
     accommodationCards: [AccommodationCards]
@@ -138,8 +138,8 @@ const typeDefs = gql`
       studentId: ID!
     ): User
     
-    frequencyIncreased(frequencyId: ID!, studentId: ID!): User
-    removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): User
+    frequencyIncreased(frequencyId: ID!, studentId: ID!): Frequency
+    removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
     startDurationTimer(durationId: ID!, studentId: ID!): User
     endDurationTimer(durationId: ID!, startDurationId: ID!): User

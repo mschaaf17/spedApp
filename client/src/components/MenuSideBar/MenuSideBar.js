@@ -101,17 +101,25 @@ const MenuSideBar = ({ userParam, onItemClick }) => {
           inlineCollapsed={collapsed}
           onClick={({ key }) => handleItemClick(key)}
         >
-          {items.map((item) => (
-            <Menu.SubMenu key={item.key} icon={item.icon} title={item.label}>
-              {item.children &&
-                item.children.map((child) => (
-                  <Menu.Item key={child.key}>
-                    {child.label}
-                  </Menu.Item>
-                ))}
-            </Menu.SubMenu>
-          ))}
-        </Menu>
+        {items.map((item) => (
+    <React.Fragment key={item.key}>
+      {item.key === 'sub1' ? (
+        <Menu.SubMenu key={item.key} icon={item.icon} title={item.label}>
+          {item.children &&
+            item.children.map((child) => (
+              <Menu.Item key={child.key}>
+                {child.label}
+              </Menu.Item>
+            ))}
+        </Menu.SubMenu>
+      ) : (
+        <Menu.Item key={item.key} icon={item.icon}>
+          {item.label}
+        </Menu.Item>
+      )}
+    </React.Fragment>
+  ))}
+</Menu>
       </div>
     );
   };

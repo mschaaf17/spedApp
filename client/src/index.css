@@ -625,8 +625,67 @@ input:focus {
 
 }
 
-
+.dataContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  margin: auto;
+}
 /* end AddDataLoggingForStudent page */
+/* frequency */
+.secondHeading {
+  margin: 10px;
+  font-style: italic;
+  margin-left: 25px;
+}
+
+.thirdHeading {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.frequencyButtons {
+  margin: 10px;
+  border: none;
+  border-radius: 50%; /* Make the button circular */
+  padding: 30px;
+  background-color: rgb(7, 154, 162, 0.3);
+  display: flex;
+  justify-content: center; /* Align text horizontally in the center */
+  align-items: center; /* Align text vertically in the center */
+  width: 100px; /* Set the width of the button */
+  height: 100px; /* Set the height of the button */
+}
+
+.frequencyButtons:hover {
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid rgb(7, 154, 162, 0.5);
+}
+
+.frequencyButtons span {
+  font-size: 18px; /* Adjust the font size as needed */
+}
+
+.selectedForDelete {
+  background-color: red;
+  color: white; /* Add any other desired styles */
+}
+
+.deleteIcon {
+  color: red;
+  cursor: pointer;
+}
+
+.buttonContent {
+  display: flex;
+  flex-direction: column;
+  
+}
+
+
+/* frequency end */
 
 /*   --blue-color: rgb(7, 154, 162);
   --gray-color: rgb(125, 128, 130); */

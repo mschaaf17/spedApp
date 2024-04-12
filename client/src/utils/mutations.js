@@ -64,6 +64,9 @@ export const ADD_DURATION_TITLE = gql`
 }
  `;
 
+
+
+
 //  export const ADD_FREQUENCY_TO_STUDENT = gql`
 //   mutation AddFrequencyToTrackForStudent($frequencyId: ID!, $studentId: ID!) {
 //   addFrequencyToTrackForStudent(frequencyId: $frequencyId, studentId: $studentId) {
@@ -122,7 +125,40 @@ mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
   }
 }
 `;
- //remove duration from student
+
+export const REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT = gql`
+mutation RemoveFrequencyBeingTrackedForStudent($frequencyId: ID!, $studentId: ID!) {
+  removeFrequencyBeingTrackedForStudent(frequencyId: $frequencyId, studentId: $studentId) {
+    _id
+    behaviorFrequencies {
+      _id
+      behaviorTitle
+    }
+  }
+}
+`;
+
+export const FREQUENCY_INCREASED = gql`
+mutation FrequencyIncreased($frequencyId: ID!, $studentId: ID!) {
+  frequencyIncreased(frequencyId: $frequencyId, studentId: $studentId) {
+    behaviorTitle
+    _id
+    log {
+      time
+    }
+    count
+    createdFor {
+      username
+      _id
+      firstName
+      lastName
+    }
+  }
+}
+`;
+
+
+
 
 export const ADD_ACCOMMODATION_CARD = gql`
 mutation addAccommodationCard($title: String, $image: String) {

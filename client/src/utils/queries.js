@@ -166,8 +166,8 @@ query Users {
 `;
 
 export const QUERY_USER = gql`
-query User($username: String!) {
-  user(username: $username) {
+query User($identifier: String!, $isUsername: Boolean!) {
+  user(identifier: $identifier, isUsername: $isUsername) {
     _id
     username
     firstName
@@ -206,7 +206,7 @@ query User($username: String!) {
       _id
       operationalDefinition
       behaviorTitle
-      # count
+       count
       # createdAt
       # createdBy {
       #   username
@@ -214,9 +214,9 @@ query User($username: String!) {
       # createdFor {
       #   username
       # }
-      # log {
-      #   time
-      # }
+       log {
+         time
+       }
       # updatedAt
     }
     interventions {
@@ -256,6 +256,17 @@ query Frequency {
       lastName
       firstName
       username
+    }
+    count
+    createdFor {
+      _id
+      firstName
+      lastName
+      username
+      studentSchoolId
+    }
+    log {
+      time
     }
   }
 }

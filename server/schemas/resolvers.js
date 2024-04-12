@@ -193,26 +193,38 @@ const resolvers = {
     users: async () => {
       return User.find().select("-__v -password");
     },
-
-    user: async (parent, { username }) => {
-      const user = await User.findOne({ username })
-        .select("-__v -password")
-        .populate("isAdmin")
-        .populate('firstName')
-        .populate('lastName')
-        .populate("studentSchoolId")
-        .populate("students")
-        .populate("accommodations")
-        .populate("behaviorFrequencies")
-        .populate("behaviorDurations")
-        .populate("interventions");
-
-      if (!user) {
-        throw new Error("User not found");
+    user: async (_, { identifier, isUsername }) => {
+      try {
+        let user;
+        if (isUsername) {
+          user = await User.findOne({ username: identifier }).populate('behaviorFrequencies');
+        } else {
+          user = await User.findById(identifier).populate('behaviorFrequencies');
+        }
+        
+        console.log('Populated user:', user); // Log the populated user object
+    
+        // Calculate the count for each behavior frequency
+        const populatedBehaviorFrequencies = user.behaviorFrequencies.map((behaviorFrequency) => {
+          const count = behaviorFrequency.log.length > 0 ? behaviorFrequency.log.length : 0; // Check if log array is not empty
+          return {
+            ...behaviorFrequency.toObject(),
+            count: count,
+          };
+        });
+    
+        return {
+          ...user.toObject(),
+          behaviorFrequencies: populatedBehaviorFrequencies,
+        };
+      } catch (error) {
+        throw new Error('Error fetching user data');
       }
-      return user;
     },
-
+    
+    
+    
+    
     admins: async () => {
       try {
         const adminUsers = await User.find({ isAdmin: true });
@@ -239,7 +251,20 @@ const resolvers = {
 
     //need data to check these
     frequency: async () => {
-      return Frequency.find();
+      try {
+        // Your code to fetch frequencies from the database
+        const frequencies = await Frequency.find(); // Example code, replace with your actual implementation
+
+        // Map over the frequencies and replace null count with 0
+        const frequenciesWithCountZero = frequencies.map(frequency => ({
+          ...frequency.toObject(),
+          count: frequency.count || 0, // If count is null, replace with 0
+        }));
+
+        return frequenciesWithCountZero;
+      } catch (error) {
+        throw new Error('Failed to fetch frequencies');
+      }
     },
 
     //need data to check these
@@ -752,30 +777,50 @@ const resolvers = {
       if (!context.user) {
         throw new AuthenticationError("You must be logged in!");
       }
-
+    
       const { frequencyId, studentId } = args;
-
+    
       if (!frequencyId || !studentId) {
         throw new UserInputError("Frequency ID and Student ID are required");
       }
-
+    
       try {
-        const frequency = await Frequency.findById(frequencyId);
-        const user = await User.findById(studentId);
-
+        // Find the frequency document associated with the given frequencyId and studentId
+        const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
+    
         if (!frequency) {
-          throw new UserInputError("Frequency not found");
+          throw new UserInputError("Frequency not found for the specified student");
         }
-
-        if (!user) {
-          throw new UserInputError("Student not found");
+    
+        // Ensure that count is a valid numeric value before incrementing
+        if (typeof frequency.count !== 'number' || isNaN(frequency.count)) {
+          // Initialize count with a valid numeric value (e.g., 0)
+          frequency.count = 0;
         }
-
+    
+        // Increment the count for the specific frequency document
         frequency.count++;
         frequency.updatedAt = new Date();
         frequency.log.push({ time: new Date() });
         await frequency.save();
-
+    
+        // Update the user's behaviorFrequencies array
+        const user = await User.findById(studentId);
+        if (!user) {
+          throw new UserInputError("Student not found");
+        }
+    
+        const updatedBehaviorFrequencies = user.behaviorFrequencies.map(behavior => {
+          if (behavior._id.toString() === frequencyId) {
+            // Increment the count for the corresponding behavior frequency
+            behavior.count++;
+          }
+          return behavior;
+        });
+    
+        user.behaviorFrequencies = updatedBehaviorFrequencies;
+        await user.save();
+    
         return frequency;
       } catch (error) {
         throw new ApolloError(
@@ -785,6 +830,8 @@ const resolvers = {
         );
       }
     },
+    
+    
 
     removeFrequencyIncrement: async (parent, args, context) => {
       if (!context.user) {
