@@ -47,12 +47,14 @@ const MenuSideBar = ({ userParam, onItemClick }) => {
         ],
       },
       {
+        //this is being rendered on data logging so I will need to change how the student list words to go to graphs
         key: '3',
-        label: (
-          <Link className="link-to-page" to={`/studentProfile/${userParam}/studentCharts`}>
-            Student Charts
-          </Link>
-        ),
+        label: 'Charts',
+        // label: (
+        //   <Link className="link-to-page" to={`/studentProfile/${userParam}/studentCharts`}>
+        //     Student Charts
+        //   </Link>
+        // ),
         icon: <AssessmentOutlinedIcon />,
       },
       {

@@ -11,16 +11,21 @@ import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutl
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import GroupAddOutlinedIcon from '@mui/icons-material/GroupAddOutlined';
 import "../../../src/index.css";
+import useSelectedCharts from '../../hooks/useSelectCharts';
 
 
 
-
-const StudentTable = ({placeholder, isStudentAdded, getAllStudents, getMyStudentList, removeStudent, addStudent}) => {
+const StudentTable = ({placeholder, isStudentAdded, getAllStudents, getMyStudentList, removeStudent, addStudent, setSelectedForm}) => {
 
   const { loading, error, data } = useQuery(QUERY_ME); 
   const [filteredData, setFilteredData] = useState([]);
   const [filteredInfo, setFilteredInfo] = useState({});
   const [sortedInfo, setSortedInfo] = useState({});
+  const {selectCharts} = useSelectedCharts();
+
+  const handleViewGraphClick = () => {
+    setSelectedForm('3');
+  };
 
   const capitalizeInitials = (name) => {
     return name
@@ -82,7 +87,7 @@ useEffect(()=> {
     return index % 2 === 0 ? 'whiteRow' : 'coloredRow'; // Alternate between white and green rows
   };
 
-
+ 
   const columns = [
     {
       title: 'First Name',
@@ -154,7 +159,7 @@ useEffect(()=> {
             </div>
 
             <div className='tooltip'>
-            <Link to={`/studentProfile/${record.username}/studentCharts`}>
+            <Link to={`/studentProfile/${record.username}/dataLogging`}onClick={handleViewGraphClick}>
               <AssessmentOutlinedIcon className='icons'/>
               <span className='tooltipText'>View Graph</span>
             </Link>

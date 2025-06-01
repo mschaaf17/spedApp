@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react'
+import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar';
 import { Link, useParams } from 'react-router-dom'
 import NavigationLinks from '../../../components/SideNavigationLinks'
 import { useQuery, useMutation } from '@apollo/client';
@@ -13,6 +14,9 @@ import AddIcon from '@mui/icons-material/Add';
 import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+
+
+//will delete this page later!!
 
 
 //this needs to be saved to the backend rather than local storage

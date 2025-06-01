@@ -10,11 +10,10 @@ import Auth from '../../utils/auth';
 
 const { confirm } = Modal;
 
-
 const Frequency = () => {
   const { username: usernameFromUrl } = useParams();
   const { loading, data } = useQuery(QUERY_USER, {
-    variables: { identifier: usernameFromUrl, isUsername: true},
+    variables: { identifier: usernameFromUrl, isUsername: true },
   });
 
   const { loading: meLoading, data: meData } = useQuery(QUERY_ME);
@@ -85,32 +84,31 @@ const Frequency = () => {
     setShowDeleteIcons(false);
   };
 
-
   const handleSpecificSelectedButtonToDeleteClick = (behaviorId, behaviorTitle) => {
     if (deleteMode) {
       if (selectedBehaviorIds.includes(behaviorId)) {
         setSelectedBehaviorIds(selectedBehaviorIds.filter(id => id !== behaviorId));
-        setSelectedBehaviorTitles(selectedBehaviorTitles.filter(title => title !== behaviorTitle))
+        setSelectedBehaviorTitles(selectedBehaviorTitles.filter(title => title !== behaviorTitle));
       } else {
         setSelectedBehaviorIds([...selectedBehaviorIds, behaviorId]);
-        setSelectedBehaviorTitles([...selectedBehaviorTitles, behaviorTitle])
+        setSelectedBehaviorTitles([...selectedBehaviorTitles, behaviorTitle]);
       }
       setSelectedBehaviorTitleForDelete(behaviorTitle); 
     }
   };
 
-  const handleCancelClickForExitingDeleteMode = () =>{
+  const handleCancelClickForExitingDeleteMode = () => {
     setDeleteMode(false);
-  setShowSaveCancel(false);
-  setSelectedBehaviorIds([]);
-  setShowRedXIcons(false);
-  }
+    setShowSaveCancel(false);
+    setSelectedBehaviorIds([]);
+    setShowRedXIcons(false);
+  };
 
-  const handleSaveClickForDeletingFrequency =  () => {
+  const handleSaveClickForDeletingFrequency = () => {
     setShowDeleteConfirmation(true);
   };
 
-  const handleConfirmDelete = async (behaviorTitle) => {
+  const handleConfirmDelete = async () => {
     try {
       for (const behaviorId of selectedBehaviorIds) {
         await removeDataMeasureFromStudent({ variables: { frequencyId: behaviorId, studentId: user._id } });
@@ -120,11 +118,10 @@ const Frequency = () => {
       setShowSaveCancel(false);
       setShowDeleteConfirmation(false);
       toggleRedXIcons(false);
-      showDeleteMessage(behaviorTitle)
+      showDeleteMessage(selectedBehaviorTitleForDelete);
     } catch (error) {
       console.error('Error deleting data measures from student: ', error);
     }
-  
   };
 
   const showDeleteMessage = (behaviorTitle) => {
@@ -149,8 +146,6 @@ const Frequency = () => {
       // You can handle this based on your specific requirements
     }
   };
-  
-  
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -171,7 +166,7 @@ const Frequency = () => {
   }, []);
 
   useEffect(() => {
-    if (!loggedInUser || !frequencyData) return;
+    if (!loggedInUser || !frequencyData || !user) return;
 
     const loggedInUserId = loggedInUser.data._id;
 
@@ -190,8 +185,39 @@ const Frequency = () => {
   }
 
   return (
+    <>
+    <div className='centerBody'>
+    <div className='titleSection'>
+  <h1 className ="title"> Logging for {usernameFromUrl}</h1>
+  </div>
     <div>
-      {user && user.behaviorFrequencies && user.behaviorFrequencies.length > 0 ? (
+      {user.behaviorFrequencies.length === 0 ? (
+        <>
+          <div className='thirdHeading'>No behavior frequencies found for this user.</div>
+          <div className='dataContainer'>
+            <Button onClick={handleClickForAddingDataMeasure}>Add Data Measure For Student</Button>
+            {showSelect && (
+              <>
+                <Select
+                  mode='multiple'
+                  style={{ width: '100%' }}
+                  placeholder='Select behavior titles'
+                  onChange={handleSelectChange}
+                >
+                  {initialMergedData.map((frequency) => (
+                    <Select.Option key={frequency._id} value={frequency._id}>
+                      {frequency.behaviorTitle}
+                    </Select.Option>
+                  ))}
+                </Select>
+                <Button type='primary' onClick={handleSaveClickForAddingFrequency}>
+                  Save
+                </Button>
+              </>
+            )}
+          </div>
+        </>
+      ) : (
         <div>
           <div className='container'>
             <div className='tooltip'>
@@ -218,96 +244,65 @@ const Frequency = () => {
               </>
             )}
             
-              <div className='tooltip'>
-                <DeleteForeverIcon danger className='deleteIcon' onClick={handleDeleteIconClick} />
-                <span className='tooltipText'>Remove Data Measure</span>
-              </div>
-           
+            <div className='tooltip'>
+              <DeleteForeverIcon danger className='deleteIcon' onClick={handleDeleteIconClick} />
+              <span className='tooltipText'>Remove Data Measure</span>
+            </div>
           </div>
-
 
           <h2 className='secondHeading'>Click button as behavior occurs</h2>
           <div className='dataContainer'>
-          {user.behaviorFrequencies.map((behavior) => {
-  console.log("Behavior:", behavior); // Log the behavior object
-  return (
-    <div key={behavior._id} style={{ position: 'relative' }}>
-      <Button 
-        className={`buttonContent frequencyButtons ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
-        onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}
-      >
-        <div onClick={() => handleFrequencyItemIncreasing(behavior._id)}>
-          {behavior.behaviorTitle} : ({behavior.count}) 
-        </div>
-        {showRedXIcons && (
-          <div>
-            <span className='deleteIcon' onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}>&times;</span>
-          </div>
-        )}
-       
-      </Button>
-    </div>
-  );
-})}
-
-
+            {user.behaviorFrequencies.map((behavior) => (
+              <div key={behavior._id} style={{ position: 'relative' }}>
+                <Button 
+                  className={`buttonContent frequencyButtons ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
+                  onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}
+                >
+                  <div onClick={() => handleFrequencyItemIncreasing(behavior._id)}>
+                    {behavior.behaviorTitle} : ({behavior.count}) 
+                  </div>
+                  {showRedXIcons && (
+                    <div>
+                      <span className='deleteIcon' onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}>&times;</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
+            ))}
 
             {showSaveCancel && (
-            <>
-               <Button type='primary' onClick={handleSaveClickForDeletingFrequency} disabled={selectedBehaviorIds.length === 0}>
-  Save
-</Button>
-<Button onClick={handleCancelClickForExitingDeleteMode} disabled={!showSaveCancel}>
-  Cancel
-</Button>
-</>
-)}
-          </div>
-          <Modal
-title={`Are you sure you want to delete ${selectedBehaviorTitles.length > 0 ? (
-  selectedBehaviorTitles.length === 1 ? (
-    selectedBehaviorTitles[0]
-  ) : selectedBehaviorTitles.length === 2 ? (
-    selectedBehaviorTitles.join(' and ')
-  ) : (
-    selectedBehaviorTitles.slice(0, -1).join(', ') + ', and ' + selectedBehaviorTitles[selectedBehaviorTitles.length - 1]
-  )
-) : ''}?`}
-        visible={showDeleteConfirmation}
-        onOk={handleConfirmDelete}
-        onCancel={() => setShowDeleteConfirmation(false)}
-      >
-        <p>Click "OK" to confirm deletion.</p>
-      </Modal>
-        </div>
-      ) : (
-        <>
-          <div className='thirdHeading'>No behavior frequencies found for this user.</div>
-          <div className='dataContainer'>
-            <Button onClick={handleClickForAddingDataMeasure}>Add Data Measure For Student</Button>
-            {showSelect && (
               <>
-                <Select
-                  mode='multiple'
-                  style={{ width: '100%' }}
-                  placeholder='Select behavior titles'
-                  onChange={handleSelectChange}
-                >
-                  {initialMergedData.map((frequency) => (
-                    <Select.Option key={frequency._id} value={frequency._id}>
-                      {frequency.behaviorTitle}
-                    </Select.Option>
-                  ))}
-                </Select>
-                <Button type='primary' onClick={handleSaveClickForAddingFrequency}>
+                <Button type='primary' onClick={handleSaveClickForDeletingFrequency} disabled={selectedBehaviorIds.length === 0}>
                   Save
+                </Button>
+                <Button onClick={handleCancelClickForExitingDeleteMode} disabled={!showSaveCancel}>
+                  Cancel
                 </Button>
               </>
             )}
           </div>
-        </>
+
+          <Modal
+            title={`Are you sure you want to delete ${selectedBehaviorTitles.length > 0 ? (
+              selectedBehaviorTitles.length === 1 ? (
+                selectedBehaviorTitles[0]
+              ) : selectedBehaviorTitles.length === 2 ? (
+                selectedBehaviorTitles.join(' and ')
+              ) : (
+                selectedBehaviorTitles.slice(0, -1).join(', ') + ', and ' + selectedBehaviorTitles[selectedBehaviorTitles.length - 1]
+              )
+            ) : ''}?`}
+            visible={showDeleteConfirmation}
+            onOk={handleConfirmDelete}
+            onCancel={() => setShowDeleteConfirmation(false)}
+          >
+            <p>Click "OK" to confirm deletion.</p>
+          </Modal>
+        </div>
       )}
     </div>
+    </div>
+    </>
   );
 };
 

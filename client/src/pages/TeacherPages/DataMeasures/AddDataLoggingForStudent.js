@@ -8,6 +8,8 @@ import Frequency from '../../../components/DataTrackingMeasures/frequency'
 import Observation from '../../../components/DataTrackingMeasures/observation'
 import Contracts from '../../../components/DataTrackingMeasures/Contracts'
 import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar'
+import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts'
+import useSelectedCharts from '../../../hooks/useSelectCharts'
 
 
 export default function DataLogging() {
@@ -19,38 +21,29 @@ export default function DataLogging() {
   });
   
   const user = data?.me || data?.user || {};
-  
-  const [selectedForm, setSelectedForm] = useState(null)
+
+  const { selectedForm, selectCharts, setSelectedForm } = useSelectedCharts();
+
+  //const [selectedForm, setSelectedForm] = useState(null)
 
     // use effect for on click display frequency
     const forms = {
       '1': <Frequency/>,
       '2': <Duration />,
+      '3': <FrequencyCharts/>,
       abc: <ABC/>,
       observation: <Observation/>,
       contracts: <Contracts/>
     }
 
   
-      let initalState = {
-        frequency: false,
-        duration: false,
-        abc: false,
-        observation: false,
-        contracts: false
-      }
-     
+
 
       const handleMenuItemClick = (formName) => {
         setSelectedForm(formName);
       }
 
-    const toggleElement = (el) => {
-      setSelectedForm((prevState)=> ({
-        ...prevState,
-        [el]:!prevState[el]
-      }))
-    }
+
   
     if (loading) {
       return <div className='loader'>Loading...</div>;
@@ -60,10 +53,7 @@ export default function DataLogging() {
     <div className='container'>
       {/* menu side bar */}
       <MenuSideBar userParam = {userParam} onItemClick={handleMenuItemClick}/>
-      <div className='centerBody'>
-        <div className='titleSection'>
-      <h1 className ="title"> Logging for {userParam}</h1>
-      </div>
+     
 
       {/* will render all specific components based on what is clicked on the left side for the stuent */}
       
@@ -81,7 +71,7 @@ export default function DataLogging() {
       
 
       </div>
-    </div>
+
 
     
   )

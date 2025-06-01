@@ -772,64 +772,94 @@ const resolvers = {
         );
       }
     },
-
-    frequencyIncreased: async (parent, args, context) => {
-      if (!context.user) {
-        throw new AuthenticationError("You must be logged in!");
-      }
-    
-      const { frequencyId, studentId } = args;
-    
-      if (!frequencyId || !studentId) {
-        throw new UserInputError("Frequency ID and Student ID are required");
-      }
-    
-      try {
-        // Find the frequency document associated with the given frequencyId and studentId
-        const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
-    
-        if (!frequency) {
-          throw new UserInputError("Frequency not found for the specified student");
+   
+    frequencyIncreased: async (_, { frequencyId, studentId }, { user }) => {
+        // Check if the user is authenticated
+        if (!user) {
+          throw new AuthenticationError('You must be logged in!');
         }
-    
+  
+        // Find the behavior frequency associated with the given IDs
+        const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
+  
+        // If frequency is not found, throw an error
+        if (!frequency) {
+          throw new UserInputError('Frequency not found');
+        }
+  
         // Ensure that count is a valid numeric value before incrementing
         if (typeof frequency.count !== 'number' || isNaN(frequency.count)) {
-          // Initialize count with a valid numeric value (e.g., 0)
           frequency.count = 0;
         }
-    
-        // Increment the count for the specific frequency document
+  
+        // Increment the frequency count and update timestamp
         frequency.count++;
         frequency.updatedAt = new Date();
-        frequency.log.push({ time: new Date() });
+  
+        // Save the updated frequency
         await frequency.save();
-    
-        // Update the user's behaviorFrequencies array
-        const user = await User.findById(studentId);
-        if (!user) {
-          throw new UserInputError("Student not found");
-        }
-    
-        const updatedBehaviorFrequencies = user.behaviorFrequencies.map(behavior => {
-          if (behavior._id.toString() === frequencyId) {
-            // Increment the count for the corresponding behavior frequency
-            behavior.count++;
-          }
-          return behavior;
-        });
-    
-        user.behaviorFrequencies = updatedBehaviorFrequencies;
-        await user.save();
-    
+  
         return frequency;
-      } catch (error) {
-        throw new ApolloError(
-          "Failed to increase frequency count",
-          "FREQUENCY_INCREASE_ERROR",
-          { originalError: error },
-        );
-      }
-    },
+      },
+
+
+    // frequencyIncreased: async (parent, args, context) => {
+    //   if (!context.user) {
+    //     throw new AuthenticationError("You must be logged in!");
+    //   }
+    
+    //   const { frequencyId, studentId } = args;
+    
+    //   if (!frequencyId || !studentId) {
+    //     throw new UserInputError("Frequency ID and Student ID are required");
+    //   }
+    
+    //   try {
+    //     // Find the frequency document associated with the given frequencyId and studentId
+    //     const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
+    
+    //     if (!frequency) {
+    //       throw new UserInputError("Frequency not found for the specified student");
+    //     }
+    
+    //     // Ensure that count is a valid numeric value before incrementing
+    //     if (typeof frequency.count !== 'number' || isNaN(frequency.count)) {
+    //       // Initialize count with a valid numeric value (e.g., 0)
+    //       frequency.count = 0;
+    //     }
+    
+    //     // Increment the count for the specific frequency document
+    //     frequency.count++;
+    //     frequency.updatedAt = new Date();
+    //     frequency.log.push({ time: new Date() });
+    //     await frequency.save();
+    
+    //     // Update the user's behaviorFrequencies array
+    //     const user = await User.findById(studentId);
+    //     if (!user) {
+    //       throw new UserInputError("Student not found");
+    //     }
+    
+    //     const updatedBehaviorFrequencies = user.behaviorFrequencies.map(behavior => {
+    //       if (behavior._id.toString() === frequencyId) {
+    //         // Increment the count for the corresponding behavior frequency
+    //         behavior.count++;
+    //       }
+    //       return behavior;
+    //     });
+    
+    //     user.behaviorFrequencies = updatedBehaviorFrequencies;
+    //     await user.save();
+    
+    //     return frequency;
+    //   } catch (error) {
+    //     throw new ApolloError(
+    //       "Failed to increase frequency count",
+    //       "FREQUENCY_INCREASE_ERROR",
+    //       { originalError: error },
+    //     );
+    //   }
+    // },
     
     
 

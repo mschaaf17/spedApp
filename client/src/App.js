@@ -27,7 +27,7 @@ import AccommodationList from './pages/TeacherPages/Accommodations/Accommodation
 
 // teacher pages: specific to student
 import DataLogging from './pages/TeacherPages/DataMeasures/AddDataLoggingForStudent'
-import StudentCharts from './pages/TeacherPages/StudentCharts'
+import Charts from './pages/TeacherPages/StudentCharts/Charts'
 import AddAccommodationsForStudent from './pages/TeacherPages/Accommodations/AddAccommodationsForStudent'
 
 //student pages
@@ -74,7 +74,7 @@ function App() {
 
           {/* teacher pages: student specific pages */}
           <Route path ="/studentProfile/:username/dataLogging"element ={<DataLogging/>}/>
-          <Route path ="/studentProfile/:username/studentCharts" element ={<StudentCharts/>}/>
+          <Route path ="/studentProfile/:username/studentCharts" element ={<Charts/>}/>
           <Route path ="/studentProfile/:username/addAccommodationsForStudent" element ={<AddAccommodationsForStudent/>}/>
           <Route path ="/studentProfile/:username/studentCharts/additionalStudentInfo" element ={<AdditionalStudentInfo/>}/>
         
