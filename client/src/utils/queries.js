@@ -245,10 +245,22 @@ query Students {
 }
 `;
 
+export const QUERY_FREQUENCY_TEMPLATES = gql`
+  query FrequencyTemplates {
+    frequency(isTemplate: true) {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isTemplate
+    }
+  }
+`;
+
 export const QUERY_FREQUENCY_LIST = gql`
-query Frequency {
-  frequency {
+query Frequency($studentId: ID!) {
+  frequency(studentId: $studentId) {
     _id
+    studentId
     behaviorTitle
     operationalDefinition
     createdBy {

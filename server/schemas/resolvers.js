@@ -16,44 +16,33 @@ const { startOfDay, endOfDay, isEqual } = require("date-fns");
 const mongoose = require("mongoose");
 
     
-const addFrequencyToTrackForStudent= async (_, { frequencyId, studentId }, context) => {
-  console.log('addFrequencyToTrackForStudent resolver called with frequencyId:', frequencyId, 'and studentId:', studentId);
+const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefinition, studentId }, context) => {
   if (!context.user || !context.user.isAdmin) {
-    throw new AuthenticationError(
-      "You must be logged in as an administrator!",
-    );
+    throw new AuthenticationError("You must be logged in as an administrator!");
   }
 
-  if (!studentId) {
-    throw new UserInputError("Student ID is required");
-  }
+  // 1. Create the Frequency document for the student
+  const frequency = await Frequency.create({
+    studentId,
+    behaviorTitle,
+    operationalDefinition,
+    createdBy: context.user._id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    count: 0,
+    dailyCounts: [],
+    log: [],
+    isTemplate: false, // <-- This marks it as a student-assigned frequency
+  });
 
-  try {
-    // Find the frequency document
-    const frequency = await Frequency.findById(frequencyId);
-    if (!frequency) {
-      throw new UserInputError("Frequency not found");
-    }
+  // 2. Add the Frequency's _id to the student's behaviorFrequencies array
+  await User.findByIdAndUpdate(
+    studentId,
+    { $addToSet: { behaviorFrequencies: frequency._id } }
+  );
 
-    // Find the user document (student)
-    const user = await User.findById(studentId);
-    if (!user) {
-      throw new UserInputError("Student not found");
-    }
-
-    // Update the user document to include the frequency
-    user.behaviorFrequencies.push(frequencyId);
-    await user.save();
-
-    return user;
-  } catch (error) {
-    throw new ApolloError(
-      "Failed to add frequency of behavior for student",
-      "ADD_FREQUENCY_ERROR",
-      { originalError: error },
-    );
-  }
-}
+  return frequency;
+};
 
 
 // const removeFrequencyBeingTrackedForStudent= async (parent, args, context) => {
@@ -250,21 +239,11 @@ const resolvers = {
     },
 
     //need data to check these
-    frequency: async () => {
-      try {
-        // Your code to fetch frequencies from the database
-        const frequencies = await Frequency.find(); // Example code, replace with your actual implementation
-
-        // Map over the frequencies and replace null count with 0
-        const frequenciesWithCountZero = frequencies.map(frequency => ({
-          ...frequency.toObject(),
-          count: frequency.count || 0, // If count is null, replace with 0
-        }));
-
-        return frequenciesWithCountZero;
-      } catch (error) {
-        throw new Error('Failed to fetch frequencies');
-      }
+    frequency: async (_, { studentId, isTemplate }) => {
+      const filter = {};
+      if (typeof isTemplate === 'boolean') filter.isTemplate = isTemplate;
+      if (studentId) filter.studentId = studentId;
+      return Frequency.find(filter);
     },
 
     //need data to check these
@@ -403,17 +382,23 @@ const resolvers = {
         );
       }
     },
-    addFrequencyTitleToList: async (_, args, context) => {
-        if (!context.user || !context.user.isAdmin) {
-          throw new AuthenticationError(
-            "You must be logged in as an administrator!",
-          );
-        }
-        args.createdBy = context.user._id;
-
-        const frequency = await Frequency.create(args);
-        return frequency;
-      },
+    addFrequencyTitleToList: async (_, { behaviorTitle, operationalDefinition }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      const frequency = await Frequency.create({
+        behaviorTitle,
+        operationalDefinition,
+        isTemplate: true,
+        createdBy: context.user._id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        count: 0,
+        dailyCounts: [],
+        log: [],
+      });
+      return frequency;
+    },
       removeFrequencyTitleFromList: async (parent, args, context) => {
         if (!context.user || !context.user.isAdmin) {
           throw new AuthenticationError("You need to be logged in as an admin")
@@ -757,7 +742,7 @@ const resolvers = {
         // Proceed based on whether frequency or duration was found
         if (frequency) {
           console.log('Adding frequency to track for student:', frequency);
-          return await addFrequencyToTrackForStudent(_, { frequencyId: dataMeasureId, studentId }, context);
+          return await addFrequencyToTrackForStudent(_, { behaviorTitle: frequency.behaviorTitle, operationalDefinition: frequency.operationalDefinition, studentId }, context);
         } else if (duration) {
           console.log('Adding duration to track for student:', duration);
           console.log('Passing durationId:', dataMeasureId);
@@ -772,36 +757,31 @@ const resolvers = {
         );
       }
     },
-   
-    frequencyIncreased: async (_, { frequencyId, studentId }, { user }) => {
-        // Check if the user is authenticated
-        if (!user) {
-          throw new AuthenticationError('You must be logged in!');
-        }
-  
-        // Find the behavior frequency associated with the given IDs
-        const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
-  
-        // If frequency is not found, throw an error
-        if (!frequency) {
-          throw new UserInputError('Frequency not found');
-        }
-  
-        // Ensure that count is a valid numeric value before incrementing
-        if (typeof frequency.count !== 'number' || isNaN(frequency.count)) {
-          frequency.count = 0;
-        }
-  
-        // Increment the frequency count and update timestamp
-        frequency.count++;
-        frequency.updatedAt = new Date();
-  
-        // Save the updated frequency
-        await frequency.save();
-  
-        return frequency;
-      },
+  incrementFrequency: async (_, { frequencyId, studentId, date }, { user }) => {
+    if (!user) {
+      throw new AuthenticationError('You must be logged in!');
+    }
 
+    const frequency = await Frequency.findOne({
+      _id: mongoose.Types.ObjectId(frequencyId),
+      studentId: mongoose.Types.ObjectId(studentId)
+    });
+
+    if (!frequency) {
+      throw new UserInputError('Frequency not found for the specified behavior and student');
+    }
+
+    // Ensure count is valid and increment it
+    frequency.count = (frequency.count || 0) + 1;
+
+    // Add the current date and time to the frequency record
+    frequency.updatedAt = new Date(date); // Use the passed date
+    frequency.dailyCounts.push({ date: new Date(date), count: 1 }); // Track daily counts
+
+    await frequency.save();
+
+    return frequency;
+  },
 
     // frequencyIncreased: async (parent, args, context) => {
     //   if (!context.user) {

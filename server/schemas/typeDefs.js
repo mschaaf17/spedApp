@@ -23,9 +23,15 @@ const typeDefs = gql`
     description: String!
     createdBy: [User]
   }
+  type DailyCount {
+    date: String!
+    count: Int!    
+  }
 
   type Frequency {
     _id: ID!
+    studentId: ID!
+    dailyCount: [DailyCount!]
     count: Int
     behaviorTitle: String!
     operationalDefinition: String!
@@ -37,6 +43,7 @@ const typeDefs = gql`
     averageCountByDay: Float
     totalCount: Int
     mostFrequentTime: String
+    isTemplate: Boolean
   }
 
   type LogEntry {
@@ -78,7 +85,7 @@ const typeDefs = gql`
     admins: [User]
     students: [User]
     accommodationCards: [AccommodationCards]
-    frequency: [Frequency]
+    frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration: [Duration]
     interventionList: [InterventionList]
   }
@@ -138,7 +145,7 @@ const typeDefs = gql`
       studentId: ID!
     ): User
     
-    frequencyIncreased(frequencyId: ID!, studentId: ID!): Frequency
+    incrementFrequency(frequencyId: ID!, studentId: ID!, date: String!): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
     startDurationTimer(durationId: ID!, studentId: ID!): User
