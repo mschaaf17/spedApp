@@ -3,32 +3,30 @@ import { gql } from '@apollo/client';
 export const QUERY_ME = gql`
 query Me {
   me {
-    username
     _id
+    isAdmin
+    username
+    firstName
+    lastName
+
+    studentSchoolId
     students {
-      username
       _id
-      studentSchoolId
-      lastName
+      isAdmin
+      username
       firstName
+      lastName
+      password
+      studentSchoolId
+      
       accommodations {
         _id
+        title
         image
         description
-        title
-        createdBy {
-          username
-          _id
-          firstName
-          lastName
-        }
-      }
-      behaviorDurations {
-        _id
-        behaviorTitle
-        operationalDefinition
         createdBy {
           _id
+          isAdmin
           username
           firstName
           lastName
@@ -36,69 +34,132 @@ query Me {
       }
       behaviorFrequencies {
         _id
+        studentId
+        dailyCounts {
+          date
+          count
+        }
+        count
         behaviorTitle
         operationalDefinition
+        createdAt
+        updatedAt
         createdBy {
           _id
+          isAdmin
+          username
           firstName
           lastName
+        }
+        createdFor {
+          _id
+          isAdmin
           username
+          firstName
+          lastName
+        }
+        log {
+          time
+        }
+        averageCountByDay
+        todayTotal
+        mostFrequentTime
+        isTemplate
+        isActive
+      }
+      behaviorDurations {
+        _id
+        duration
+        behaviorTitle
+        operationalDefinition
+        createdAt
+        startTimes
+        startDurationId
+        endTimes
+        createdBy {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
+        }
+        createdFor {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
+        }
+        averageTimeSpentDaily
+        timeMostOccurrences
+      }
+      interventions {
+        _id
+        title
+        summary
+        function
+        createdBy {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
         }
       }
-
     }
     accommodations {
       _id
-      createdBy {
-        username
-      }
-      description
+      title
       image
-      title
-    }
-    firstName
-    isAdmin
-    lastName
-    studentSchoolId
-    interventions {
-      title
-      _id
-    }
-    behaviorDurations {
-      behaviorTitle
-      _id
-      createdAt
-      operationalDefinition
-      endTimes
-      startTimes
-      startDurationId
-      createdFor {
-        username
-      }
+      description
       createdBy {
+        _id
+        isAdmin
         username
+        firstName
+        lastName
       }
     }
     behaviorFrequencies {
       _id
       behaviorTitle
-      count
-      createdAt
+      isTemplate
+      isActive
       createdBy {
+        _id
+        isAdmin
         username
+        firstName
+        lastName
       }
-      createdFor {
+    }
+    behaviorDurations {
+      _id
+      behaviorTitle
+      createdBy {
+        _id
+        isAdmin
         username
+        firstName
+        lastName
       }
-      log {
-        time
+      duration
+    }
+    interventions {
+      _id
+      title
+      summary
+      function
+      createdBy {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
       }
-      operationalDefinition
-      updatedAt
     }
   }
 }
-
 `;
 
 
@@ -149,6 +210,8 @@ query Users {
       _id
       behaviorTitle
       operationalDefinition
+      isActive
+     
       # count
       # createdAt
       # createdBy {
@@ -169,64 +232,122 @@ export const QUERY_USER = gql`
 query User($identifier: String!, $isUsername: Boolean!) {
   user(identifier: $identifier, isUsername: $isUsername) {
     _id
+    isAdmin
     username
     firstName
-    isAdmin
     lastName
     studentSchoolId
     students {
-      username
       _id
+      isAdmin
+      username
+      firstName
+      lastName
+      studentSchoolId
+      accommodations {
+        _id
+        title
+        image
+        description
+        createdBy {
+          _id
+          firstName
+          lastName
+          username
+          isAdmin
+        }
+      }
     }
     accommodations {
-      createdBy {
-        username
-      }
       _id
-      description
-      image
       title
+      image
+      description
+      createdBy {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+        studentSchoolId
+      }
     }
-    behaviorDurations {
-      behaviorTitle
-      operationalDefinition
-      _id
-    #   createdAt
-    #   createdBy {
-    #     username
-    #   }
-    #   createdFor {
-    #     username
-    #   }
-    #   endTimes
-    #   startDurationId
-    #   startTimes
-     }
     behaviorFrequencies {
       _id
-      operationalDefinition
+      studentId
+      dailyCounts {
+        date
+        count
+      }
+      count
       behaviorTitle
-       count
-      # createdAt
-      # createdBy {
-      #   username
-      # }
-      # createdFor {
-      #   username
-      # }
-       log {
-         time
-       }
-      # updatedAt
+      operationalDefinition
+      createdAt
+      updatedAt
+      createdBy {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+      }
+      createdFor {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+        studentSchoolId
+      }
+      log {
+        time
+      }
+      averageCountByDay
+      todayTotal
+      mostFrequentTime
+      isTemplate
+      isActive
+    }
+    behaviorDurations {
+      _id
+      duration
+      behaviorTitle
+      operationalDefinition
+      createdAt
+      startTimes
+      startDurationId
+      endTimes
+      createdBy {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+        studentSchoolId
+      }
+      createdFor {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+        studentSchoolId
+      }
+      averageTimeSpentDaily
+      timeMostOccurrences
     }
     interventions {
       _id
-      createdBy {
-        username
-      }
-      function
-      summary
       title
+      summary
+      function
+      createdBy {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+      }
     }
   }
 }
@@ -252,6 +373,20 @@ export const QUERY_FREQUENCY_TEMPLATES = gql`
       behaviorTitle
       operationalDefinition
       isTemplate
+      isActive
+      createdBy {
+        _id
+        username
+      }
+      createdFor {
+        _id
+        username
+      }
+      count
+      dailyCounts {
+        date
+        count
+      }
     }
   }
 `;
@@ -262,6 +397,7 @@ query Frequency($studentId: ID!) {
     _id
     studentId
     behaviorTitle
+    isActive
     operationalDefinition
     createdBy {
       _id

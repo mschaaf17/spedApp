@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'; 
-import { Button, Space, Table, Select } from 'antd';
+import { Button, Space, Table, Select, Modal } from 'antd';
 import { useQuery } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST } from '../../../utils/queries';
+import { QUERY_FREQUENCY_LIST, QUERY_STUDENT_LIST } from '../../../utils/queries';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,12 +15,14 @@ import SaveIcon from '@mui/icons-material/Save';
 
 const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, onDataMeasureClick, submitDataMeasureForStudent, selectedStudent, setSelectedStudent, handleDelete}) => {
 
-  const { loading: loadingMe, error, data } = useQuery(QUERY_ME); 
+  const { loading: loadingMe, error, data: frequencyData } = useQuery(QUERY_FREQUENCY_LIST); 
   const [filteredData, setFilteredData] = useState([]);
   const [filteredInfo, setFilteredInfo] = useState({});
   const [sortedInfo, setSortedInfo] = useState({});
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectOptions, setSelectOptions] = useState([]);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteRecord, setDeleteRecord] = useState(null);
 
   const capitalizeInitials = (name) => {
     return name
@@ -31,43 +33,62 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
 
 
   useEffect(() => {
-    if (meData) {
-      const options = meData.students
-        .filter(student => 
-          !(
-            student.behaviorFrequencies && 
-            student.behaviorFrequencies.some(frequency => frequency._id === selectedDataMeasureId)
-          ) && 
-          !(
-            student.behaviorDurations && 
-            student.behaviorDurations.some(duration => duration._id === selectedDataMeasureId)
-          )
+    console.log('meData:', meData);
+    console.log('selectedDataMeasureId:', selectedDataMeasureId);
+    console.log('mergedData:', mergedData);
+    console.log('frequencyData:', frequencyData);
+
+    if (meData && selectedDataMeasureId && mergedData) {
+      // Find the selected data measure (template) by ID
+      const selectedTemplate = mergedData.find(
+        (template) => template._id === selectedDataMeasureId
+      );
+      console.log('selectedTemplate:', selectedTemplate);
+
+      if (!selectedTemplate) {
+        setSelectOptions([]);
+        return;
+      }
+     
+      // Only include students who do NOT already have this template assigned
+      const options = (meData.students || [])
+        .filter(student =>
+          !((student.behaviorFrequencies || [])
+            .filter(freq => freq.isActive)
+            .some(freq =>
+              freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+            ))
         )
         .map(student => ({
           value: student._id,
-          label: `${capitalizeInitials(student.lastName)}, ${capitalizeInitials(student.firstName)} (${student.studentSchoolId})`
+          label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
         }));
+
+      console.log('Dropdown options:', options);
       setSelectOptions(options);
-    }
-  }, [meData, selectedDataMeasureId]);
 
-  useEffect(() => {
-    if (selectedStudent) {
-      setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
+      (meData.students || []).forEach(student => {
+        const hasActive = (student.behaviorFrequencies || [])
+          .filter(freq => freq.isActive)
+          .some(freq =>
+            freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+          );
+        console.log(`${student.firstName} ${student.lastName}: hasActive=${hasActive}`);
+      });
     }
-  }, [selectedStudent]);
+  }, [meData, selectedDataMeasureId, mergedData]);
 
-useEffect(()=> {
-  setFilteredInfo({});
-  setSortedInfo({});
-}, [mergedData])
+  useEffect(()=> {
+    setFilteredInfo({});
+    setSortedInfo({});
+  }, [mergedData])
 
 const handleSaveDataMeasureToStudent = () => {
   if (!selectedStudent || !selectedDataMeasureId) {
     console.error('Selected student or data measure ID is missing.');
     return;
   }
-  submitDataMeasureForStudent(selectedDataMeasureId, selectedStudent);
+  
   setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
 
   setSelectedStudent(null)
@@ -106,6 +127,37 @@ const displaySelect = (rowId) => {
     return index % 2 === 0 ? 'whiteRow' : 'coloredRow'; // Alternate between white and green rows
   };
 
+  const getSelectOptionsForRow = (record) => {
+    if (!meData || !meData.students) return [];
+    return meData.students
+      .filter(student =>
+        !(student.behaviorFrequencies || [])
+          .filter(freq => freq.isActive)
+          .some(freq => freq.behaviorTitle === record.behaviorTitle)
+      )
+      .map(student => ({
+        value: student._id,
+        label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
+      }));
+  };
+
+  const confirmDelete = (record) => {
+    setDeleteRecord(record);
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteRecord) {
+      handleDelete(deleteRecord);
+    }
+    setDeleteModalVisible(false);
+    setDeleteRecord(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setDeleteRecord(null);
+  };
 
   const columns = [
     {
@@ -155,52 +207,55 @@ const displaySelect = (rowId) => {
         title: 'Actions',
         dataIndex: 'actions',
         key: 'actions',
-        render: (text, record) => (
-          <>
+        render: (text, record) => {
+          const optionsForRow = getSelectOptionsForRow(record);
+          return (
             <Space>
-          {visibleSelectRowId !== record._id && (  
-            <div className='tooltip' 
-             onClick={() => displaySelect(record._id)}
-            >
-              <PersonAddAlt1Icon className='icons'/>
-              <span className='tooltipText'>Add to student</span>
-            </div>
-           )} 
-          {visibleSelectRowId === record._id && (  
-            <>
-              <Select
-                onClick={() => onDataMeasureClick(record._id)}
-                onChange={(value) => setSelectedStudent(value)}
-                value={selectedStudent}
-                showSearch
-                style={{
-                  width: 200,
-                }}
-                placeholder="Search to Select"
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option?.label.toLowerCase().includes(input.toLowerCase())
-                }
-                filterSort={(optionA, optionB) =>
-                  optionA.label.toLowerCase().localeCompare(optionB.label.toLowerCase())
-                }
-                options={selectOptions}
-               />
-              <div className='tooltip' 
-              onClick={handleSaveDataMeasureToStudent}
+              {optionsForRow.length > 0 && visibleSelectRowId !== record._id && (
+                <div className='tooltip' onClick={() => displaySelect(record._id)}>
+                  <PersonAddAlt1Icon className='icons'/>
+                  <span className='tooltipText'>Add to student</span>
+                </div>
+              )}
+              {optionsForRow.length === 0 && (
+                <div className='tooltip'>
+                  <PersonAddAlt1Icon className='icons' style={{ opacity: 0.3, pointerEvents: 'none' }}/>
+                  <span className='tooltipText'>No students available</span>
+                </div>
+              )}
+              {visibleSelectRowId === record._id && (
+                <>
+                  <Select
+                    onClick={() => onDataMeasureClick(record._id)}
+                    onChange={(value) => setSelectedStudent(value)}
+                    value={selectedStudent}
+                    showSearch
+                    style={{ width: 200 }}
+                    placeholder="Search to Select"
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option?.label.toLowerCase().includes(input.toLowerCase())
+                    }
+                    filterSort={(optionA, optionB) =>
+                      optionA.label.toLowerCase().localeCompare(optionB.label.toLowerCase())
+                    }
+                    options={optionsForRow}
+                  />
+                  <div className='tooltip' 
+               onClick={handleSaveDataMeasureToStudent}
               >
                 <SaveIcon className="icons" onClick={() => submitDataMeasureForStudent(selectedDataMeasureId, selectedStudent)}/>
                 <span className='tooltipText'>Save data measure for student</span>
               </div>
-            </>
-           )} 
-          <div className='tooltip'>
-            <DeleteForeverIcon danger className="deleteIcon" onClick={() => handleDelete(record)}/>
-            <span className='tooltipText'>Remove data measure from list</span>
-          </div>
-        </Space>
-          </>
-        )
+                </>
+              )}
+              <div className='tooltip'>
+                <DeleteForeverIcon danger className="deleteIcon" onClick={() => confirmDelete(record)}/>
+                <span className='tooltipText'>Remove data measure from list</span>
+              </div>
+            </Space>
+          );
+        }
     }
     
 
@@ -233,6 +288,16 @@ const displaySelect = (rowId) => {
         // })}
         rowClassName={getRowClassName}
         />
+      <Modal
+        title={`Are you sure you want to delete "${deleteRecord?.behaviorTitle}"?`}
+        visible={deleteModalVisible}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Yes"
+        cancelText="Cancel"
+      >
+        <p>This action cannot be undone.</p>
+      </Modal>
     </>
   );
 };

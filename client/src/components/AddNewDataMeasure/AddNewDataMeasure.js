@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@apollo/client';
 import { ADD_FREQUENCY_TITLE, ADD_DURATION_TITLE } from '../../utils/mutations';
 import { Input, Checkbox, Form, Select, Upload, Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { QUERY_FREQUENCY_TEMPLATES } from '../../utils/queries';
 const { TextArea } = Input;
 
 
@@ -17,6 +18,9 @@ const normFile = (e) => {
 
 
 const AddNewDataMeasure = ({onClose, updateMergedData, mergedData}) => {
+
+  const { data, loading, error, refetch } = useQuery(QUERY_FREQUENCY_TEMPLATES);
+
   const [componentDisabled, setComponentDisabled] = useState(false);
   const [addFrequencyTitle] = useMutation(ADD_FREQUENCY_TITLE)
   const [addDurationTitle] = useMutation(ADD_DURATION_TITLE)
@@ -36,40 +40,39 @@ useEffect(() => {
   // You can perform any additional actions here
 }, [tableData]); 
 
-  const handleSubmit = async (values) =>{
-    //if frequency is selected from the dropdown run the addFrequencyTitle
-    const {behaviorTitle, dataType, operationalDefinition} = values;
-    if(dataType === "frequency"){
-      try{
+  const handleSubmit = async (values) => {
+    const { behaviorTitle, dataType, operationalDefinition } = values;
+    if (dataType === "frequency") {
+      try {
         await addFrequencyTitle({
           variables: {
-            behaviorTitle: behaviorTitle,
-            operationalDefinition: operationalDefinition,
+            behaviorTitle,
+            operationalDefinition
           }
-      })
-      showMessage(behaviorTitle);
-      setTableData([...tableData, {behaviorTitle, dataType, operationalDefinition}])
-      updateMergedData([...mergedData, {behaviorTitle, dataType, operationalDefinition}])  
-    }catch(error) {
-        console.error('Error saving frequency data measure" ', error)
+        });
+        // Refetch templates here
+        refetch(); // (if using Apollo's useQuery, call the refetch function)
+        showMessage(behaviorTitle);
+        setTableData([...tableData, { behaviorTitle, dataType, operationalDefinition }]);
+        updateMergedData([...mergedData, { behaviorTitle, dataType, operationalDefinition }]);
+      } catch (error) {
+        console.error('Error saving frequency template: ', error);
       }
-    } else if(dataType=== 'duration'){
+    } else if (dataType === 'duration') {
       try {
         await addDurationTitle({
           variables: {
             behaviorTitle: behaviorTitle,
             operationalDefinition: operationalDefinition
           }
-        })
+        });
         setTableData([...tableData, {behaviorTitle, dataType, operationalDefinition}])
         showMessage(behaviorTitle);
         updateMergedData([...mergedData, {behaviorTitle, dataType, operationalDefinition}])  
-
       } catch(error) {
         console.error('Error saving duration data measure: ', error)
       }
     }
-  
   }
 
   return (

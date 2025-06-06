@@ -34,6 +34,7 @@ export const ADD_FREQUENCY_TITLE = gql`
     _id
     behaviorTitle
     operationalDefinition
+    isTemplate
   }
 }
 `;
@@ -108,6 +109,7 @@ mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
       }
       operationalDefinition
       isTemplate
+      
     }
     username
     firstName
@@ -130,7 +132,6 @@ mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
 export const REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT = gql`
 mutation RemoveFrequencyBeingTrackedForStudent($frequencyId: ID!, $studentId: ID!) {
   removeFrequencyBeingTrackedForStudent(frequencyId: $frequencyId, studentId: $studentId) {
-    studentId
     _id
     behaviorFrequencies {
       _id
@@ -145,7 +146,6 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) 
   incrementFrequency(frequencyId: $frequencyId, studentId: $studentId, date: $date) {
     studentId
     behaviorTitle
-    totalCount
     dailyCounts {
       date
       count
@@ -157,7 +157,7 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) 
     count
     createdFor {
       username
-      studentId
+      _id
       firstName
       lastName
     }
@@ -166,6 +166,7 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) 
       firstName
       lastName
     }
+    todayTotal
   }
 }
 `;

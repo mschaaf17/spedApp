@@ -25,7 +25,7 @@ const { confirm } = Modal;
     variables: {studentId}
   });
 
-  const { loading: templatesLoading, data: templatesData } = useQuery(QUERY_FREQUENCY_TEMPLATES);
+  const { loading: templatesLoading, data: templatesData, refetch: refetchTemplates } = useQuery(QUERY_FREQUENCY_TEMPLATES);
 
   
 
@@ -63,10 +63,13 @@ const { confirm } = Modal;
 
   function getTodayCount(dailyCounts) {
     const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-    console.log(today);
-    const todayEntry = dailyCounts?.find(dc => dc.date.slice(0, 10) === today);
-    return todayEntry ? todayEntry.count : 0;
-   
+    return dailyCounts
+      ?.filter(dc => {
+        // Convert the timestamp to a date string
+        const dateString = new Date(Number(dc.date)).toISOString().slice(0, 10);
+        return dateString === today;
+      })
+      .reduce((sum, dc) => sum + dc.count, 0);
   }
 
   const handleClickForAddingDataMeasure = () => {
@@ -124,7 +127,6 @@ const { confirm } = Modal;
         setSelectedBehaviorIds([...selectedBehaviorIds, behaviorId]);
         setSelectedBehaviorTitles([...selectedBehaviorTitles, behaviorTitle]);
       }
-      setSelectedBehaviorTitleForDelete(behaviorTitle); 
     }
   };
 
@@ -132,6 +134,7 @@ const { confirm } = Modal;
     setDeleteMode(false);
     setShowSaveCancel(false);
     setSelectedBehaviorIds([]);
+    setSelectedBehaviorTitles([]);
     setShowRedXIcons(false);
   };
 
@@ -145,33 +148,59 @@ const { confirm } = Modal;
         await removeDataMeasureFromStudent({ variables: { frequencyId: behaviorId, studentId: user._id } });
       }
       setSelectedBehaviorIds([]);
+      setSelectedBehaviorTitles([]);
       setDeleteMode(false);
       setShowSaveCancel(false);
       setShowDeleteConfirmation(false);
       toggleRedXIcons(false);
-      showDeleteMessage(selectedBehaviorTitleForDelete);
+      showDeleteMessage(selectedBehaviorTitles);
     } catch (error) {
       console.error('Error deleting data measures from student: ', error);
     }
   };
 
-  const showDeleteMessage = (behaviorTitle) => {
-    message.success(`${behaviorTitle} was removed from list`);
+  const showDeleteMessage = (behaviorTitles) => {
+    let formatted;
+    if (Array.isArray(behaviorTitles)) {
+      if (behaviorTitles.length === 1) {
+        formatted = behaviorTitles[0];
+      } else if (behaviorTitles.length === 2) {
+        formatted = behaviorTitles.join(' and ');
+      } else {
+        formatted = behaviorTitles.slice(0, -1).join(', ') + ', and ' + behaviorTitles[behaviorTitles.length - 1];
+      }
+    } else {
+      formatted = behaviorTitles; // fallback for single string
+    }
+    message.success(`${formatted} was removed from list`);
   };
 
   const handleIncrementFrequency = async (frequencyId) => {
     try {
       const currentDate = new Date().toISOString();
-      await incrementFrequency({
-        variables: {
-          frequencyId,
-          studentId: data.user._id,
-          date: currentDate,
-        },
+      console.log("currentDate being sent:", currentDate);
+      const { data: incrementData } = await incrementFrequency({
+        variables: { frequencyId, studentId: data.user._id, date: currentDate },
       });
 
-      // Refetch frequency data to update the UI
-      await refetch();
+      // Find the behavior in your local state and update its todayTotal
+      setUser(prevUser => {
+        const updatedFrequencies = prevUser.behaviorFrequencies.map(b => {
+          if (b._id === frequencyId) {
+            return {
+              ...b,
+              todayTotal: incrementData.incrementFrequency.todayTotal,
+              dailyCounts: incrementData.incrementFrequency.dailyCounts,
+            };
+          }
+          return b;
+        });
+        return { ...prevUser, behaviorFrequencies: updatedFrequencies };
+      });
+      console.log("button is clicked")
+
+      // Optionally, you can still call refetch() if you want to ensure data consistency
+      // await refetch();
     } catch (error) {
       console.error('Error incrementing frequency:', error);
     }
@@ -229,14 +258,26 @@ const { confirm } = Modal;
     setInitialMergedData(mergedData);
   }, [loggedInUser, frequencyData, user]);
 
-  if (loading || frequencyLoading || meLoading || !user) {
+  if (loading || frequencyLoading  || !user) {
     return <div>Loading...</div>;
   }
+
+ 
+
+  // Get the titles of behaviors already assigned to the student
+  const assignedTitles = user.behaviorFrequencies.map(b => b.behaviorTitle);
+
+  // Filter templates to only those not already assigned
+  const availableTemplates = templatesData?.frequency?.filter(
+    template => !assignedTitles.includes(template.behaviorTitle)
+  );
+
+  const activeFrequencies = user?.behaviorFrequencies?.filter(b => b.isActive) || [];
 
   return (
     <>
 {/* created by should be changed to the logged in user not the studnet name */}
-      <h2>Frequency Data for Student {studentId}</h2>
+      {/* <h2>Frequency Data for Student {usernameFromUrl}</h2>
       {Array.isArray(data?.user?.behaviorFrequencies) && data.user.behaviorFrequencies.length > 0 ? (
         data.user.behaviorFrequencies.map((freq) => (
           <div key={freq._id}>
@@ -244,7 +285,7 @@ const { confirm } = Modal;
             <p>Count: {freq.count ?? "No count available"}</p>
             <p>Operational Definition: {freq.operationalDefinition}</p>
             <p>Created By: {data.user.firstName} {data.user.lastName}</p>
-            <p>Log:</p>
+            <p>Log:{data.user.behaviorFrequencies.behaviorTitle}, {data.user.behaviorFrequencies.id}}</p>
             <ul>
               {Array.isArray(freq.log) && freq.log.length > 0 ? (
                 freq.log.map((logEntry, index) => (
@@ -258,7 +299,7 @@ const { confirm } = Modal;
         ))
       ) : (
         <p>No frequency data available</p>
-      )}
+      )} */}
 
 
     <div className='centerBody'>
@@ -280,7 +321,7 @@ const { confirm } = Modal;
                     placeholder='Select behavior titles'
                     onChange={handleSelectChange}
                   >
-                    {templatesData?.frequency?.map((template) => (
+                    {availableTemplates?.map((template) => (
                       <Select.Option key={template._id} value={template._id}>
                         {template.behaviorTitle}
                       </Select.Option>
@@ -310,7 +351,7 @@ const { confirm } = Modal;
                     placeholder='Select behavior titles'
                     onChange={handleSelectChange}
                   >
-                    {templatesData?.frequency?.map((template) => (
+                    {availableTemplates?.map((template) => (
                       <Select.Option key={template._id} value={template._id}>
                         {template.behaviorTitle}
                       </Select.Option>
@@ -335,29 +376,31 @@ const { confirm } = Modal;
             
 
          
-
-
-
-
-
-
-            {user.behaviorFrequencies.map((behavior) => {
+            {activeFrequencies.map((behavior) => {
               
-              console.log(behavior, "behavior");
+              console.log(behavior, "full behavior object");
+              console.log(behavior.dailyCounts ? behavior.dailyCounts : "no dailyCounts", "behavior.dailyCounts");
+              console.log(behavior.todayTotal ? behavior.todayTotal : "no todayTotal", "behavior.todayTotal");
               return (
                 <div key={behavior._id} style={{ position: 'relative' }}>
-                  <Button 
+                  <Button
                     className={`buttonContent frequencyButtons ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
-                    onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}
+                    onClick={() => {
+                      if (deleteMode) {
+                        handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
+                      } else {
+                        handleIncrementFrequency(behavior._id);
+                      }
+                    }}
                   >
-                    <div onClick={() => handleIncrementFrequency(behavior._id)}>
-                      
-                      {behavior.behaviorTitle} : ({getTodayCount(behavior.dailyCounts)}) 
-                    </div>
+                    {behavior.behaviorTitle} : ({getTodayCount(behavior.dailyCounts)})
                     {showRedXIcons && (
-                      <div>
-                        <span className='deleteIcon' onClick={() => handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle)}>&times;</span>
-                      </div>
+                      <span className='deleteIcon' onClick={e => {
+                        e.stopPropagation(); // Prevents triggering the main button click
+                        handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
+                      }}>
+                        &times;
+                      </span>
                     )}
                   </Button>
                 </div>
@@ -377,15 +420,13 @@ const { confirm } = Modal;
           </div>
 
           <Modal
-            title={`Are you sure you want to delete ${selectedBehaviorTitles.length > 0 ? (
-              selectedBehaviorTitles.length === 1 ? (
-                selectedBehaviorTitles[0]
-              ) : selectedBehaviorTitles.length === 2 ? (
-                selectedBehaviorTitles.join(' and ')
-              ) : (
-                selectedBehaviorTitles.slice(0, -1).join(', ') + ', and ' + selectedBehaviorTitles[selectedBehaviorTitles.length - 1]
-              )
-            ) : ''}?`}
+            title={`Are you sure you want to delete ${
+              selectedBehaviorTitles.length === 1
+                ? selectedBehaviorTitles[0]
+                : selectedBehaviorTitles.length === 2
+                ? selectedBehaviorTitles.join(' and ')
+                : selectedBehaviorTitles.slice(0, -1).join(', ') + ', and ' + selectedBehaviorTitles[selectedBehaviorTitles.length - 1]
+            }?`}
             visible={showDeleteConfirmation}
             onOk={handleConfirmDelete}
             onCancel={() => setShowDeleteConfirmation(false)}
