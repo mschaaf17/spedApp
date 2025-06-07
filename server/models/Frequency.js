@@ -59,10 +59,6 @@ const FrequencySchema = new Schema({
   averageCountByDay: {
     type: Number,
   },
-  totalCount: {
-    default: 0,
-    type: Number,
-  },
   mostFrequentTime: {
     type: Date,
   },
@@ -70,6 +66,7 @@ const FrequencySchema = new Schema({
     type: Boolean,
     default: false,
   },
+   isActive: { type: Boolean, default: true }
 });
 
 const Frequency = model("Frequency", FrequencySchema);

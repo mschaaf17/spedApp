@@ -23,7 +23,7 @@ const typeDefs = gql`
     description: String!
     createdBy: [User]
   }
-  type DailyCount {
+  type DailyCounts {
     date: String!
     count: Int!    
   }
@@ -31,7 +31,7 @@ const typeDefs = gql`
   type Frequency {
     _id: ID!
     studentId: ID!
-    dailyCount: [DailyCount!]
+    dailyCounts: [DailyCounts!]
     count: Int
     behaviorTitle: String!
     operationalDefinition: String!
@@ -41,9 +41,11 @@ const typeDefs = gql`
     createdFor: [User!]!
     log: [LogEntry!]
     averageCountByDay: Float
-    totalCount: Int
+    todayTotal: Int
     mostFrequentTime: String
     isTemplate: Boolean
+    isActive: Boolean
+   
   }
 
   type LogEntry {
@@ -134,10 +136,11 @@ const typeDefs = gql`
       studentId: ID!
     ): User
     
-  
-    removeFrequencyBeingTrackedForStudent(frequencyId: ID!, studentId: ID!): User
+    removeFrequencyBeingTrackedForStudent(
+      frequencyId: ID!
+      studentId: ID!
+    ): User
 
-  
     removeDurationBeingTrackedForStudent(durationId: ID!, studentId: ID!): User
 
     addDataMeasureToStudent(

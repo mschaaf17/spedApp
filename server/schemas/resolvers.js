@@ -21,6 +21,16 @@ const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefi
     throw new AuthenticationError("You must be logged in as an administrator!");
   }
 
+  // Prevent duplicate behaviorTitle for the same student
+  const existing = await Frequency.findOne({
+    studentId,
+    behaviorTitle,
+    isTemplate: false,
+  });
+  if (existing) {
+    throw new UserInputError(`Student is already tracking the behavior '${behaviorTitle}'.`);
+  }
+
   // 1. Create the Frequency document for the student
   const frequency = await Frequency.create({
     studentId,
@@ -239,11 +249,17 @@ const resolvers = {
     },
 
     //need data to check these
-    frequency: async (_, { studentId, isTemplate }) => {
+    frequency: async (_, { studentId, isTemplate }, context) => {
       const filter = {};
-      if (typeof isTemplate === 'boolean') filter.isTemplate = isTemplate;
+      if (isTemplate !== undefined) filter.isTemplate = isTemplate;
       if (studentId) filter.studentId = studentId;
-      return Frequency.find(filter);
+      console.log('FREQUENCY FILTER:', filter);
+      const results = await Frequency.find(filter);
+      console.log('Direct Mongoose Query Results:', results);
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      return results;
     },
 
     //need data to check these
@@ -608,6 +624,7 @@ const resolvers = {
       }
 
       try {
+        // 1. Remove the frequency reference from the student's array
         const user = await User.findById(studentId);
 
         if (!user) {
@@ -617,18 +634,21 @@ const resolvers = {
         const index = user.behaviorFrequencies.indexOf(frequencyId);
         if (index === -1) {
           throw new UserInputError(
-            "Accommodation card not found for this student!",
+            "Frequency not found for this student!"
           );
         }
 
         user.behaviorFrequencies.splice(index, 1);
         await user.save();
 
+        // 2. SOFT DELETE: Set isActive to false (do NOT delete the document)
+        await Frequency.findByIdAndUpdate(frequencyId, { isActive: false });
+
         return user;
       } catch (error) {
         throw new ApolloError(
-          "Failed to remove accommodation from student",
-          "REMOVE_ACCOMMODATION_ERROR",
+          "Failed to remove frequency from student",
+          "REMOVE_FREQUENCY_ERROR",
           { originalError: error },
         );
       }
@@ -728,8 +748,10 @@ const resolvers = {
           console.log('Frequency found:', frequency);
         } catch (frequencyError) {
           console.error('Error finding frequency:', frequencyError);
-          // If not a frequency, try finding a duration
         }
+
+        // If not a frequency, try finding a duration
+        if (!frequency) {
           try {
             duration = await Duration.findById(dataMeasureId);
             console.log('Duration found:', duration);
@@ -737,24 +759,86 @@ const resolvers = {
             console.error('Error finding duration:', durationError);
             throw new Error("Data measure not found or does not exist");
           }
+        }
         
     
         // Proceed based on whether frequency or duration was found
         if (frequency) {
           console.log('Adding frequency to track for student:', frequency);
-          return await addFrequencyToTrackForStudent(_, { behaviorTitle: frequency.behaviorTitle, operationalDefinition: frequency.operationalDefinition, studentId }, context);
+          
+          // 1. Check for active frequency
+          const activeFrequency = await Frequency.findOne({
+            studentId,
+            behaviorTitle: frequency.behaviorTitle,
+            isTemplate: false,
+            isActive: true
+          });
+          if (activeFrequency) {
+            throw new UserInputError(`Student is already tracking the behavior '${frequency.behaviorTitle}'`);
+          }
+
+          // 2. Check for inactive frequency and restore it
+          const inactiveFrequency = await Frequency.findOne({
+            studentId,
+            behaviorTitle: frequency.behaviorTitle,
+            isTemplate: false,
+            isActive: false
+          });
+          if (inactiveFrequency) {
+            inactiveFrequency.isActive = true;
+            await inactiveFrequency.save();
+            // Add to student's behaviorFrequencies if not present
+            await User.findByIdAndUpdate(
+              studentId,
+              { $addToSet: { behaviorFrequencies: inactiveFrequency._id } }
+            );
+            // Return updated user (populate as needed)
+            const user = await User.findById(studentId).populate('behaviorFrequencies');
+            return user;
+          }
+
+          // 3. Otherwise, create new as usual
+          // Create new frequency for student based on template
+          const newFrequency = await Frequency.create({
+            studentId,
+            behaviorTitle: frequency.behaviorTitle,
+            operationalDefinition: frequency.operationalDefinition,
+            createdBy: context.user._id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            count: 0,
+            dailyCounts: [],
+            log: [],
+            isTemplate: false
+          });
+
+          // Add to student's behaviorFrequencies
+          const user = await User.findByIdAndUpdate(
+            studentId,
+            { $addToSet: { behaviorFrequencies: newFrequency._id } },
+            { new: true }
+          ).populate({
+            path: 'behaviorFrequencies',
+            populate: {
+              path: 'createdBy',
+              select: '_id firstName lastName username'
+            }
+          }).populate({
+            path: 'behaviorDurations',
+            populate: {
+              path: 'createdBy',
+              select: '_id firstName lastName username'
+            }
+          });
+
+          return user;
         } else if (duration) {
           console.log('Adding duration to track for student:', duration);
-          console.log('Passing durationId:', dataMeasureId);
           return await addDurationToTrackForStudent(_, { durationId: dataMeasureId, studentId }, context);
         }
       } catch (error) {
         console.error('Error in addDataMeasureToStudent resolver:', error);
-        throw new ApolloError(
-          "Failed to add data measure to student",
-          "ADD_DATA_MEASURE_ERROR",
-          { originalError: error },
-        );
+        throw error;
       }
     },
   incrementFrequency: async (_, { frequencyId, studentId, date }, { user }) => {
@@ -774,9 +858,14 @@ const resolvers = {
     // Ensure count is valid and increment it
     frequency.count = (frequency.count || 0) + 1;
 
-    // Add the current date and time to the frequency record
-    frequency.updatedAt = new Date(date); // Use the passed date
-    frequency.dailyCounts.push({ date: new Date(date), count: 1 }); // Track daily counts
+    // Use the passed date if valid, otherwise use the current date
+    let dateToUse = date ? new Date(date) : new Date();
+    if (isNaN(dateToUse.getTime())) {
+      dateToUse = new Date();
+    }
+
+    frequency.updatedAt = dateToUse;
+    frequency.dailyCounts.push({ date: dateToUse, count: 1 });
 
     await frequency.save();
 
@@ -1190,12 +1279,14 @@ const resolvers = {
   },
   Frequency: {
     createdBy: async (parent, args, context) => {
-      const user = await User.findById(parent.createdBy);
-      return user ? [user] : [];
+      if (!parent.createdBy || !parent.createdBy.length) return [];
+      const users = await User.find({ _id: { $in: parent.createdBy } });
+      return users;
     },
     createdFor: async (parent, args, context) => {
-      const user = await User.findById(parent.createdFor);
-      return user ? [user] : [];
+      if (!parent.createdFor || !parent.createdFor.length) return [];
+      const users = await User.find({ _id: { $in: parent.createdFor } });
+      return users;
     },
   },
   InterventionList: {
