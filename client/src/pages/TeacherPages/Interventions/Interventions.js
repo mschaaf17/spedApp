@@ -2,14 +2,15 @@
 import React, {useState} from 'react'
 import { Navigate, useParams, Link } from 'react-router-dom'
 import {useQuery, useMutation} from '@apollo/client'
-import {ADD_INTERVENTION, REMOVE_INTERVENTION} from '../../../utils/mutations'
-import {QUERY_USER, QUERY_ME, QUERY_INTERVENTION_LIST} from '../../../utils/queries'
+import {ADD_INTERVENTION_TO_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, REMOVE_INTERVENTION, ADD_INTERVENTION_TEMPLATE} from '../../../utils/mutations'
+import {QUERY_USER, QUERY_ME,  QUERY_INTERVENTION_TEMPLATES} from '../../../utils/queries'
 import Auth from '../../../utils/auth'
 import NavigationLinks from '../../../components/SideNavigationLinks'
 import './index.css'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { Modal, Button } from 'react-bootstrap';
-
+import InterventionDataTable from '../../../components/Tables/GeneralTables/interventionListTable';
+import AddNewIntervention from '../../../components/AddNewIntervention/AddNewIntervention';
 export default function Interventions() {
 
   const { username: userParam } = useParams()
@@ -24,6 +25,7 @@ const [selectedSummary, setSelectedSummary] = useState('');
 const [selectedHardcodedIntervention, setSelectedHardcodedIntervention] = useState(null);
 
 const [addedIntervention, setAddedIntervention] = useState([]);
+const [isAddInterventionOpen, setAddInterventionOpen] = useState(false);
 
 const { loading, data } = useQuery(QUERY_ME)
 
@@ -32,15 +34,19 @@ const { loading, data } = useQuery(QUERY_ME)
 const user = data?.me || data?.user || {};
 
 
-const { loading: interventionsLoading, data: interventions } = useQuery(QUERY_INTERVENTION_LIST, {
-  variables: { username: user.username },
+const { loading: interventionsLoading, data: interventions } = useQuery(QUERY_INTERVENTION_TEMPLATES, {
+  variables: { isTemplate: true, isActive: true }
 });
-const interventionList = interventions?.interventionList || []
-console.log(interventionList)
+console.log(interventions?.interventionList, "raw interventionList");
+interventions?.interventionList?.forEach(i => console.log(i.isTemplate, typeof i.isTemplate));
+const interventionList = interventions?.interventionList?.filter(
+  intervention => intervention.isTemplate === true || intervention.isTemplate === "true"
+) || [];
+console.log(interventionList, "filtered interventionList")
 
-console.log(user.username)
+// console.log(user.username + username)
 const [addInterventionToList, {error}] = useMutation(
-  ADD_INTERVENTION
+  ADD_INTERVENTION_TEMPLATE
 );
 
 const [removeInterventionFromList] = useMutation(
@@ -60,7 +66,7 @@ const handleDeleteConfirmation = async () => {
       await removeInterventionFromList({
           variables: { id: selectedIntervention},
           refetchQueries: [
-              {query: QUERY_INTERVENTION_LIST, variables: {username: user.username}},
+              {query: QUERY_INTERVENTION_TEMPLATES, variables: {username: user.username}},
               {query: QUERY_ME, variables: {username: user.username}}
           ]
       })
@@ -87,6 +93,10 @@ const handleHideSummaryModal = () => {
   setShowSummaryModal(false)
 }
 
+const handleUpdateInterventionData = (newData) => {
+  setAddedIntervention(newData);
+};
+
 const addIntervention = async (event) => {
   event.preventDefault();
   const title = event.target.elements.title.value;
@@ -100,13 +110,14 @@ const addIntervention = async (event) => {
   try {
     await addInterventionToList({
       variables: {
-        username: user.username,
-        functions: selectedIntervention,
-        title: title,
-        summary: summary,
+        title,
+        summary,
+        function: selectedIntervention,
+        isTemplate: true,
+        isActive: true,
       },
       refetchQueries: [
-        { query: QUERY_INTERVENTION_LIST, variables: { username: user.username}},
+        { query: QUERY_INTERVENTION_TEMPLATES, variables: { username: user.username}},
         { query: QUERY_ME, variables: { username: user.username } },
       ],
     });
@@ -128,7 +139,7 @@ const addIntervention = async (event) => {
 
 
 const isInterventionAdded = (title) => {
-  const isAdded = addedIntervention[title] || interventionList.some((intervention) => intervention.functions === title);
+  const isAdded = addedIntervention[title] || interventionList.some((intervention) => intervention.function === title);
   console.log(`Intervention title: ${title}, Is Added: ${isAdded}`);
   return isAdded;
 };
@@ -149,217 +160,27 @@ if (loading) {
 
   return (
     <div>
-          <h2 className='profile-name'>Intervention Ideas</h2>
-          {/* find a way to provide teacher with function of behavior based on additional studnet info */}
-          <div className='flex_left'>
-            {/* Need a search bar and possible make this page large so you can click on the 
-            intervention regardless of if the teacher added it so that it more informaton 
-            can be provided --teacher much add a detail and a summary of the intervention*/}
-            {/* thoughts if I add an intervention for a specific student will tha tbe annoying?
-            should their be an add intervention but it adds to the entire list not for a particular student */}       
-            <div className='border_solid margin_right'>
-                <h3 className='center_only'>Add Intervention</h3>
-                <form className='flex_column' onSubmit={(e) => addIntervention(e)}>
-                  {/* this form will be in the user schema,, otherwise 
-                  i will seed in intervention ideas  */}
-                <label htmlFor="Functions">Pick a Function:</label>
-                        <select name="" id="functions" value={selectedIntervention || ""} onChange={(e) => setSelectedIntervention(e.target.value)}>
-                        <option value="">Select</option>
-                        <option value="Escape">Escape</option>
-                        <option value="Attention">Attention</option>
-                        <option value="Sensory">Sensory</option>
-                        <option value="Tangible">Tangible</option>
-                        <option value="Other">Other</option>
-                        </select>
-                    <label>Title: <input className='title' name ='title'></input></label>
-                    <label>Summary: <input className='summary' name = 'summary'></input></label>
-                    <button className="submit-btn" type="submit">
-                Submit
-              </button>
-              {formError && <p className="form-error">{formError}</p>}
-                </form>
-            </div>
-            
-            <div className=' flex_right'>
-            
-            <div className='border_solid'>
-          <h4 className = 'center_only'>Intervention Ideas for Escape</h4>
-          {/* if escape was selected then it needs to appear here */}
-          <ol className='flex_column ordered_list'>
-       
-        {isInterventionAdded('Escape') ? (
-              interventionList
-                .filter((intervention) => intervention.functions === 'Escape')
-                .map((intervention) => (
-                  <li className='flex' key={intervention._id}>
-                    <button className='list_buttons' onClick={() => handleShowSummaryModal(intervention.summary)}>
-                    {intervention.title.charAt(0).toUpperCase() + intervention.title.slice(1)}
-                    </button>
-                    <p className='center'><DeleteForeverIcon className = 'delete' onClick={() => removeIntervention(intervention._id)}  />
-         </p>      
-                  </li>                
-                ))
-            ) : (
-              ""
-            )}
-            <li className= 'ideas_center' onClick={() => setSelectedHardcodedIntervention('Scheduled Breaks')}>
-             <button className='list_buttons'> Scheduled Breaks</button>
-            </li>
-
-          </ol>
-     
-          </div>
-          {showConfirmationModal && (
-        <Modal show={showConfirmationModal} onHide={handleCancelConfirmation}>
-          <Modal.Header closeButton>
-            <Modal.Title >Confirmation</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>Are you sure you want to delete this intervention?</Modal.Body>
-          <Modal.Footer>
-            <Button className='modal-cancel' variant='secondary' onClick={handleCancelConfirmation}>
-              Cancel
-            </Button>
-            <Button className = 'modal-delete' variant='danger' onClick={handleDeleteConfirmation}>
-              Delete
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      )}
-
-          <div className='border_solid'>
-          <h4 className ='center_only'>Intervention Ideas for Access to Attention</h4>
-          <ol className='flex_column ordered_list'>
-        {/* possible links to articles for these interventions or instead just a module that gives a description? */}
-  
-        {isInterventionAdded('Attention') ? (
-              interventionList
-                .filter((intervention) => intervention.functions === 'Attention')
-                .map((intervention) => (
-                  <li className = 'flex' key={intervention._id}>
-                    <button className='list_buttons' onClick={() => handleShowSummaryModal(intervention.summary)}>
-                    {intervention.title.charAt(0).toUpperCase() + intervention.title.slice(1)}
-                    </button>
-                    <p><DeleteForeverIcon className = 'delete' onClick={() => removeIntervention(intervention._id)}  />
-         </p>     
-                      </li>
-                ))
-            ) : (
-              ""
-            )}
-            {/* teacher helper not in switch yet */}
-            <li className= 'ideas_center' onClick={() => setSelectedHardcodedIntervention('Teacher Helper')}>
-             <button className='list_buttons'>Teacher Helper</button>
-            </li>
-          </ol>
-          </div>
-
       
-
-          <div className='border_solid'>
-          <h4 className='center_only'>Intervention Ideas for Sensory Stimulation</h4>
-          <ol className='flex_column ordered_list'>
-              
-        {isInterventionAdded('Sensory') ? (
-              interventionList
-                .filter((intervention) => intervention.functions === 'Sensory')
-                .map((intervention) => (
-                  <li className = 'flex' key={intervention._id}>
-                    <button className='list_buttons' onClick={() => handleShowSummaryModal(intervention.summary)}>
-                    {intervention.title.charAt(0).toUpperCase() + intervention.title.slice(1)}
-                    </button>
-                    <p className='center'><DeleteForeverIcon className = 'delete' onClick={() => removeIntervention(intervention._id)}  />
-         </p>
-                  </li>
-                ))
-            ) : (
-              ""
-            )}
-            <li className= 'ideas_center' onClick={() => setSelectedHardcodedIntervention('Velcro')}>
-             <button className='list_buttons'> Velcro</button>
-            </li>
-          </ol>
-          </div>
-
-          <div className='border_solid'>
-          <h4 className='center_only'>Intervention Ideas for Access to Tangible</h4>
-          <ol className='flex_column ordered_list'>
-        {/* possible links to articles for these interventions? */}
-        {isInterventionAdded('Tangible') ? (
-              interventionList
-                .filter((intervention) => intervention.functions === 'Tangible')
-                .map((intervention) => (
-                  <li className = 'flex' key={intervention._id}>
-                    <button className='list_buttons' onClick={() => handleShowSummaryModal(intervention.summary)}>
-                    {intervention.title.charAt(0).toUpperCase() + intervention.title.slice(1)}
-                    </button>
-                    <p className='center'><DeleteForeverIcon className = 'delete' onClick={() => removeIntervention(intervention._id)}  />
-         </p>
-                  </li>
-                ))
-            ) : (
-              ""
-            )}
-             <li className= 'ideas_center' onClick={() => setSelectedHardcodedIntervention('Token Economy')}>
-             <button className='list_buttons'>Token Economy</button>
-            </li>
-          </ol>
-          </div>
-
-          {interventionList.map((intervention) => {
-  if (intervention.functions === 'Other') {
-    return (
-      <div className='border_solid' key={intervention._id}>
-        <h4 className='center_only'>Other Intervention Ideas</h4>
-        <ol className='flex_column ordered_list'>
-          {/* possible links to articles for these interventions? */}
-          <li className='flex'>
-          <button className='list_buttons' onClick={() => handleShowSummaryModal(intervention.summary)}>
-            {intervention.title.charAt(0).toUpperCase() + intervention.title.slice(1)}
-            </button>
-            <p className='center'><DeleteForeverIcon className = 'delete' onClick={() => removeIntervention(intervention._id)}  />
-         </p> </li>
-        </ol>
+      <h2 className='profile-name'>Intervention Ideas</h2>
+      {!isAddInterventionOpen && (
+        <Button className='generalButton' onClick={() => setAddInterventionOpen(true)}>
+          Add Intervention
+        </Button>
+      )}
+      {isAddInterventionOpen && (
+        <AddNewIntervention
+          onClose={() => setAddInterventionOpen(false)}
+          updateInterventionData={handleUpdateInterventionData}
+          interventionData={interventionList}
+        />
+      )}
+      
+      {/* Pass interventionList as a prop here */}
+      <div style={{ marginBottom: 32 }}>
+        <InterventionDataTable interventionList={interventionList} />
       </div>
-    );
-  }
-  return null; // Return nothing if the intervention is not of the "Other" function
-})}
-{showSummaryModal && (
-            <Modal show={showSummaryModal} onHide={handleHideSummaryModal}>
-              <Modal.Header closeButton>
-                <Modal.Title>Intervention Summary</Modal.Title>
-              </Modal.Header>
-              <Modal.Body>Summary: {selectedSummary}</Modal.Body>
-              <Modal.Footer>
-                <Button variant='secondary' onClick={handleHideSummaryModal}>
-                  Close
-                </Button>
-              </Modal.Footer>
-            </Modal>
-          )}
-
-{selectedHardcodedIntervention && (
-  <Modal show={true} onHide={() => setSelectedHardcodedIntervention(null)}>
-    <Modal.Header closeButton>
-      <Modal.Title>Intervention Summary</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>{getHardcodedInterventionSummary(selectedHardcodedIntervention)}</Modal.Body>
-    <Modal.Footer>
-      <Button variant="secondary" onClick={() => setSelectedHardcodedIntervention(null)}>
-        Close
-      </Button>
-    </Modal.Footer>
-  </Modal>
-)}
-
-
-
-
-          </div>
-          </div>
-          
+      
         
-         
-    </div>
-  )
+</div>
+)
 }

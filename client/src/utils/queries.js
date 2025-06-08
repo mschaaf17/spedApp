@@ -469,14 +469,22 @@ createdAt
 // }
 // `;
 
-export const QUERY_INTERVENTION_LIST = gql`
-query InterventionList($username: String) {
-  interventionList(username: $username) {
+export const QUERY_INTERVENTION_TEMPLATES = gql`
+query InterventionList($isTemplate: Boolean, $isActive: Boolean) {
+  interventionList(isTemplate: $isTemplate, isActive: $isActive) {
+    isTemplate
+    isActive
+    _id
     title
     summary
-    username
-    _id
-    functions
+    function
+    createdBy {
+      username
+      firstName
+      lastName
+      _id
+    }
+    
   }
 }
 `;

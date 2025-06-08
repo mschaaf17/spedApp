@@ -267,9 +267,12 @@ const resolvers = {
       return Duration.find();
     },
 
-    interventionList: async () => {
-      const interventionList = await InterventionList.find();
-      // Filter out records where createdBy is null
+    interventionList: async (parent, args) => {
+      const filter = {};
+      if (args.isTemplate !== undefined) filter.isTemplate = args.isTemplate;
+      if (args.isActive !== undefined) filter.isActive = args.isActive;
+      // Add more filters as needed (e.g., studentId)
+      const interventionList = await InterventionList.find(filter);
       return interventionList.filter((item) => item.createdBy !== null);
     },
 
@@ -1095,11 +1098,12 @@ const resolvers = {
       }
     },
 
-    addToInterventionList: async (parent, args, context) => {
+    addInterventionTemplate: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You must be logged in as an admin");
       }
       args.createdBy = context.user._id;
+      args.isTemplate = true;
       const interventionItem = await InterventionList.create(args);
       return interventionItem;
     },
@@ -1109,13 +1113,14 @@ const resolvers = {
         throw new AuthenticationError("You need to be logged in as an admin");
       }
       try {
-        const interventionItem = await InterventionList.findByIdAndDelete(
+        const interventionItem = await InterventionList.findByIdAndUpdate(
           args._id,
+          { isActive: false },
+          { new: true }
         );
         if (!interventionItem) {
           throw new Error("Intervention was not found");
         }
-        console.log(interventionItem);
         return interventionItem;
       } catch (error) {
         throw new ApolloError(
@@ -1127,13 +1132,8 @@ const resolvers = {
     },
 
     addInterventionForStudent: async (parent, args, context) => {
-      console.log("Starting addInterventionForStudent resolver");
-      console.log("Received arguments:", args);
-
       if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
+        throw new AuthenticationError("You must be logged in as an administrator!");
       }
 
       const { interventionId, studentId } = args;
@@ -1143,44 +1143,40 @@ const resolvers = {
       }
 
       try {
-        console.log("Finding accommodation card with ID:", interventionId);
+        // 1. Find the intervention template
+        const interventionTemplate = await InterventionList.findById(interventionId);
 
-        const objectIdinterventionId = mongoose.Types.ObjectId(interventionId);
-
-        const interventionItem = await AccommodationCards.findById(
-          objectIdinterventionId,
-        );
-
-        if (!interventionItem) {
-          throw new Error("Accommodation card not found");
+        if (!interventionTemplate || !interventionTemplate.isTemplate) {
+          throw new Error("Intervention template not found");
         }
 
-        console.log("Found accommodation card:", interventionItem);
-
-        interventionItem.createdBy = context.user._id;
-
-        await interventionItem.save();
-
-        console.log("Finding user with ID:", studentId);
-        const user = await User.findById(studentId);
-
-        if (!user) {
-          throw new Error("User not found");
+        // 2. Prevent duplicate assignment
+        const existing = await InterventionList.findOne({
+          studentId,
+          title: interventionTemplate.title,
+          isTemplate: false,
+          isActive: true,
+        });
+        if (existing) {
+          throw new UserInputError("Student already has this intervention assigned.");
         }
 
-        console.log("Found user:", user);
+        // 3. Create a new intervention for the student
+        const newIntervention = await InterventionList.create({
+          title: interventionTemplate.title,
+          summary: interventionTemplate.summary,
+          function: interventionTemplate.function,
+          createdBy: context.user._id,
+          studentId,
+          isTemplate: false,
+          isActive: true,
+        });
 
-        console.log("Adding intervention item to user's interventions array");
-        user.interventions.push(objectIdinterventionId);
+        // (Optional) Add to user's interventions array if you want
+        // await User.findByIdAndUpdate(studentId, { $addToSet: { interventions: newIntervention._id } });
 
-        console.log("Saving updated user");
-        await user.save();
-
-        console.log("User successfully updated:", user);
-
-        return user;
+        return newIntervention;
       } catch (error) {
-        console.error("Error occurred:", error);
         throw new ApolloError(
           "Failed to add intervention for student",
           "ADD_INTERVENTION_ERROR",
@@ -1201,21 +1197,19 @@ const resolvers = {
       }
 
       try {
+        // 1. Remove the reference from the user's interventions array (optional)
         const user = await User.findById(studentId);
-
         if (!user) {
           throw new UserInputError("Student not found");
         }
-
         const index = user.interventions.indexOf(interventionId);
-        if (index === -1) {
-          throw new UserInputError(
-            "Intervention item not found for this student!",
-          );
+        if (index !== -1) {
+          user.interventions.splice(index, 1);
+          await user.save();
         }
 
-        user.interventions.splice(index, 1);
-        await user.save();
+        // 2. SOFT DELETE: Set isActive to false
+        await InterventionList.findByIdAndUpdate(interventionId, { isActive: false });
 
         return user;
       } catch (error) {

@@ -267,14 +267,33 @@ mutation RemoveStudentFromTeacherList($studentId: ID!) {
 }
 `;
 
-export const ADD_INTERVENTION = gql`
-mutation AddIntervention($functions: String, $title: String, $username: String, $summary: String) {
-  addIntervention(functions: $functions, title: $title, username: $username, summary: $summary) {
+export const ADD_INTERVENTION_TEMPLATE = gql`
+mutation AddInterventionTemplate(
+  $title: String!
+  $summary: String!
+  $function: String!
+  $isTemplate: Boolean
+  $isActive: Boolean
+) {
+  addInterventionTemplate(
+    title: $title
+    summary: $summary
+    function: $function
+    isTemplate: $isTemplate
+    isActive: $isActive
+  ) {
     _id
-    functions
-    summary
     title
-    username
+    summary
+    function
+    createdBy {
+      _id
+      username
+      firstName
+      lastName
+    }
+    isTemplate
+    isActive
   }
 }
 `;
@@ -285,7 +304,7 @@ mutation AddInterventionToStudent($interventionId: ID!, $username: String) {
     userInterventions {
       _id
       createdAt
-      functions
+      function
       summary
       title
       username
@@ -298,7 +317,7 @@ export const REMOVE_INTERVENTION = gql`
 mutation RemoveIntervention($id: ID) {
   removeIntervention(_id: $id) {
     _id
-    functions
+    function
     summary
     title
     username

@@ -196,6 +196,8 @@ export default function DataMeasuresList() {
         <Button className='generalButton' onClick={openDataMeasureModal}>Add Data Measure</Button>
       )}
       {isDataMeasureModalOpen && <AddNewDataMeasure onClose={closeAddDataMeasurenModal} updateMergedData={updateMergedData} mergedData={initialMergedData} />}
+      
+      {/* the table will need to have an action that you click a student and then associated behavior will show and oyu select the behavior  */}
       <DataMeasureTable
         loading={templateLoading}
         mergedData={initialMergedData}

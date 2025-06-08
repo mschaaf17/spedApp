@@ -614,7 +614,7 @@ input:focus {
 /* this is ending body for some reason???? */
 }
 
-/* AddDataLoggingForStudent page*/
+/* AddStudentDataHomePsgeForStudent page*/
 .container{
   display:flex ;
   /* justify-content: flex-end; */
@@ -631,7 +631,7 @@ input:focus {
   justify-content: space-around;
   margin: auto;
 }
-/* end AddDataLoggingForStudent page */
+/* end AddStudentDataHomePsgeForStudent page */
 /* frequency */
 .secondHeading {
   margin: 10px;

@@ -73,6 +73,10 @@ const typeDefs = gql`
     summary: String!
     function: String!
     createdBy: User!
+    createdFor: [User!]!
+    isTemplate: Boolean!
+    isActive: Boolean!
+    studentId: ID
   }
 
   type Auth {
@@ -89,7 +93,7 @@ const typeDefs = gql`
     accommodationCards: [AccommodationCards]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration: [Duration]
-    interventionList: [InterventionList]
+    interventionList(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
   }
 
   type Mutation {
@@ -155,10 +159,12 @@ const typeDefs = gql`
     endDurationTimer(durationId: ID!, startDurationId: ID!): User
     removeLastDurationTimer(studentId: ID!): User
 
-    addToInterventionList(
+    addInterventionTemplate(
       title: String!
       summary: String!
       function: String!
+      isTemplate: Boolean
+      isActive: Boolean
     ): InterventionList
     removedInterventionFromList(interventionId: ID!): InterventionList
 

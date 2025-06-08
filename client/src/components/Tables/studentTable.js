@@ -152,14 +152,14 @@ useEffect(()=> {
         <>
           <Space>
           <div className='tooltip'>
-            <Link to={`/studentProfile/${record.username}/dataLogging`}>
+            <Link to={`/studentProfile/${record.username}/studentDataHomePage`}>
               <CreateNewFolderOutlinedIcon className='icons'/>
               <span className='tooltipText'>Log Data</span>
             </Link>
             </div>
 
             <div className='tooltip'>
-            <Link to={`/studentProfile/${record.username}/dataLogging`}onClick={handleViewGraphClick}>
+            <Link to={`/studentProfile/${record.username}/studentDataHomePage`}onClick={handleViewGraphClick}>
               <AssessmentOutlinedIcon className='icons'/>
               <span className='tooltipText'>View Graph</span>
             </Link>

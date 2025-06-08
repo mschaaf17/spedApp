@@ -19,6 +19,21 @@ const InterventionListSchema = new Schema({
     ref: "User",
     required: true,
   },
+  createdFor: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
+  studentId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
+  isTemplate: {
+    type: Boolean,
+    default: false,
+  },
+   isActive: { type: Boolean, default: true }
 });
 
 const InterventionList = model("InterventionList", InterventionListSchema);
