@@ -19,11 +19,6 @@ const InterventionListSchema = new Schema({
     ref: "User",
     required: true,
   },
-  createdFor: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: false,
-  },
   studentId: {
     type: Schema.Types.ObjectId,
     ref: "User",
@@ -33,7 +28,16 @@ const InterventionListSchema = new Schema({
     type: Boolean,
     default: false,
   },
-   isActive: { type: Boolean, default: true }
+   isActive: { type: Boolean, default: true },
+  behaviorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Frequency",
+    required: false,
+  },
+  behaviorTitle: {
+    type: String,
+    required: false,
+  },
 });
 
 const InterventionList = model("InterventionList", InterventionListSchema);

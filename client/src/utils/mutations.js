@@ -298,16 +298,26 @@ mutation AddInterventionTemplate(
 }
 `;
 
-export const ADD_INTERVENTION_TO_STUDENT = gql`
-mutation AddInterventionToStudent($interventionId: ID!, $username: String) {
-  addInterventionToStudent(interventionId: $interventionId, username: $username) {
-    userInterventions {
+export const ADD_INTERVENTION_FOR_STUDENT = gql`
+mutation AddInterventionForStudent($interventionId: ID!, $studentId: ID!, $behaviorId: ID) {
+  addInterventionForStudent(interventionId: $interventionId, studentId: $studentId, behaviorId: $behaviorId) {
+    _id
+    title
+    summary
+    function
+    createdBy {
       _id
-      createdAt
-      function
-      summary
-      title
       username
+      firstName
+      lastName
+    }
+    isTemplate
+    isActive
+    studentId {
+      _id
+      username
+      firstName
+      lastName
     }
   }
 }

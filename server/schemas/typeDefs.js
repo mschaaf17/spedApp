@@ -76,7 +76,9 @@ const typeDefs = gql`
     createdFor: [User!]!
     isTemplate: Boolean!
     isActive: Boolean!
-    studentId: ID
+    studentId: User
+    behaviorId: Frequency
+    behaviorTitle: String
   }
 
   type Auth {
@@ -93,7 +95,9 @@ const typeDefs = gql`
     accommodationCards: [AccommodationCards]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration: [Duration]
-    interventionList(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
+    interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
+    interventionListForStudent(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
+    interventionListForStudentByBehavior(studentId: ID, behaviorId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
   }
 
   type Mutation {
@@ -168,7 +172,11 @@ const typeDefs = gql`
     ): InterventionList
     removedInterventionFromList(interventionId: ID!): InterventionList
 
-    addInterventionForStudent(interventionId: ID!, studentId: ID!): User
+    addInterventionForStudent(
+      interventionId: ID!
+      studentId: ID!
+      behaviorId: ID
+    ): InterventionList
     removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
   }
 `;

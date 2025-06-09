@@ -276,6 +276,25 @@ const resolvers = {
       return interventionList.filter((item) => item.createdBy !== null);
     },
 
+    interventionListForStudent: async (parent, args) => {
+      const filter = {};
+      if (args.studentId) filter.studentId = args.studentId;
+      if (args.isTemplate !== undefined) filter.isTemplate = args.isTemplate;
+      if (args.isActive !== undefined) filter.isActive = args.isActive;
+      const interventionList = await InterventionList.find(filter);
+      return interventionList.filter((item) => item.createdBy !== null);
+    },
+
+    interventionListForStudentByBehavior: async (parent, args) => {
+      const filter = {};
+      if (args.studentId) filter.studentId = args.studentId;
+      if (args.behaviorId) filter.behaviorId = args.behaviorId;
+      if (args.isTemplate !== undefined) filter.isTemplate = args.isTemplate;
+      if (args.isActive !== undefined) filter.isActive = args.isActive;
+      const interventionList = await InterventionList.find(filter);
+      return interventionList.filter((item) => item.createdBy !== null);
+    },
+
     //need data to check these
     // interventionList: async (parent, { username }) => {
     //   const params = username ? { username } : {};
@@ -1136,47 +1155,64 @@ const resolvers = {
         throw new AuthenticationError("You must be logged in as an administrator!");
       }
 
-      const { interventionId, studentId } = args;
+      const { interventionId, studentId, behaviorId } = args;
 
       if (!studentId) {
         throw new UserInputError("Student ID is required");
       }
 
       try {
-        // 1. Find the intervention template
+        console.log('Finding intervention template:', interventionId);
         const interventionTemplate = await InterventionList.findById(interventionId);
+        console.log('Found template:', interventionTemplate);
 
         if (!interventionTemplate || !interventionTemplate.isTemplate) {
           throw new Error("Intervention template not found");
         }
 
-        // 2. Prevent duplicate assignment
+        console.log('Checking for existing assignment...');
         const existing = await InterventionList.findOne({
           studentId,
           title: interventionTemplate.title,
+          behaviorId,
           isTemplate: false,
           isActive: true,
         });
+        console.log('Existing assignment:', existing);
+
         if (existing) {
+          // Optionally, restore if it was soft-deleted
+          if (!existing.isActive) {
+            existing.isActive = true;
+            await existing.save();
+            return existing;
+          }
           throw new UserInputError("Student already has this intervention assigned.");
         }
 
-        // 3. Create a new intervention for the student
+        console.log('Creating new intervention for student...');
+        const behavior = await Frequency.findById(behaviorId);
         const newIntervention = await InterventionList.create({
           title: interventionTemplate.title,
           summary: interventionTemplate.summary,
           function: interventionTemplate.function,
           createdBy: context.user._id,
           studentId,
+          behaviorId,
+          behaviorTitle: behavior ? behavior.behaviorTitle : undefined,
           isTemplate: false,
           isActive: true,
         });
 
-        // (Optional) Add to user's interventions array if you want
-        // await User.findByIdAndUpdate(studentId, { $addToSet: { interventions: newIntervention._id } });
+        // Add the new intervention to the user's interventions array
+        await User.findByIdAndUpdate(
+          studentId,
+          { $addToSet: { interventions: newIntervention._id } }
+        );
 
         return newIntervention;
       } catch (error) {
+        console.error('Error in addInterventionForStudent:', error);
         throw new ApolloError(
           "Failed to add intervention for student",
           "ADD_INTERVENTION_ERROR",
@@ -1287,6 +1323,14 @@ const resolvers = {
     createdBy: async (parent, args, context) => {
       const user = await User.findById(parent.createdBy);
       return user ? user : null;
+    },
+    studentId: async (parent) => {
+      if (!parent.studentId) return null;
+      return await User.findById(parent.studentId);
+    },
+    behaviorId: async (parent) => {
+      if (!parent.behaviorId) return null;
+      return await Frequency.findById(parent.behaviorId);
     },
   },
 };

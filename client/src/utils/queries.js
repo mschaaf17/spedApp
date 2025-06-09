@@ -336,9 +336,24 @@ query User($identifier: String!, $isUsername: Boolean!) {
       averageTimeSpentDaily
       timeMostOccurrences
     }
+  
     interventions {
       _id
       title
+     
+      studentId {
+        _id
+        username
+        
+      }
+      isTemplate
+      isActive
+      behaviorId {
+        behaviorTitle
+        operationalDefinition
+        _id
+      }
+      behaviorTitle
       summary
       function
       createdBy {
@@ -349,6 +364,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
         lastName
       }
     }
+    
   }
 }
 `;
@@ -472,19 +488,46 @@ createdAt
 export const QUERY_INTERVENTION_TEMPLATES = gql`
 query InterventionList($isTemplate: Boolean, $isActive: Boolean) {
   interventionList(isTemplate: $isTemplate, isActive: $isActive) {
-    isTemplate
-    isActive
     _id
     title
     summary
     function
     createdBy {
+      _id
+      isAdmin
       username
       firstName
       lastName
-      _id
     }
-    
+    isTemplate
+    isActive
+    studentId {
+      _id
+      username
+      firstName
+      lastName
+    }
+    behaviorId {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isTemplate
+      isActive
+    }
+    behaviorTitle
+  }
+}
+`;
+
+export const QUERY_ASSIGNED_INTERVENTIONS = gql`
+query AssignedInterventions($isTemplate: Boolean, $isActive: Boolean) {
+  interventionList(isTemplate: $isTemplate, isActive: $isActive) {
+    _id
+    title
+    studentId { _id }
+    behaviorId { _id }
+    isTemplate
+    isActive
   }
 }
 `;

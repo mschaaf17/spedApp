@@ -12,6 +12,9 @@ const AddNewIntervention = ({ onClose, updateInterventionData, interventionData 
   const [addInterventionTemplate] = useMutation(ADD_INTERVENTION_TEMPLATE);
   const [form] = Form.useForm();
   const [tableData, setTableData] = useState([]);
+  const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedBehavior, setSelectedBehavior] = useState(null);
 
   const showMessage = (title) => {
     message.success(`Intervention "${title}" saved`, 2, onClose);
