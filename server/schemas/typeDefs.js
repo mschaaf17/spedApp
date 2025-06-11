@@ -79,6 +79,7 @@ const typeDefs = gql`
     studentId: User
     behaviorId: Frequency
     behaviorTitle: String
+    createdAt: String
   }
 
   type Auth {

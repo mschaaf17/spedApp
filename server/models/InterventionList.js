@@ -38,7 +38,11 @@ const InterventionListSchema = new Schema({
     type: String,
     required: false,
   },
-});
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+}, { timestamps: true });
 
 const InterventionList = model("InterventionList", InterventionListSchema);
 module.exports = InterventionList;

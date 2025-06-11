@@ -6,27 +6,10 @@ import { Link, useParams } from 'react-router-dom'
 // import Frequency from '../../../components/DataTrackingMeasures/frequency'
 // import Observation from '../../../components/DataTrackingMeasures/observation'
 // import Contracts from '../../../components/DataTrackingMeasures/Contracts'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle } from 'recharts';
 import { Select, Alert } from 'antd';
-
-
-
-// import NavigationLinks from '../../../components/SideNavigationLinks'
-// import { useQuery, useMutation } from '@apollo/client';
-// import WeeklyData from '../../../components/StudentData/weekly'
-// import {QUERY_USER, QUERY_INTERVENTION_LIST, QUERY_ME} from '../../../utils/queries'
-// import { ADD_ACCOMMODATION_FOR_STUDENT, ADD_INTERVENTION_TO_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT } from '../../../utils/mutations';
-// import './index.css'
-// import moment from 'moment';
-// import { Modal, Button } from 'react-bootstrap';
-// import OutOfSeatData from '../../../components/StudentData/outOfSeatData';
-// import AddIcon from '@mui/icons-material/Add';
-// import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
-// import SearchIcon from '@mui/icons-material/Search';
-// import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-
-
-
+import { useQuery } from '@apollo/client';
+import { QUERY_USER } from '../../utils/queries';
 
 const data = [
   { name: 'Date', uv: 4000, pv: 2400, amt: 2400 },
@@ -45,11 +28,46 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   // Set up selectedIds only after frequencies are loaded
   const [selectedIds, setSelectedIds] = useState(safeFrequencies.map(f => f._id));
 
-  // If frequencies are not loaded yet, show loading
+  const { data: userData, loading: userLoading, error: userError } = useQuery(QUERY_USER, {
+    variables: { identifier: userParam, isUsername: true }
+  });
+
   if (!safeFrequencies.length) return <div>Loading or no frequency data available.</div>;
 
   // Filtered frequencies
   const filtered = safeFrequencies.filter(f => selectedIds.includes(f._id));
+
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  const userInterventions = userData?.user?.interventions || [];
+
+  // Example color palette
+  const interventionColors = [
+    '#e6194b', // red
+    '#3cb44b', // green
+    '#ffe119', // yellow
+    '#4363d8', // blue
+    '#f58231', // orange
+    '#911eb4', // purple
+    '#46f0f0', // cyan
+    '#f032e6', // magenta
+    '#bcf60c', // lime
+    '#fabebe', // pink
+  ];
+
+  // Hash function to pick a color based on intervention title or id
+  function getInterventionColor(intervention) {
+    if (!intervention) return '#8884d8'; // default
+    const str = intervention.title || intervention._id || '';
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return interventionColors[Math.abs(hash) % interventionColors.length];
+  }
 
   return (
     <div className='centerBody'>
@@ -57,7 +75,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         <h1 className="title"> Viewing Charts for {userParam}</h1>
       </div>
 
-      <h3>Frequency for insert behavior title here</h3>
+      <h3>Select a behavior to view</h3>
       <Select
         mode="multiple"
         value={selectedIds}
@@ -137,13 +155,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         console.log('validChartData:', validChartData);
         
 
-        const studentInterventions = [
-          {
-            frequencyId: freq._id,
-            name: "Intervention 1",
-            startDate: "2024-06-10" // or a date matching one in your chartData
-          }
-        ];
+      
 
         const hourCount = {};
         (freq.dailyCounts || []).forEach(dc => {
@@ -166,8 +178,9 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         }
 
         let startDateStr;
-        if (freq.createdAt) {
-          const d = new Date(freq.createdAt);
+        if (freq.createdAt !== undefined && freq.createdAt !== null) {
+          // Accept both string and number
+          const d = new Date(Number(freq.createdAt));
           if (!isNaN(d.getTime())) {
             startDateStr = d.toISOString().slice(0, 10);
           } else {
@@ -195,12 +208,46 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           !isNaN(new Date(startDateStr).getTime()) &&
           !isNaN(new Date(extendedEndDateStr).getTime())
         ) {
-          console.log('fillMissingDates called with:', { startDateStr, extendedEndDateStr, chartData });
+          console.log('Calling fillMissingDates with:', { startDateStr, extendedEndDateStr, chartData });
           filledChartData = fillMissingDates(chartData, startDateStr, extendedEndDateStr);
         }
 
+        console.log('filledChartData:', filledChartData);
+        console.log('filledChartData for chart:', filledChartData);
+        console.log('Types:', filledChartData.map(d => typeof d.count));
+
         // Use filledChartData for chart and aimline
         const aimlinePointsFilled = calculateAimline(filledChartData, goalValue, extendedEndDateStr, startDateStr);
+
+        console.log('Result from fillMissingDates:', filledChartData);
+
+        const assignedIntervention = userInterventions.find(
+          i => i.behaviorId?._id === freq._id || i.behaviorTitle === freq.behaviorTitle
+        );
+        let interventionDate = null;
+        let interventionColor = '#8884d8'; // default
+        if (assignedIntervention?.createdAt) {
+          let d;
+          if (typeof assignedIntervention.createdAt === "number") {
+            d = new Date(assignedIntervention.createdAt);
+          } else if (typeof assignedIntervention.createdAt === "string") {
+            // If it's a numeric string, treat as timestamp
+            if (/^\d+$/.test(assignedIntervention.createdAt)) {
+              d = new Date(Number(assignedIntervention.createdAt));
+            } else {
+              d = new Date(assignedIntervention.createdAt);
+            }
+          }
+          if (d && !isNaN(d.getTime())) {
+            interventionDate = d.toISOString().slice(0, 10);
+            interventionColor = getInterventionColor(assignedIntervention);
+          } else {
+            console.warn('Invalid assignedIntervention.createdAt:', assignedIntervention.createdAt, assignedIntervention);
+            interventionDate = null;
+          }
+        }
+        console.log('Intervention assignedIntervention:', assignedIntervention);
+        console.log('Intervention createdAt:', assignedIntervention?.createdAt, 'Parsed:', interventionDate);
 
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
@@ -218,19 +265,49 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             )}
             <LineChart width={600} height={300} data={filledChartData}>
               <XAxis dataKey="date" />
-              <YAxis />
+              <YAxis domain={[0, dataMax => Math.ceil(dataMax * 1.1)]} />
+              <YAxis yAxisId="right" orientation="right" hide={true} />
               <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#8884d8" />
-              {/* Plot the aimline as a line */}
-              <Line type="monotone" dataKey="value" data={aimlinePointsFilled} stroke="red" dot={false} name="Aimline" />
-              <Scatter data={filledChartData.filter(d => d.intervention)} fill="orange" />
+              
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#8884d8"
+                dot={props => <CustomDot {...props} interventionDate={interventionDate} interventionColor={interventionColor} />}
+                activeDot={{ r: 7 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                data={aimlinePointsFilled}
+                stroke="red"
+                dot={false}
+                name="Aimline"
+                yAxisId="right"
+              />
+              {/* If you want to highlight intervention days, keep this: */}
+              <Scatter data={filledChartData.filter(d => d.intervention)} fill={interventionColor} />
             </LineChart>
+            <div>
+              <h4>Assigned Interventions</h4>
+              {userInterventions.length > 0 ? (
+                <ul>
+                  {userInterventions.map(intervention => (
+                    <li key={intervention._id}>
+                      <b style={{ color: getInterventionColor(intervention) }}>
+                        {intervention.title}
+                      </b>: {intervention.summary}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No interventions assigned.</p>
+              )}
+            </div>
           </div>
         );
       })}
-      <div>
-        <button>Show dates/times</button>
-      </div>
+      
     </div>
   );
 };
@@ -300,7 +377,54 @@ function fillMissingDates(chartData, startDateStr, endDateStr) {
     });
     current.setDate(current.getDate() + 1);
   }
+  console.log('Result from fillMissingDates:', result);
   return result;
+}
+
+function CustomDot(props) {
+  const { cx, cy, payload, interventionDate, interventionColor } = props;
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  if (payload.date <= todayStr) {
+    if (interventionDate && payload.date === interventionDate) {
+      // Use the interventionColor for the ring
+      return (
+        <>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={10}
+            stroke={interventionColor}
+            strokeWidth={4}
+            fill="none"
+          />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={5}
+            stroke="black"
+            strokeWidth={2}
+            fill="black"
+          />
+        </>
+      );
+    }
+    // Default black dot
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        stroke="black"
+        strokeWidth={2}
+        fill="black"
+      />
+    );
+  }
+  return null;
 }
 
 export default FrequencyCharts;

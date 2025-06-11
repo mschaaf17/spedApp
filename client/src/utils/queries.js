@@ -363,6 +363,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
         firstName
         lastName
       }
+      createdAt
     }
     
   }

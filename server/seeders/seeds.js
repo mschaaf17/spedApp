@@ -77,10 +77,10 @@ async function seed() {
     createdBy: admin._id,
     isTemplate: false,
     isActive: true,
-    createdAt: new Date('2025-06-09T00:00:00.000Z'),
+    createdAt: new Date('2025-06-07T00:00:00.000Z'),
     dailyCounts: [
-      { date: '2025-06-09T00:00:00.000Z', count: 3 },
-      { date: '2025-06-11T00:00:00.000Z', count: 8 }
+      { date: '2025-06-07T00:00:00.000Z', count: 3 },
+      { date: '2025-06-09T00:00:00.000Z', count: 8 }
     ],
     count: 11 // total count (3 + 8)
   });
@@ -92,7 +92,8 @@ async function seed() {
     function: 'Attention',
     createdBy: admin._id,
     isTemplate: true,
-    isActive: true
+    isActive: true,
+    createdAt: new Date('2025-06-07T00:00:00.000Z')
   });
 
   // Assign intervention to student for a behavior
@@ -102,10 +103,11 @@ async function seed() {
     function: 'Attention',
     createdBy: admin._id,
     studentId: student._id,
-    behaviorId: frequency._id,
-    behaviorTitle: frequency.behaviorTitle,
+    behaviorId: callingOutFrequency._id,
+    behaviorTitle: callingOutFrequency.behaviorTitle,
     isTemplate: false,
-    isActive: true
+    isActive: true,
+    createdAt: new Date('2025-06-08T00:00:00.000Z')
   });
 
   // Add assigned intervention to student's interventions array
@@ -113,6 +115,8 @@ async function seed() {
   student.behaviorFrequencies.push(callingOutFrequency._id);
   await student.save();
 
+  console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);
+  console.log('assignedIntervention:', assignedIntervention, 'interventionDate:', assignedIntervention.createdAt);
 
   console.log('Seed data created!');
   mongoose.disconnect();
