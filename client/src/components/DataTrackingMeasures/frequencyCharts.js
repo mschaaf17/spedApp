@@ -165,6 +165,43 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           console.log('No data for most frequent hour');
         }
 
+        let startDateStr;
+        if (freq.createdAt) {
+          const d = new Date(freq.createdAt);
+          if (!isNaN(d.getTime())) {
+            startDateStr = d.toISOString().slice(0, 10);
+          } else {
+            console.warn('Invalid freq.createdAt:', freq.createdAt, freq);
+            startDateStr = undefined;
+          }
+        } else {
+          startDateStr = undefined;
+        }
+
+        const endDateStr = chartData.length ? chartData[chartData.length - 1].date : startDateStr;
+
+        // Extend end date by 5 days
+        let extendedEndDateStr = endDateStr;
+        if (endDateStr) {
+          const end = new Date(endDateStr);
+          end.setDate(end.getDate() + 5);
+          extendedEndDateStr = end.toISOString().slice(0, 10);
+        }
+
+        let filledChartData = chartData;
+        if (
+          startDateStr &&
+          extendedEndDateStr &&
+          !isNaN(new Date(startDateStr).getTime()) &&
+          !isNaN(new Date(extendedEndDateStr).getTime())
+        ) {
+          console.log('fillMissingDates called with:', { startDateStr, extendedEndDateStr, chartData });
+          filledChartData = fillMissingDates(chartData, startDateStr, extendedEndDateStr);
+        }
+
+        // Use filledChartData for chart and aimline
+        const aimlinePointsFilled = calculateAimline(filledChartData, goalValue, extendedEndDateStr, startDateStr);
+
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
             <h3>{freq.behaviorTitle}</h3>
@@ -179,14 +216,14 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             {notification && (
               <Alert message="Change your intervention: 3 consecutive days below aimline" type="warning" showIcon />
             )}
-            <LineChart width={600} height={300} data={validChartData}>
+            <LineChart width={600} height={300} data={filledChartData}>
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Line type="monotone" dataKey="count" stroke="#8884d8" />
               {/* Plot the aimline as a line */}
-              <Line type="monotone" dataKey="value" data={aimlinePoints} stroke="red" dot={false} name="Aimline" />
-              <Scatter data={validChartData.filter(d => d.intervention)} fill="orange" />
+              <Line type="monotone" dataKey="value" data={aimlinePointsFilled} stroke="red" dot={false} name="Aimline" />
+              <Scatter data={filledChartData.filter(d => d.intervention)} fill="orange" />
             </LineChart>
           </div>
         );
@@ -230,6 +267,40 @@ function formatHour(hour) {
   
   return `${hour12}:00 ${ampm}`;
   
+}
+
+function fillMissingDates(chartData, startDateStr, endDateStr) {
+  if (!startDateStr || !endDateStr) {
+    console.warn('Missing start or end date:', startDateStr, endDateStr);
+    return chartData; // fallback
+  }
+
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.warn('Invalid start or end date:', start, end);
+    return chartData; // fallback
+  }
+
+  const dateMap = {};
+  chartData.forEach(d => { dateMap[d.date] = d.count; });
+
+  const result = [];
+  let current = new Date(start);
+  while (current <= end) {
+    if (isNaN(current.getTime())) {
+      console.warn('Invalid current date in loop:', current);
+      break; // Prevent infinite loop
+    }
+    const dateStr = current.toISOString().slice(0, 10);
+    result.push({
+      date: dateStr,
+      count: dateMap[dateStr] || 0
+    });
+    current.setDate(current.getDate() + 1);
+  }
+  return result;
 }
 
 export default FrequencyCharts;
