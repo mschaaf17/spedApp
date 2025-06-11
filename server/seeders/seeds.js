@@ -69,8 +69,21 @@ async function seed() {
     isActive: true
   });
 
-
-
+  // Create a student-specific frequency with dailyCounts
+  const callingOutFrequency = await Frequency.create({
+    studentId: student._id,
+    behaviorTitle: frequencyTemplate.behaviorTitle,
+    operationalDefinition: frequencyTemplate.operationalDefinition,
+    createdBy: admin._id,
+    isTemplate: false,
+    isActive: true,
+    createdAt: new Date('2025-06-09T00:00:00.000Z'),
+    dailyCounts: [
+      { date: '2025-06-09T00:00:00.000Z', count: 3 },
+      { date: '2025-06-11T00:00:00.000Z', count: 8 }
+    ],
+    count: 11 // total count (3 + 8)
+  });
 
   // Create an intervention template
   const interventionTemplate = await InterventionList.create({
@@ -97,6 +110,7 @@ async function seed() {
 
   // Add assigned intervention to student's interventions array
   student.interventions.push(assignedIntervention._id);
+  student.behaviorFrequencies.push(callingOutFrequency._id);
   await student.save();
 
 
