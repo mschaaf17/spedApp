@@ -199,31 +199,12 @@ const { confirm } = Modal;
       });
       console.log("button is clicked")
 
-      // Optionally, you can still call refetch() if you want to ensure data consistency
-      // await refetch();
+    
     } catch (error) {
       console.error('Error incrementing frequency:', error);
     }
   };
 
-  // const handleFrequencyItemIncreasing = async (behaviorId) => {
-  //   try {
-  //     // Optimistically update the UI
-  //     const updatedBehaviorFrequencies = user.behaviorFrequencies.map((behavior) =>
-  //       behavior._id === behaviorId ? { ...behavior, count: behavior.count + 1 } : behavior
-  //     );
-  //     setUser({ ...user, behaviorFrequencies: updatedBehaviorFrequencies });
-  
-  //     // Call the mutation
-  //     await frequencyItemIncreased({ variables: { frequencyId: behaviorId, studentId: user._id } });
-  
-  //     console.log('Frequency increased successfully');
-  //   } catch (error) {
-  //     console.error('Error increasing frequency count: ', error);
-  //     // Revert the UI changes on error
-  //     // You can handle this based on your specific requirements
-  //   }
-  // };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -276,30 +257,6 @@ const { confirm } = Modal;
 
   return (
     <>
-{/* created by should be changed to the logged in user not the studnet name */}
-      {/* <h2>Frequency Data for Student {usernameFromUrl}</h2>
-      {Array.isArray(data?.user?.behaviorFrequencies) && data.user.behaviorFrequencies.length > 0 ? (
-        data.user.behaviorFrequencies.map((freq) => (
-          <div key={freq._id}>
-            <p>Behavior: {freq.behaviorTitle}</p>
-            <p>Count: {freq.count ?? "No count available"}</p>
-            <p>Operational Definition: {freq.operationalDefinition}</p>
-            <p>Created By: {data.user.firstName} {data.user.lastName}</p>
-            <p>Log:{data.user.behaviorFrequencies.behaviorTitle}, {data.user.behaviorFrequencies.id}}</p>
-            <ul>
-              {Array.isArray(freq.log) && freq.log.length > 0 ? (
-                freq.log.map((logEntry, index) => (
-                  <li key={index}>Time: {logEntry.time}</li>
-                ))
-              ) : (
-                <li>No log entries available</li>
-              )}
-            </ul>
-          </div>
-        ))
-      ) : (
-        <p>No frequency data available</p>
-      )} */}
 
 
     <div className='centerBody'>
