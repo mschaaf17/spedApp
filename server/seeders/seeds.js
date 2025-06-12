@@ -52,13 +52,14 @@ async function seed() {
 
   // Create a frequency (behavior)
   const frequency = await Frequency.create({
-    studentId: student._id,
     behaviorTitle: 'Tapping',
     operationalDefinition: 'Student taps fingers on desk',
     createdBy: admin._id,
-    isTemplate: false,
+    isTemplate: true,
     isActive: true
   });
+
+  
 
   // Create a frequency template (master behavior)
   const frequencyTemplate = await Frequency.create({
@@ -68,6 +69,18 @@ async function seed() {
     isTemplate: true,
     isActive: true
   });
+
+
+
+  const frequencyTemplate2 = await Frequency.create({
+    behaviorTitle: 'Throwing Objects',
+    operationalDefinition: 'Student throws objects',
+    createdBy: admin._id,
+    isTemplate: true,
+    isActive: true
+  });
+
+  
 
   // Create a student-specific frequency with dailyCounts
   const callingOutFrequency = await Frequency.create({
@@ -90,6 +103,16 @@ async function seed() {
     title: 'Teacher Helper',
     summary: 'Helping the teacher as a reward',
     function: 'Attention',
+    createdBy: admin._id,
+    isTemplate: true,
+    isActive: true,
+    createdAt: new Date('2025-06-07T00:00:00.000Z')
+  });
+
+  const interventionTemplate1 = await InterventionList.create({
+    title: 'Breaks',
+    summary: 'Student will take breaks when needed',
+    function: 'Escape',
     createdBy: admin._id,
     isTemplate: true,
     isActive: true,
