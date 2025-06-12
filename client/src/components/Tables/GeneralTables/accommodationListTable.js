@@ -116,54 +116,46 @@ const handleSaveAccommodation = () => {
     },
     {
       title: 'Actions',
-      dataIndex: 'actions',
       key: 'actions',
-      render: (text, record) => (
-        <>
+      render: (text, record) => {
+        // Only show students who do not already have this accommodation
+        const options = meData?.students
+          ?.filter(student =>
+            !student.accommodations?.some(acc => acc._id === record._id)
+          )
+          .map(student => ({
+            value: student._id,
+            label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
+          })) || [];
+
+        return (
           <Space>
-        {visibleSelectRowId !== record._id && (  
-          <div className='tooltip' onClick={() => displaySelect(record._id)}>
-            <PersonAddAlt1Icon className='icons'/>
-            <span className='tooltipText'>Add to student</span>
-          </div>
-        )}
-        {visibleSelectRowId === record._id && ( 
-          <>
-            <Select
-              onClick={() => onAccommodationClick(record._id)}
-              onChange={value => setSelectedStudent(value)}
-              value={selectedStudent}
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                option?.label.toLowerCase().includes(input.toLowerCase())
-              }
-              filterSort={(optionA, optionB) =>
-                optionA.label.toLowerCase().localeCompare(optionB.label.toLowerCase())
-              }
-              options={selectOptions}
-             />
-            <div className='tooltip' onClick={handleSaveAccommodation}>
-              <SaveIcon className="icons"/>
-              <span className='tooltipText'>Save accommodation for student</span>
-            </div>
-          </>
-        )}
-        <div className='tooltip'>
-          <DeleteForeverIcon danger className="deleteIcon"/>
-          <span className='tooltipText'>Remove Accommodation from list</span>
-        </div>
-      </Space>
-        </>
-      )
+            {visibleSelectRowId !== record._id && options.length > 0 && (
+              <div className='tooltip' onClick={() => displaySelect(record._id)}>
+                <PersonAddAlt1Icon className='icons'/>
+                <span className='tooltipText'>Add to student</span>
+              </div>
+            )}
+            {visibleSelectRowId === record._id && (
+              <>
+                <Select
+                  onChange={value => setSelectedStudent(value)}
+                  value={selectedStudent}
+                  showSearch
+                  style={{ width: 200 }}
+                  placeholder="Search to Select"
+                  options={options}
+                />
+                <div className='tooltip' onClick={handleSaveAccommodation}>
+                  <SaveIcon className="icons"/>
+                  <span className='tooltipText'>Save accommodation for student</span>
+                </div>
+              </>
+            )}
+          </Space>
+        );
+      }
     }
-
-    
-
   ];
   return (
     <>

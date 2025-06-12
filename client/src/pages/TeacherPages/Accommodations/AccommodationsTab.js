@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ACCOMMODATION_CARDS, QUERY_ME } from '../../../utils/queries';
+import { QUERY_ACCOMMODATION_TEMPLATES, QUERY_ME } from '../../../utils/queries';
 import { AccommodationListTable } from '../../../components/Tables/GeneralTables/accommodationListTable';
-import AddNewAccommodation from '../../../components/AddNewAccommodation';
+import AddNewAccommodation from '../../../components/AddNewAccommodation/AddNewAccommodation';
 import { ADD_ACCOMMODATION_FOR_STUDENT } from '../../../utils/mutations';
 import { Button } from 'antd';
 import AddAccommodationsForStudent from './AddAccommodationsForStudent';
@@ -13,22 +13,24 @@ const normFile = (e) => {
   return e?.fileList;
 };
 
-export default function AccommodationsList() {
-  const { loading: accommodationLoading, data: accommodationData } = useQuery(QUERY_ACCOMMODATION_CARDS);
-  const accommodationCards = accommodationData?.accommodationCards || [];
+export default function AccommodationsTab() {
+  const { data: accommodationsData, loading: accommodationsLoading } = useQuery(QUERY_ACCOMMODATION_TEMPLATES, {
+    variables: { isTemplate: true, isActive: true }
+  });
+  const { data: meData, loading: meLoading } = useQuery(QUERY_ME);
+  const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT);
 
-  const { loading: meLoading, data: meData } = useQuery(QUERY_ME);
-  const [addAccommodationForStudent, {error: removeAccommodationError}] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT)
-  
-  const me = meData?.me || null;
-  
+  const handleAssignAccommodation = async (accommodationId, studentId) => {
+    await addAccommodationForStudent({
+      variables: { accommodationCardId: accommodationId, studentId },
+      refetchQueries: [{ query: QUERY_ME }]
+    });
+  };
 
-  
   const [isAccommodationModalOpen, setAccommodationModalOpen] = useState(false);
   const [selectedAccommodationId, setSelectedAccommodationId] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [addedStudents, setAddedStudents] = useState({});
-
 
   const handleAccommodationSelect = (accommodationId) => {
     setSelectedAccommodationId(accommodationId);
@@ -63,6 +65,8 @@ export default function AccommodationsList() {
     
   }
 
+  const accommodationCards = accommodationsData?.accommodationList || [];
+
   return (
     <div>
       <div className='titleSection'>
@@ -74,16 +78,13 @@ export default function AccommodationsList() {
 
       {isAccommodationModalOpen && <AddNewAccommodation onClose={closeAddAccommodationModal} />}
 
-
       <AccommodationListTable
-       selectedAccommodationId={selectedAccommodationId}
-       accommodationCards={accommodationCards}
-       meData={me}
-       accommodationLoading={accommodationLoading}
-       onAccommodationClick={handleAccommodationClick} 
-       submitAccommodationForStudent= {submitAccommodationForStudent}
-       selectedStudent = {selectedStudent}
-       setSelectedStudent={setSelectedStudent}
+        accommodationCards={accommodationCards}
+        meData={meData?.me || null}
+        accommodationLoading={accommodationsLoading || meLoading}
+        submitAccommodationForStudent={handleAssignAccommodation}
+        selectedStudent={selectedStudent}
+        setSelectedStudent={setSelectedStudent}
       />
     </div>
   );

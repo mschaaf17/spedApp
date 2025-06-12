@@ -453,16 +453,29 @@ query Duration {
 }
 `;
 
-export const QUERY_ACCOMMODATION_CARDS = gql`
-query AccommodationCards {
-  accommodationCards {
+export const QUERY_ACCOMMODATION_TEMPLATES = gql`
+query AccommodationList {
+  accommodationList {
     _id
-    createdBy {
-      username
-    }
-    description
-    image
     title
+    image
+    description
+    createdBy {
+      _id
+      username
+      firstName
+      lastName
+    }
+    studentId {
+      _id
+      username
+      firstName
+      lastName
+      studentSchoolId
+    }
+    isTemplate
+    isActive
+    createdAt
   }
 }
 `;
@@ -507,6 +520,7 @@ query InterventionList($isTemplate: Boolean, $isActive: Boolean) {
       username
       firstName
       lastName
+      studentSchoolId
     }
     behaviorId {
       _id

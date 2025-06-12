@@ -174,12 +174,23 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) 
 
 
 
-export const ADD_ACCOMMODATION_CARD = gql`
-mutation addAccommodationCard($title: String, $image: String) {
-  addAccommodationCard(title: $title, image: $image) {
-    image
+export const ADD_ACCOMMODATION_TEMPLATE = gql`
+mutation AddAccommodationTemplate($title: String!, $image: String!, $description: String!, $isTemplate: Boolean, $isActive: Boolean) {
+  addAccommodationTemplate(title: $title, image: $image, description: $description, isTemplate: $isTemplate, isActive: $isActive) {
+    _id
     title
-}
+    image
+    description
+    createdBy {
+      _id
+      username
+      firstName
+      lastName
+    }
+    isTemplate
+    isActive
+    createdAt
+  }
 }
 `;
 

@@ -35,7 +35,7 @@ const UserSchema = new Schema({
   accommodations: [
     {
       type: Schema.Types.ObjectId,
-      ref: "AccommodationCards",
+      ref: "AccommodationList",
     },
   ],
   behaviorFrequencies: [

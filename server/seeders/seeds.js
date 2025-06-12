@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Frequency = require('../models/Frequency');
 const InterventionList = require('../models/InterventionList');
+const AccommodationList = require('../models/AccommodationList');
 
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/inclusion-student-app';
@@ -13,6 +14,7 @@ async function seed() {
   await User.deleteMany({});
   await Frequency.deleteMany({});
   await InterventionList.deleteMany({});
+  await AccommodationList.deleteMany({});
 
 
   // Create users
@@ -132,6 +134,19 @@ async function seed() {
     isActive: true,
     createdAt: new Date('2025-06-08T00:00:00.000Z')
   });
+
+
+  const accommodationTemplate = await AccommodationList.create({
+    title: 'Seat Away',
+    description: 'Student will sit away from the teacher',
+    image: 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',
+    createdBy: admin._id,
+    isTemplate: true,
+    isActive: true,
+    createdAt: new Date('2025-06-07T00:00:00.000Z')
+  });
+
+  
 
   // Add assigned intervention to student's interventions array
   student.interventions.push(assignedIntervention._id);

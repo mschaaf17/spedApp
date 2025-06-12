@@ -10,18 +10,22 @@ const typeDefs = gql`
     password: String!
     studentSchoolId: String!
     students: [User!]!
-    accommodations: [AccommodationCards!]!
+    accommodations: [AccommodationList!]!
     behaviorFrequencies: [Frequency!]!
     behaviorDurations: [Duration!]!
     interventions: [InterventionList!]!
   }
 
-  type AccommodationCards {
+  type AccommodationList {
     _id: ID!
     title: String!
     image: String!
     description: String!
     createdBy: [User]
+    studentId: User
+    isTemplate: Boolean!
+    isActive: Boolean!
+    createdAt: String
   }
   type DailyCounts {
     date: String!
@@ -93,7 +97,7 @@ const typeDefs = gql`
     user(identifier: String!, isUsername: Boolean!): User
     admins: [User]
     students: [User]
-    accommodationCards: [AccommodationCards]
+    accommodationList: [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration: [Duration]
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
@@ -116,12 +120,14 @@ const typeDefs = gql`
     addStudentToTeacherList(studentId: ID!): User
     removeStudentFromTeacherList(studentId: ID!): User
 
-    addAccommodationCard(
+    addAccommodationTemplate(
       title: String!
       image: String!
       description: String!
-    ): AccommodationCards
-    removeAccommodationCard(_id: ID!): AccommodationCards
+      isTemplate: Boolean
+      isActive: Boolean
+    ): AccommodationList
+    removeAccommodation(_id: ID!): AccommodationList
 
     addFrequencyTitleToList(
       behaviorTitle: String!

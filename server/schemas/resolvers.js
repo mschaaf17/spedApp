@@ -5,7 +5,7 @@ const {
 } = require("apollo-server-express");
 const {
   User,
-  AccommodationCards,
+  AccommodationList,
   InterventionList,
   Frequency,
   Duration,
@@ -244,8 +244,8 @@ const resolvers = {
       throw error;
     },
 
-    accommodationCards: async () => {
-      return AccommodationCards.find();
+    accommodationList: async () => {
+      return AccommodationList.find();
     },
 
     //need data to check these
@@ -381,7 +381,7 @@ const resolvers = {
       throw new AuthenticationError('You need to be logged in as an admin!');
     },
 
-    addAccommodationCard: async (parent, args, context) => {
+    addAccommodationTemplate: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError(
           "You must be logged in as an admin to perform this action.",
@@ -389,29 +389,29 @@ const resolvers = {
       }
 
       args.createdBy = context.user._id;
+      args.isTemplate = true;
+      const accommodationList = await AccommodationList.create(args);
 
-      const accommodationCard = await AccommodationCards.create(args);
-
-      return accommodationCard;
+      return accommodationList;
     },
 
-    removeAccommodationCard: async (parent, args, context) => {
+    removeAccommodation: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You need to be logged in as an admin!");
       }
 
       try {
-        const accommodationCard = await AccommodationCards.findByIdAndDelete(
+        const accommodationList= await AccommodationList.findByIdAndDelete(
           args._id,
         );
 
-        if (!accommodationCard) {
+        if (!accommodationList) {
           throw new Error("Accommodation card not found");
         }
 
-        console.log(accommodationCard);
+        console.log(accommodationList);
 
-        return accommodationCard;
+        return accommodationList;
       } catch (error) {
         throw new ApolloError(
           "Failed to delete accommodation card",
@@ -502,31 +502,31 @@ const resolvers = {
         );
       }
 
-      const { accommodationCardId, studentId } = args;
+      const { accommodationId, studentId } = args;
 
       if (!studentId) {
         throw new UserInputError("Student ID is required");
       }
 
       try {
-        console.log("Finding accommodation card with ID:", accommodationCardId);
+        console.log("Finding accommodation card with ID:", accommodationId);
 
-        const objectIdAccommodationCardId =
-          mongoose.Types.ObjectId(accommodationCardId);
+        const objectIdAccommodationId =
+          mongoose.Types.ObjectId(accommodationId);
 
-        const accommodationCard = await AccommodationCards.findById(
-          objectIdAccommodationCardId,
+        const accommodationList= await AccommodationList.findById(
+          objectIdAccommodationId,
         );
 
-        if (!accommodationCard) {
+        if (!accommodationList) {
           throw new Error("Accommodation card not found");
         }
 
-        console.log("Found accommodation card:", accommodationCard);
+        console.log("Found accommodation card:", accommodationList);
 
-        accommodationCard.createdBy = context.user._id;
+        accommodationList.createdBy = context.user._id;
 
-        await accommodationCard.save();
+        await accommodationList.save();
 
         console.log("Finding user with ID:", studentId);
         const user = await User.findById(studentId);
@@ -538,7 +538,7 @@ const resolvers = {
         console.log("Found user:", user);
 
         console.log("Adding accommodation card to user's accommodations array");
-        user.accommodations.push(objectIdAccommodationCardId);
+        user.accommodations.push(objectIdAccommodationId);
 
         console.log("Saving updated user");
         await user.save();
@@ -561,7 +561,7 @@ const resolvers = {
         throw new AuthenticationError("You need to be logged in as an admin!");
       }
 
-      const { accommodationCardId, studentId } = args;
+      const { accommodationId, studentId } = args;
 
       if (!studentId) {
         throw new UserInputError("Student ID is required");
@@ -574,7 +574,7 @@ const resolvers = {
           throw new UserInputError("Student not found");
         }
 
-        const index = user.accommodations.indexOf(accommodationCardId);
+        const index = user.accommodations.indexOf(accommodationId);
         if (index === -1) {
           throw new UserInputError(
             "Accommodation card not found for this student!",
@@ -1258,7 +1258,7 @@ const resolvers = {
     },
   },
 
-  AccommodationCards: {
+  AccommodationList: {
     createdBy: async (parent, args, context) => {
       console.log("Fetching createdBy user with ID:", parent.createdBy);
       try {
@@ -1272,7 +1272,7 @@ const resolvers = {
   },
   User: {
     accommodations: async (parent, args, context) => {
-      const accommodations = await AccommodationCards.find({
+      const accommodations = await AccommodationList.find({
         _id: { $in: parent.accommodations },
       });
       return accommodations ? accommodations : [];

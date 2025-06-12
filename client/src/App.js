@@ -20,10 +20,10 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 
 // teacher pages: general
-import StudentList from './pages/TeacherPages/StudentList/StudentList'
+import StudentList from './pages/TeacherPages/StudentsAssignedToTeacher/StudentsTab'
 import DataMeasuresList from './pages/TeacherPages/DataMeasures/DataMeasuresTab';
 import Interventions from './pages/TeacherPages/Interventions/InterventionsTab'
-import AccommodationList from './pages/TeacherPages/Accommodations/AccommodationsList';
+import AccommodationList from './pages/TeacherPages/Accommodations/AccommodationsTab';
 
 // teacher pages: specific to student
 import SideMenuLandingPage from './pages/TeacherPages/SideMenuLandingPage'
@@ -74,8 +74,8 @@ function App() {
 
           {/* teacher pages: student specific pages */}
           <Route path ="/studentProfile/:username/SideMenuLandingPage"element ={<SideMenuLandingPage/>}/>
-          <Route path ="/studentProfile/:username/studentCharts" element ={<Charts/>}/>
-          <Route path ="/studentProfile/:username/addAccommodationsForStudent" element ={<AddAccommodationsForStudent/>}/>
+          {/* <Route path ="/studentProfile/:username/studentCharts" element ={<Charts/>}/> */}
+          {/* <Route path ="/studentProfile/:username/addAccommodationsForStudent" element ={<AddAccommodationsForStudent/>}/> */}
           <Route path ="/studentProfile/:username/studentCharts/additionalStudentInfo" element ={<AdditionalStudentInfo/>}/>
         
 
