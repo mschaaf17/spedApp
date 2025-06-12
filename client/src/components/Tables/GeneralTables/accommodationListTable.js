@@ -9,29 +9,23 @@ import { ADD_ACCOMMODATION_FOR_STUDENT } from '../../../utils/mutations';
 
 const AccommodationListTable = ({
   accommodationItems,
-  selectedAccommodationId,
   meData,
   accommodationLoading,
   onAccommodationClick,
-  submitAccommodationForStudent,
-  selectedStudent,
-  setSelectedStudent,
-  setSelectedAccommodationId
+  submitAccommodationForStudent
 }) => {
-
+  const [selectedAccommodationId, setSelectedAccommodationId] = useState(null);
   const [filteredInfo, setFilteredInfo] = useState({});
   const [sortedInfo, setSortedInfo] = useState({});
   const [isSelectShowing, setSelectShowing] = useState(false);
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectOptions, setSelectOptions] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Fetch user (for students) and accommodation templates
   const { loading: userLoading, data: userData } = useQuery(QUERY_ME);
   const { loading: accommodationsLoading, data: accommodationsData } = useQuery(QUERY_ACCOMMODATION_TEMPLATES, {
     variables: { isTemplate: true, isActive: true }
-  });
-  const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT, {
-    refetchQueries: [{ query: QUERY_ME }]
   });
 
   const students = userData?.me?.students || [];
@@ -48,6 +42,7 @@ const AccommodationListTable = ({
       setSelectOptions(options);
     }
   }, [meData, selectedAccommodationId]);
+
   useEffect(() => {
     if (selectedStudent) {
       setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
@@ -61,9 +56,8 @@ const AccommodationListTable = ({
     }
     submitAccommodationForStudent(selectedAccommodationId, selectedStudent);
     setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
-
-    setSelectedStudent(null)
-    setVisibleSelectRowId(null)
+    setSelectedStudent(null);
+    setVisibleSelectRowId(null);
   };
 
   const displaySelect = (rowId) => {
@@ -89,6 +83,7 @@ const AccommodationListTable = ({
   const getRowClassName = (record, index) => {
     return index % 2 === 0 ? 'whiteRow' : 'coloredRow'; 
   };
+
   const capitalizeInitials = (name) => {
     return name
       .split(' ')
@@ -142,13 +137,15 @@ const AccommodationListTable = ({
             label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
           }));
 
+        console.log('selectedStudent:', selectedStudent, 'options:', options);
+
         return (
           <Space>
             {options.length > 0 ? (
               visibleSelectRowId !== record._id ? (
                 <Button
                   icon={<PersonAddAlt1Icon />}
-                  onClick={() => setVisibleSelectRowId(record._id)}
+                  onClick={() => displaySelect(record._id)}
                 >
                   Add to student
                 </Button>
@@ -164,16 +161,7 @@ const AccommodationListTable = ({
                   <Button
                     type="primary"
                     disabled={!selectedStudent}
-                    onClick={async () => {
-                      await addAccommodationForStudent({
-                        variables: {
-                          accommodationId: record._id,
-                          studentId: selectedStudent,
-                        }
-                      });
-                      setVisibleSelectRowId(null);
-                      setSelectedStudent(null);
-                    }}
+                    onClick={handleSaveAccommodation}
                   >
                     Confirm
                   </Button>
@@ -193,6 +181,7 @@ const AccommodationListTable = ({
       }
     }
   ];
+
   return (
     <>
       <Space
@@ -205,10 +194,10 @@ const AccommodationListTable = ({
       <Table 
         columns={columns} 
         dataSource={accommodationList} 
-        loading = {userLoading || accommodationsLoading} 
+        loading={userLoading || accommodationsLoading} 
         onChange={handleChange}
         rowClassName={getRowClassName}
-        />
+      />
     </>
   );
 };

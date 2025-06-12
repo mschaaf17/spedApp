@@ -1,5 +1,41 @@
 const express = require("express");
 const puppeteer = require("puppeteer");
+const multer = require('multer');
+const path = require("path");
+const fs = require('fs');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Create a safe filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
 // add instant messaging
 // const io = require('socket.io')(3000)
 // io.on('connection', socket => {
@@ -8,7 +44,6 @@ const puppeteer = require("puppeteer");
 
 // import ApolloServer
 const { ApolloServer } = require("apollo-server-express");
-const path = require("path");
 
 // import our typeDefs and resolvers
 const { typeDefs, resolvers } = require("./schemas");
@@ -27,6 +62,48 @@ const app = express();
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// File upload endpoint with enhanced error handling
+app.post('/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      console.error('No file received in request');
+      return res.status(400).json({ 
+        error: 'No file uploaded',
+        details: 'No file was received in the request'
+      });
+    }
+
+    console.log('File received:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    });
+
+    // Return the relative path for the client to use
+    const relativePath = path.join('uploads', req.file.filename);
+    
+    res.json({
+      filename: req.file.filename,
+      path: relativePath,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'Upload failed',
+      details: error.message
+    });
+  }
+});
+
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client/build")));
 
