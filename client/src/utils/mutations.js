@@ -195,8 +195,8 @@ mutation AddAccommodationTemplate($title: String!, $image: String!, $description
 `;
 
 export const ADD_ACCOMMODATION_FOR_STUDENT = gql`
-mutation AddAccommodationForStudent($accommodationCardId: ID!, $studentId: ID!) {
-  addAccommodationForStudent(accommodationCardId: $accommodationCardId, studentId: $studentId) {
+mutation AddAccommodationForStudent($accommodationId: ID!, $studentId: ID!) {
+  addAccommodationForStudent(accommodationId: $accommodationId, studentId: $studentId) {
     accommodations {
       title
       image

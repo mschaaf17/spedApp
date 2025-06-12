@@ -145,9 +145,9 @@ const typeDefs = gql`
       _id: ID!
     ): Duration
 
-    addAccommodationForStudent(accommodationCardId: ID!, studentId: ID!): User
+    addAccommodationForStudent(accommodationId: ID!, studentId: ID!): User
     removeAccommodationFromStudent(
-      accommodationCardId: ID!
+      accommodationId: ID!
       studentId: ID!
     ): User
     

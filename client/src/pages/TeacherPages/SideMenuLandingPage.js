@@ -13,7 +13,7 @@ import MenuSideBar from '../../components/MenuSideBar/MenuSideBar.js'
 import FrequencyCharts from '../../components/DataTrackingMeasures/frequencyCharts.js'
 import useSelectedCharts from '../../hooks/useSelectCharts.js'
 import StudentInterventions from './Interventions/StudentInterventions.js';
-
+import StudentAccommodations from './Accommodations/StudentAccommodations.js';
 export default function SideMenuLandingPage() {
 
   const { username: userParam } = useParams();
@@ -64,6 +64,7 @@ export default function SideMenuLandingPage() {
         />
       ),
       '4': <StudentInterventions/>,
+      '5': <StudentAccommodations/>,
       abc: <ABC/>,
       observation: <Observation/>,
       contracts: <Contracts/>

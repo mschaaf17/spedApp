@@ -1,11 +1,23 @@
 import React, { useEffect, useState } from 'react'; 
-import { Space, Table, Select } from 'antd';
+import { Space, Table, Select, Button } from 'antd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import SaveIcon from '@mui/icons-material/Save';
+import { useQuery, useMutation } from '@apollo/client';
+import { QUERY_ME, QUERY_ACCOMMODATION_TEMPLATES } from '../../../utils/queries';
+import { ADD_ACCOMMODATION_FOR_STUDENT } from '../../../utils/mutations';
 
-
-const AccommodationListTable = ({accommodationCards, selectedAccommodationId, meData, accommodationLoading, onAccommodationClick, submitAccommodationForStudent, selectedStudent, setSelectedStudent}) => {
+const AccommodationListTable = ({
+  accommodationItems,
+  selectedAccommodationId,
+  meData,
+  accommodationLoading,
+  onAccommodationClick,
+  submitAccommodationForStudent,
+  selectedStudent,
+  setSelectedStudent,
+  setSelectedAccommodationId
+}) => {
 
   const [filteredInfo, setFilteredInfo] = useState({});
   const [sortedInfo, setSortedInfo] = useState({});
@@ -13,57 +25,61 @@ const AccommodationListTable = ({accommodationCards, selectedAccommodationId, me
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectOptions, setSelectOptions] = useState([]);
 
+  // Fetch user (for students) and accommodation templates
+  const { loading: userLoading, data: userData } = useQuery(QUERY_ME);
+  const { loading: accommodationsLoading, data: accommodationsData } = useQuery(QUERY_ACCOMMODATION_TEMPLATES, {
+    variables: { isTemplate: true, isActive: true }
+  });
+  const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT, {
+    refetchQueries: [{ query: QUERY_ME }]
+  });
 
-useEffect(() => {
-  if (meData) {
-    const options = meData.students
-      .filter(student => student.accommodations && !student.accommodations.some(accommodation => accommodation._id === selectedAccommodationId))
-      .map(student => ({
-        value: student._id,
-        label: `${capitalizeInitials(student.lastName)}, ${capitalizeInitials(student.firstName)} (${student.studentSchoolId})`
-      }));
-    setSelectOptions(options);
-  }
-}, [meData, selectedAccommodationId]);
-useEffect(() => {
-  if (selectedStudent) {
+  const students = userData?.me?.students || [];
+  const accommodationList = accommodationsData?.accommodationList || [];
+
+  useEffect(() => {
+    if (meData) {
+      const options = meData.students
+        .filter(student => student.accommodations && !student.accommodations.some(accommodation => accommodation._id === selectedAccommodationId))
+        .map(student => ({
+          value: student._id,
+          label: `${capitalizeInitials(student.lastName)}, ${capitalizeInitials(student.firstName)} (${student.studentSchoolId})`
+        }));
+      setSelectOptions(options);
+    }
+  }, [meData, selectedAccommodationId]);
+  useEffect(() => {
+    if (selectedStudent) {
+      setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
+    }
+  }, [selectedStudent]);
+
+  const handleSaveAccommodation = () => {
+    if (!selectedStudent || !selectedAccommodationId) {
+      console.error('Selected student or accommodation ID is missing.');
+      return;
+    }
+    submitAccommodationForStudent(selectedAccommodationId, selectedStudent);
     setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
-  }
-}, [selectedStudent]);
 
-
-
-const handleSaveAccommodation = () => {
-  if (!selectedStudent || !selectedAccommodationId) {
-    console.error('Selected student or accommodation ID is missing.');
-    return;
-  }
-  submitAccommodationForStudent(selectedAccommodationId, selectedStudent);
-  setSelectOptions(prevOptions => prevOptions.filter(option => option.value !== selectedStudent));
-
-  setSelectedStudent(null)
-  setVisibleSelectRowId(null)
-};
+    setSelectedStudent(null)
+    setVisibleSelectRowId(null)
+  };
 
   const displaySelect = (rowId) => {
-    setVisibleSelectRowId(rowId)
-    //setSelectShowing(true)
+    setVisibleSelectRowId(rowId);
+    setSelectedAccommodationId(rowId);
   }
   
-  
-
   const handleChange = (pagination, filters, sorter, extra) => {
     console.log('Various parameters', pagination, filters, sorter, extra);
     setFilteredInfo(filters);
     setSortedInfo(sorter);
   };
 
- 
-
-
   const generateFilters = (key) => {
-    if (!accommodationCards) return [];
-    const values = [...new Set(accommodationCards.map(student => student[key]))];
+    if (!accommodationItems) return [];
+    const values = [...new Set(accommodationItems.map(student => student[key]))];
     return values.map(value => ({
       text: value,
       value: value,
@@ -80,8 +96,6 @@ const handleSaveAccommodation = () => {
       .join(' ');
   };
 
-//I will create a data seed that will always be in
-  //change accommodation cards to only query that ones the user added and from me rather than all of them
   const columns = [
     {
       title: 'Title',
@@ -97,7 +111,6 @@ const handleSaveAccommodation = () => {
       render: (text) => (
         <span style={{ textTransform: 'capitalize' }}>{text}</span>
       )
-      
     },
     {
       title: 'Description',
@@ -117,40 +130,63 @@ const handleSaveAccommodation = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (text, record) => {
+      render: (_, record) => {
         // Only show students who do not already have this accommodation
-        const options = meData?.students
-          ?.filter(student =>
-            !student.accommodations?.some(acc => acc._id === record._id)
+        const options = students
+          .filter(student =>
+            !Array.isArray(student.accommodations) ||
+            !student.accommodations.some(acc => acc._id === record._id)
           )
           .map(student => ({
             value: student._id,
             label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
-          })) || [];
+          }));
 
         return (
           <Space>
-            {visibleSelectRowId !== record._id && options.length > 0 && (
-              <div className='tooltip' onClick={() => displaySelect(record._id)}>
-                <PersonAddAlt1Icon className='icons'/>
-                <span className='tooltipText'>Add to student</span>
-              </div>
-            )}
-            {visibleSelectRowId === record._id && (
-              <>
-                <Select
-                  onChange={value => setSelectedStudent(value)}
-                  value={selectedStudent}
-                  showSearch
-                  style={{ width: 200 }}
-                  placeholder="Search to Select"
-                  options={options}
-                />
-                <div className='tooltip' onClick={handleSaveAccommodation}>
-                  <SaveIcon className="icons"/>
-                  <span className='tooltipText'>Save accommodation for student</span>
-                </div>
-              </>
+            {options.length > 0 ? (
+              visibleSelectRowId !== record._id ? (
+                <Button
+                  icon={<PersonAddAlt1Icon />}
+                  onClick={() => setVisibleSelectRowId(record._id)}
+                >
+                  Add to student
+                </Button>
+              ) : (
+                <>
+                  <Select
+                    placeholder="Select student"
+                    style={{ width: 180 }}
+                    value={selectedStudent}
+                    onChange={setSelectedStudent}
+                    options={options}
+                  />
+                  <Button
+                    type="primary"
+                    disabled={!selectedStudent}
+                    onClick={async () => {
+                      await addAccommodationForStudent({
+                        variables: {
+                          accommodationId: record._id,
+                          studentId: selectedStudent,
+                        }
+                      });
+                      setVisibleSelectRowId(null);
+                      setSelectedStudent(null);
+                    }}
+                  >
+                    Confirm
+                  </Button>
+                  <Button onClick={() => {
+                    setVisibleSelectRowId(null);
+                    setSelectedStudent(null);
+                  }}>
+                    Cancel
+                  </Button>
+                </>
+              )
+            ) : (
+              <span style={{ color: '#aaa' }}>All students have this</span>
             )}
           </Space>
         );
@@ -168,14 +204,13 @@ const handleSaveAccommodation = () => {
       </Space>
       <Table 
         columns={columns} 
-        dataSource={accommodationCards.map(card => ({...card, key: card._id}))} 
-        loading = {accommodationLoading} 
+        dataSource={accommodationList} 
+        loading = {userLoading || accommodationsLoading} 
         onChange={handleChange}
         rowClassName={getRowClassName}
         />
     </>
   );
 };
-
 
 export {AccommodationListTable};
