@@ -221,33 +221,36 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
 
         console.log('Result from fillMissingDates:', filledChartData);
 
-        const assignedIntervention = userInterventions.find(
-          i => i.behaviorId?._id === freq._id || i.behaviorTitle === freq.behaviorTitle
+        const assignedInterventionsForThisBehavior = userInterventions.filter(
+          i => i.behaviorId?._id === freq._id
         );
         let interventionDate = null;
         let interventionColor = '#8884d8'; // default
-        if (assignedIntervention?.createdAt) {
-          let d;
-          if (typeof assignedIntervention.createdAt === "number") {
-            d = new Date(assignedIntervention.createdAt);
-          } else if (typeof assignedIntervention.createdAt === "string") {
-            // If it's a numeric string, treat as timestamp
-            if (/^\d+$/.test(assignedIntervention.createdAt)) {
-              d = new Date(Number(assignedIntervention.createdAt));
+        if (assignedInterventionsForThisBehavior.length > 0) {
+          const intervention = assignedInterventionsForThisBehavior[0];
+          if (intervention.createdAt) {
+            let d;
+            if (typeof intervention.createdAt === "number") {
+              d = new Date(intervention.createdAt);
+            } else if (typeof intervention.createdAt === "string") {
+              // If it's a numeric string, treat as timestamp
+              if (/^\d+$/.test(intervention.createdAt)) {
+                d = new Date(Number(intervention.createdAt));
+              } else {
+                d = new Date(intervention.createdAt);
+              }
+            }
+            if (d && !isNaN(d.getTime())) {
+              interventionDate = d.toISOString().slice(0, 10);
+              interventionColor = getInterventionColor(intervention);
             } else {
-              d = new Date(assignedIntervention.createdAt);
+              console.warn('Invalid assignedIntervention.createdAt:', intervention.createdAt, intervention);
+              interventionDate = null;
             }
           }
-          if (d && !isNaN(d.getTime())) {
-            interventionDate = d.toISOString().slice(0, 10);
-            interventionColor = getInterventionColor(assignedIntervention);
-          } else {
-            console.warn('Invalid assignedIntervention.createdAt:', assignedIntervention.createdAt, assignedIntervention);
-            interventionDate = null;
-          }
         }
-        console.log('Intervention assignedIntervention:', assignedIntervention);
-        console.log('Intervention createdAt:', assignedIntervention?.createdAt, 'Parsed:', interventionDate);
+        console.log('Intervention assignedInterventionsForThisBehavior:', assignedInterventionsForThisBehavior);
+        console.log('Intervention createdAt:', assignedInterventionsForThisBehavior?.createdAt, 'Parsed:', interventionDate);
 
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
@@ -290,9 +293,9 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             </LineChart>
             <div>
               <h4>Assigned Interventions</h4>
-              {userInterventions.length > 0 ? (
+              {assignedInterventionsForThisBehavior.length > 0 ? (
                 <ul>
-                  {userInterventions.map(intervention => (
+                  {assignedInterventionsForThisBehavior.map(intervention => (
                     <li key={intervention._id}>
                       <b style={{ color: getInterventionColor(intervention) }}>
                         {intervention.title}
@@ -301,7 +304,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                   ))}
                 </ul>
               ) : (
-                <p>No interventions assigned.</p>
+                <p>No interventions assigned to this behavior.</p>
               )}
             </div>
           </div>

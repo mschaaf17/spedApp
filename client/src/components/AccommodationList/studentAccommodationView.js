@@ -1,9 +1,11 @@
+//not being used yet
+
 import React, {useState} from 'react'
 import {Link} from 'react-router-dom'
 import RecommendIcon from '@mui/icons-material/Recommend';
 import thumb from '../../assets/images/thumbs-up-solid.svg'
 
-const AccommodationList = ({ accommodations, title}) => {
+const StudentAccommodationView = ({ accommodations, title}) => {
     const [style, setStyle] = useState(new Array(accommodations.length).fill(false));
 
 

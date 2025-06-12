@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useParams, Link } from 'react-router-dom';
 import './index.css';
-import AccommodationList from '../../../components/AccommodationList';
+import AccommodationList from '../../../components/AccommodationList/studentAccommodationView';
 import Auth from '../../../utils/auth';
 import { useQuery } from '@apollo/client';
 import { QUERY_ME, QUERY_USER } from '../../../utils/queries';
