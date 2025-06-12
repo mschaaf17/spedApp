@@ -7,7 +7,7 @@ import Auth from '../../../utils/auth';
 import { REMOVE_FREQUENCY_TITLE, REMOVE_DURATION_TITLE, ADD_DATA_MEASURE_TO_STUDENT } from '../../../utils/mutations';
 import AddNewDataMeasure from '../../../components/AddNewDataMeasure/AddNewDataMeasure';
 
-export default function DataMeasuresList() {
+export default function DataMeasuresTab() {
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [isDataMeasureModalOpen, setDataMeasureModalOpen] = useState(false);
   const [selectedDataMeasureId, setSelectedDataMeasureId] = useState(null);

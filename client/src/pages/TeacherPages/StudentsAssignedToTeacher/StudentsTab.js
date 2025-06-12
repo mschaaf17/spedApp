@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_STUDENT_LIST, QUERY_ME } from '../../../utils/queries';
+import { QUERY_STUDENT_LIST, QUERY_ME } from '../../../utils/queries.js';
 import { Modal, Button } from 'react-bootstrap';
-import { REMOVE_STUDENT_FROM_LIST } from '../../../utils/mutations';
+import { REMOVE_STUDENT_FROM_LIST } from '../../../utils/mutations.js';
 import StudentTable from '../../../components/Tables/studentTable.js';
-import { ADD_STUDENT_TO_LIST } from '../../../utils/mutations';
+import { ADD_STUDENT_TO_LIST } from '../../../utils/mutations.js';
 import { AccommodationListTable } from '../../../components/Tables/GeneralTables/accommodationListTable.js';
 
-export default function StudentList() {
+export default function StudentTab() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [addedStudents, setAddedStudents] = useState({});

@@ -11,7 +11,7 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { Modal, Button } from 'react-bootstrap';
 import InterventionDataTable from '../../../components/Tables/GeneralTables/interventionListTable';
 import AddNewIntervention from '../../../components/AddNewIntervention/AddNewIntervention';
-export default function Interventions() {
+export default function InterventionsTab() {
 
   const { username: userParam } = useParams()
 // const {loading, data} = useQuery(QUERY_USER, {

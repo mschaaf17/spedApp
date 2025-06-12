@@ -1,18 +1,20 @@
+//Side menu
+
 import React, {useEffect, useState} from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {useQuery} from '@apollo/client'
-import {QUERY_USER, QUERY_ME} from '../../../utils/queries'
-import Duration from '../../../components/DataTrackingMeasures/duration'
-import ABC from '../../../components/DataTrackingMeasures/ABC'
-import Frequency from '../../../components/DataTrackingMeasures/frequency'
-import Observation from '../../../components/DataTrackingMeasures/observation'
-import Contracts from '../../../components/DataTrackingMeasures/Contracts'
-import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar'
-import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts'
-import useSelectedCharts from '../../../hooks/useSelectCharts'
-import StudentInterventions from '../Interventions/StudentInterventions.js';
+import {QUERY_USER, QUERY_ME} from '../../utils/queries.js'
+import Duration from '../../components/DataTrackingMeasures/duration.js'
+import ABC from '../../components/DataTrackingMeasures/ABC.js'
+import Frequency from '../../components/DataTrackingMeasures/frequency.js'
+import Observation from '../../components/DataTrackingMeasures/observation.js'
+import Contracts from '../../components/DataTrackingMeasures/Contracts.js'
+import MenuSideBar from '../../components/MenuSideBar/MenuSideBar.js'
+import FrequencyCharts from '../../components/DataTrackingMeasures/frequencyCharts.js'
+import useSelectedCharts from '../../hooks/useSelectCharts.js'
+import StudentInterventions from './Interventions/StudentInterventions.js';
 
-export default function DataMeasureHomePage() {
+export default function SideMenuLandingPage() {
 
   const { username: userParam } = useParams();
   
