@@ -1,19 +1,14 @@
-const express = require("express");
-const puppeteer = require("puppeteer");
-// add instant messaging
-// const io = require('socket.io')(3000)
-// io.on('connection', socket => {
-//     socket.emit('chat-message', 'Hello World')
-// })
+import express from "express";
+import cors from "cors";
+import puppeteer from "puppeteer";
+import { ApolloServer } from "apollo-server-express";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
 
-// import ApolloServer
-const { ApolloServer } = require("apollo-server-express");
-const path = require("path");
-
-// import our typeDefs and resolvers
-const { typeDefs, resolvers } = require("./schemas");
-const { authMiddleware } = require("./utils/auth");
-const db = require("./config/connection");
+import { typeDefs, resolvers } from "./schemas/index.js";
+import { authMiddleware } from "./utils/auth.js";
+import db from "./config/connection.js";
 
 const PORT = process.env.PORT || 3001;
 // create a new apollo server and pass in our schema data
@@ -23,8 +18,19 @@ const server = new ApolloServer({
   context: authMiddleware,
 });
 
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 const app = express();
 
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  })
+);
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 if (process.env.NODE_ENV === "production") {
@@ -34,6 +40,24 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(__dirname, "../client/build/index.html"));
   });
 }
+
+app.post("/interventions", async (req, res) => {
+  try {
+    const prompt =
+      req.body.prompt || "Write a one-sentence bedtime story about a unicorn.";
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const result = response.choices[0].message.content;
+    res.json({ result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
 
 app.get("/generate-pdf", async (req, res) => {
   const { url } = req.query;
@@ -68,7 +92,7 @@ const startApolloServer = async (typeDefs, resolvers) => {
       console.log(`API server running on port ${PORT}!`);
       // log where we cna go to test our GQL API
       console.log(
-        `Use GraphQl at http://localhost:${PORT}${server.graphqlPath}`,
+        `Use GraphQl at http://localhost:${PORT}${server.graphqlPath}`
       );
     });
   });
