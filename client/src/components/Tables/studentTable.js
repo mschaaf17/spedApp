@@ -169,7 +169,7 @@ useEffect(()=> {
               <PeopleAltOutlinedIcon/>
             </Link> */}
             <div className='tooltip'>
-            <Link to={`/studentProfile/${record.username}/addAccommodationsForStudent`}>
+            <Link to={`/studentProfile/${record.username}/SideMenuLandingPage`}>
               <GroupAddOutlinedIcon className='icons' />
               <span className='tooltipText'>Add Accommodations</span>
             </Link>
