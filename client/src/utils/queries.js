@@ -530,6 +530,7 @@ query InterventionList($isTemplate: Boolean, $isActive: Boolean) {
       isActive
     }
     behaviorTitle
+    createdAt
   }
 }
 `;

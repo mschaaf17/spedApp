@@ -42,6 +42,21 @@ const InterventionDataTable = () => {
       key: 'summary',
     },
     {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (createdAt) =>
+        createdAt
+          ? new Date(
+              typeof createdAt === "number"
+                ? createdAt
+                : /^\d+$/.test(createdAt)
+                ? Number(createdAt)
+                : createdAt
+            ).toLocaleDateString()
+          : '—',
+    },
+    {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
