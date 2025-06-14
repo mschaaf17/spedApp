@@ -271,6 +271,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
         lastName
         studentSchoolId
       }
+      createdAt
     }
     behaviorFrequencies {
       _id

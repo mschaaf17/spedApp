@@ -16,12 +16,21 @@ const StudentAccommodationsTable = ({
       )
     },
     {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text) => (
-        <span style={{ textTransform: 'capitalize' }}>{text}</span>
-      )
+      title: 'Assigned Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (createdAt) => {
+        if (!createdAt) return '—';
+        let dateObj;
+        if (typeof createdAt === "number") {
+          dateObj = new Date(createdAt);
+        } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
+          dateObj = new Date(Number(createdAt));
+        } else {
+          dateObj = new Date(createdAt);
+        }
+        return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
+      },
     },
     {
       title: 'Actions',
