@@ -33,7 +33,7 @@ const interventionColors = [
 
 function getInterventionColor(intervention) {
   if (!intervention) return '#8884d8'; // default
-  const str = intervention.title || intervention._id || '';
+  const str = intervention._id ? intervention._id.toString() : '';
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -101,7 +101,9 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             }
             console.log('dc.date:', dc.date, 'typeof:', typeof dc.date, 'parsed:', d, 'isNaN:', d && isNaN(d.getTime()));
             if (d && !isNaN(d.getTime())) {
-              dateString = d.toISOString().slice(0, 10);
+              dateString = d.getUTCFullYear() + '-' +
+                String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getUTCDate()).padStart(2, '0');
             }
           }
           if (!dateString) {
@@ -255,6 +257,26 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : null;
         }).filter(Boolean);
 
+        const interventionDateMap = {};
+        assignedInterventionsForThisBehavior.forEach(intervention => {
+          let d;
+          if (typeof intervention.createdAt === "number") {
+            d = new Date(intervention.createdAt);
+          } else if (typeof intervention.createdAt === "string") {
+            if (/^\d+$/.test(intervention.createdAt)) {
+              d = new Date(Number(intervention.createdAt));
+            } else {
+              d = new Date(intervention.createdAt);
+            }
+          }
+          if (d && !isNaN(d.getTime())) {
+            const dateStr = d.getUTCFullYear() + '-' +
+              String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getUTCDate()).padStart(2, '0');
+            interventionDateMap[dateStr] = intervention;
+          }
+        });
+
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
             <h3>{freq.behaviorTitle}</h3>
@@ -282,8 +304,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 dot={props => (
                   <CustomDot
                     {...props}
-                    interventionDates={interventionDates}
-                    assignedInterventions={assignedInterventionsForThisBehavior}
+                    interventionDateMap={interventionDateMap}
                   />
                 )}
                 activeDot={{ r: 7 }}
@@ -394,17 +415,16 @@ function fillMissingDates(chartData, startDateStr, endDateStr) {
 }
 
 function CustomDot(props) {
-  const { cx, cy, payload, interventionDates, assignedInterventions } = props;
+  const { cx, cy, payload, interventionDateMap } = props;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
 
   if (payload.date <= todayStr) {
-    // Find if this date matches any intervention assignment
-    const idx = interventionDates ? interventionDates.indexOf(payload.date) : -1;
-    if (idx !== -1 && assignedInterventions && assignedInterventions[idx]) {
-      const interventionColor = getInterventionColor(assignedInterventions[idx]);
+    const intervention = interventionDateMap[payload.date];
+    if (intervention) {
+      const interventionColor = getInterventionColor(intervention);
       return (
         <>
           <circle
