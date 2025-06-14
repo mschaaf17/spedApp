@@ -138,7 +138,7 @@ async function seed() {
 
   const accommodationTemplate = await AccommodationList.create({
     title: 'Seat Away',
-    description: 'Student will sit away from the teacher',
+    description: 'Student will sit away from peers',
     image: '../uploads/1749789792434-8828269.jpeg',
     createdBy: admin._id,
     isTemplate: true,
@@ -151,7 +151,7 @@ async function seed() {
   // Assign to student
   const assignedAccommodation = await AccommodationList.create({
     title: 'Seat Away',
-    description: 'Student will sit away from the teacher',
+    description: 'Student will sit away from peers',
     image: '../uploads/1749789792434-8828269.jpeg',
     createdBy: admin._id,
     isTemplate: false,
