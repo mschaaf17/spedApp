@@ -130,7 +130,7 @@ const AccommodationListTable = ({
         const options = students
           .filter(student =>
             !Array.isArray(student.accommodations) ||
-            !student.accommodations.some(acc => acc._id === record._id)
+            !student.accommodations.some(acc => acc.templateId === record._id)
           )
           .map(student => ({
             value: student._id,

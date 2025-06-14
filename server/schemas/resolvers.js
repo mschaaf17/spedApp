@@ -244,8 +244,12 @@ const resolvers = {
       throw error;
     },
 
-    accommodationList: async () => {
-      return AccommodationList.find();
+    accommodationList: async (parent, args) => {
+      const filter = {};
+      if (args && args.isTemplate !== undefined) filter.isTemplate = args.isTemplate;
+      if (args && args.isActive !== undefined) filter.isActive = args.isActive;
+      const accommodationList = await AccommodationList.find(filter);
+      return accommodationList.filter((item) => item.createdBy !== null);
     },
 
     //need data to check these

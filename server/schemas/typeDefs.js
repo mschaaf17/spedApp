@@ -97,7 +97,7 @@ const typeDefs = gql`
     user(identifier: String!, isUsername: Boolean!): User
     admins: [User]
     students: [User]
-    accommodationList: [AccommodationList]
+    accommodationList(isTemplate: Boolean, isActive: Boolean): [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration: [Duration]
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]

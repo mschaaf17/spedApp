@@ -456,28 +456,21 @@ query Duration {
 `;
 
 export const QUERY_ACCOMMODATION_TEMPLATES = gql`
-query AccommodationList {
-  accommodationList {
+query AccommodationList($isTemplate: Boolean, $isActive: Boolean) {
+  accommodationList(isTemplate: $isTemplate, isActive: $isActive) {
     _id
     title
-    image
     description
+    isTemplate
+    isActive
+    createdAt
+    image
     createdBy {
       _id
       username
       firstName
       lastName
     }
-    studentId {
-      _id
-      username
-      firstName
-      lastName
-      studentSchoolId
-    }
-    isTemplate
-    isActive
-    createdAt
   }
 }
 `;
