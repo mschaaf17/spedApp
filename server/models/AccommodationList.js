@@ -30,6 +30,7 @@ const AccommodationListSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  templateId: { type: Schema.Types.ObjectId, ref: 'AccommodationList' },
 }, { timestamps: true });
 
 const AccommodationList = model("AccommodationList", AccommodationListSchema);

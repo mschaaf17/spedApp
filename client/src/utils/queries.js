@@ -20,18 +20,23 @@ query Me {
       studentSchoolId
       
       accommodations {
-        _id
-        title
-        image
-        description
-        createdBy {
-          _id
-          isAdmin
-          username
-          firstName
-          lastName
-        }
-      }
+  _id
+  title
+  image
+  description
+  templateId {
+    _id
+    title
+  }
+  createdBy {
+    _id
+    isAdmin
+    username
+    firstName
+    lastName
+  }
+  createdAt
+}
       behaviorFrequencies {
         _id
         studentId
@@ -108,18 +113,23 @@ query Me {
       }
     }
     accommodations {
-      _id
-      title
-      image
-      description
-      createdBy {
-        _id
-        isAdmin
-        username
-        firstName
-        lastName
-      }
-    }
+  _id
+  title
+  image
+  description
+  templateId {
+    _id
+    title
+  }
+  createdBy {
+    _id
+    isAdmin
+    username
+    firstName
+    lastName
+  }
+  createdAt
+}
     behaviorFrequencies {
       _id
       behaviorTitle
@@ -175,14 +185,23 @@ query Users {
       firstName
     }
     accommodations {
-      _id
-      createdBy {
-        username
-      }
-      description
-      image
-      title
-    }
+  _id
+  title
+  image
+  description
+  templateId {
+    _id
+    title
+  }
+  createdBy {
+    _id
+    isAdmin
+    username
+    firstName
+    lastName
+  }
+  createdAt
+}
     firstName
     isAdmin
     lastName
@@ -245,35 +264,42 @@ query User($identifier: String!, $isUsername: Boolean!) {
       lastName
       studentSchoolId
       accommodations {
-        _id
-        title
-        image
-        description
-        createdBy {
-          _id
-          firstName
-          lastName
-          username
-          isAdmin
-        }
-        createdAt
-      }
+  _id
+  title
+  image
+  description
+  templateId {
+    _id
+    title
+  }
+  createdBy {
+    _id
+    isAdmin
+    username
+    firstName
+    lastName
+  }
+  createdAt
+}
     }
     accommodations {
-      _id
-      title
-      image
-      description
-      createdBy {
-        _id
-        isAdmin
-        username
-        firstName
-        lastName
-        studentSchoolId
-      }
-      createdAt
-    }
+  _id
+  title
+  image
+  description
+  templateId {
+    _id
+    title
+  }
+  createdBy {
+    _id
+    isAdmin
+    username
+    firstName
+    lastName
+  }
+  createdAt
+}
     behaviorFrequencies {
       _id
       studentId
@@ -465,6 +491,10 @@ query AccommodationList($isTemplate: Boolean, $isActive: Boolean) {
     isActive
     createdAt
     image
+    templateId {
+      _id
+      title
+    }
     createdBy {
       _id
       username

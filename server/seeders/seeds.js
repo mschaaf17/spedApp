@@ -149,26 +149,26 @@ async function seed() {
   
 
   // Assign to student
-  // const assignedAccommodation = await AccommodationList.create({
-  //   title: 'Seat Away',
-  //   description: 'Student will sit away from the teacher',
-  //   image: '../uploads/1749789792434-8828269.jpeg',
-  //   createdBy: admin._id,
-  //   isTemplate: false,
-  //   isActive: true,
-  //   accommodationId: accommodationTemplate._id,
-  //   studentId: student._id,
-  //   createdAt: new Date('2025-06-08T00:00:00.000Z')
-  // });
+  const assignedAccommodation = await AccommodationList.create({
+    title: 'Seat Away',
+    description: 'Student will sit away from the teacher',
+    image: '../uploads/1749789792434-8828269.jpeg',
+    createdBy: admin._id,
+    isTemplate: false,
+    isActive: true,
+    templateId: accommodationTemplate._id,
+    studentId: student._id,
+    createdAt: new Date('2025-06-08T00:00:00.000Z')
+  });
 
   student.interventions.push(assignedIntervention._id);
   student.behaviorFrequencies.push(callingOutFrequency._id);
-  // student.accommodations.push(assignedAccommodation._id);
+   student.accommodations.push(assignedAccommodation._id);
   await student.save();
 
   console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);
   console.log('assignedIntervention:', assignedIntervention, 'interventionDate:', assignedIntervention.createdAt);
-
+  console.log('assignedAccommodation:', assignedAccommodation, 'accommodationDate:', assignedAccommodation.createdAt);
   console.log('Seed data created!');
   mongoose.disconnect();
 }

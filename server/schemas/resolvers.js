@@ -496,75 +496,42 @@ const resolvers = {
       },
    
    
-    addAccommodationForStudent: async (_, args, context) => {
-      console.log("Starting addAccommodationForStudent resolver");
-      console.log("Received arguments:", args);
+    addAccommodationForStudent: async (parent, { accommodationId, studentId }, context) => {
+      if (context.user) {
+        try {
+          // Find the template accommodation
+          const templateAccommodation = await AccommodationList.findById(accommodationId);
+          if (!templateAccommodation) {
+            throw new Error('Template accommodation not found');
+          }
 
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
-      }
+          // Create a new accommodation for the student
+          const studentAccommodation = await AccommodationList.create({
+            title: templateAccommodation.title,
+            description: templateAccommodation.description,
+            image: templateAccommodation.image,
+            createdBy: context.user._id,
+            studentId: studentId,
+            isTemplate: false,
+            isActive: true,
+            templateId: accommodationId,
+            createdAt: new Date()
+          });
 
-      const { accommodationId, studentId } = args;
+          // Add the accommodation to the student's accommodations array
+          const updatedUser = await User.findByIdAndUpdate(
+            studentId,
+            { $push: { accommodations: studentAccommodation._id } },
+            { new: true }
+          );
 
-      if (!studentId) {
-        throw new UserInputError("Student ID is required");
-      }
-
-      try {
-        console.log("Finding accommodation card with ID:", accommodationId);
-
-        const objectIdAccommodationId =
-          mongoose.Types.ObjectId(accommodationId);
-
-        const template = await AccommodationList.findById(
-          objectIdAccommodationId,
-        );
-
-        if (!template) {
-          throw new Error("Accommodation card not found");
+          return updatedUser;
+        } catch (error) {
+          console.error('Error in addAccommodationForStudent:', error);
+          throw new Error('Failed to add accommodation for student');
         }
-
-        console.log("Found accommodation card:", template);
-
-        const studentAccommodation = await AccommodationList.create({
-          title: template.title,
-          description: template.description,
-          image: template.image,
-          createdBy: context.user._id,
-          studentId: studentId,
-          isTemplate: false,
-          isActive: true,
-          // createdAt will be set automatically
-        });
-
-        console.log("Finding user with ID:", studentId);
-        const user = await User.findById(studentId);
-
-        if (!user) {
-          throw new Error("User not found");
-        }
-
-        console.log("Found user:", user);
-
-        console.log("Adding accommodation card to user's accommodations array");
-        user.accommodations.push(studentAccommodation._id);
-
-        console.log("Saving updated user");
-        await user.save();
-
-        console.log("User successfully updated:", user);
-
-        return user;
-      } catch (error) {
-        console.error("Error occurred:", error);
-        throw new ApolloError(
-          "Failed to add accommodation for student",
-          "ADD_ACCOMMODATION_ERROR",
-          { originalError: error },
-        );
       }
+      throw new AuthenticationError('You need to be logged in!');
     },
 
     removeAccommodationFromStudent: async (parent, args, context) => {
@@ -1279,6 +1246,10 @@ const resolvers = {
         console.error("Error fetching createdBy user:", error);
         return null;
       }
+    },
+    templateId: async (parent) => {
+      if (!parent.templateId) return null;
+      return await AccommodationList.findById(parent.templateId);
     },
   },
   User: {

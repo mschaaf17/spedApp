@@ -26,6 +26,7 @@ const typeDefs = gql`
     isTemplate: Boolean!
     isActive: Boolean!
     createdAt: String
+    templateId: AccommodationList
   }
   type DailyCounts {
     date: String!

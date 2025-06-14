@@ -130,7 +130,10 @@ const AccommodationListTable = ({
         const options = students
           .filter(student =>
             !Array.isArray(student.accommodations) ||
-            !student.accommodations.some(acc => acc.templateId === record._id)
+            !student.accommodations.some(acc =>
+              (acc.templateId && acc.templateId._id === record._id) ||
+              acc._id === record._id // fallback for legacy data
+            )
           )
           .map(student => ({
             value: student._id,
