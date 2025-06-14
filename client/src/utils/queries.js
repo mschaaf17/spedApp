@@ -256,6 +256,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
           username
           isAdmin
         }
+        createdAt
       }
     }
     accommodations {

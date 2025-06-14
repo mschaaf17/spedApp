@@ -47,6 +47,7 @@ export default function StudentAccommodations() {
 
   return (
     <div>
+      <p> need to fix the created at for when a student is assigned an accommodations similar to intervventions</p>
       <h2>{user?.username} assigned accommodations</h2>
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <Select

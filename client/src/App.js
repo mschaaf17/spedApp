@@ -12,7 +12,7 @@ import Home from './pages/Home/'
 import NoMatch from './pages/NoMatch';
 import LoadingPage from './pages/LoadingPage'
 
-import StudentAccommodations  from './pages/StudentPages/StudentAccommodations';
+import StudentAccommodations  from './pages/StudentPages/StudentAccommodations/StudentAccommodations';
 import BreakTimer from './pages/StudentPages/BreakTimer'
 import Header from './components/Header'
 import Footer from './components/Footer'

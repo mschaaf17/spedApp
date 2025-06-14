@@ -139,7 +139,7 @@ async function seed() {
   const accommodationTemplate = await AccommodationList.create({
     title: 'Seat Away',
     description: 'Student will sit away from the teacher',
-    image: 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',
+    image: '../uploads/1749789792434-8828269.jpeg',
     createdBy: admin._id,
     isTemplate: true,
     isActive: true,

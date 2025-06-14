@@ -514,19 +514,26 @@ const resolvers = {
         const objectIdAccommodationId =
           mongoose.Types.ObjectId(accommodationId);
 
-        const accommodationList= await AccommodationList.findById(
+        const template = await AccommodationList.findById(
           objectIdAccommodationId,
         );
 
-        if (!accommodationList) {
+        if (!template) {
           throw new Error("Accommodation card not found");
         }
 
-        console.log("Found accommodation card:", accommodationList);
+        console.log("Found accommodation card:", template);
 
-        accommodationList.createdBy = context.user._id;
-
-        await accommodationList.save();
+        const studentAccommodation = await AccommodationList.create({
+          title: template.title,
+          description: template.description,
+          image: template.image,
+          createdBy: context.user._id,
+          studentId: studentId,
+          isTemplate: false,
+          isActive: true,
+          // createdAt will be set automatically
+        });
 
         console.log("Finding user with ID:", studentId);
         const user = await User.findById(studentId);
@@ -538,7 +545,7 @@ const resolvers = {
         console.log("Found user:", user);
 
         console.log("Adding accommodation card to user's accommodations array");
-        user.accommodations.push(objectIdAccommodationId);
+        user.accommodations.push(studentAccommodation._id);
 
         console.log("Saving updated user");
         await user.save();

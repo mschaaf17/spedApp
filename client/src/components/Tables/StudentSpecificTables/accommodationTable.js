@@ -19,7 +19,8 @@ const StudentAccommodationsTable = ({
       title: 'Assigned Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (createdAt) => {
+      render: (createdAt, record) => {
+        console.log('Accommodation row:', record);
         if (!createdAt) return '—';
         let dateObj;
         if (typeof createdAt === "number") {
