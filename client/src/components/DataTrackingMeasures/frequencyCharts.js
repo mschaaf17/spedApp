@@ -17,6 +17,30 @@ const data = [
   // more data
 ];
 
+// Example color palette
+const interventionColors = [
+  '#e6194b', // red
+  '#3cb44b', // green
+  '#ffe119', // yellow
+  '#4363d8', // blue
+  '#f58231', // orange
+  '#911eb4', // purple
+  '#46f0f0', // cyan
+  '#f032e6', // magenta
+  '#bcf60c', // lime
+  '#fabebe', // pink
+];
+
+function getInterventionColor(intervention) {
+  if (!intervention) return '#8884d8'; // default
+  const str = intervention.title || intervention._id || '';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return interventionColors[Math.abs(hash) % interventionColors.length];
+}
+
 // Student Charts for frequency, duration?? eloping/aggression/other?, observation form, abc data   
 const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   const { username: userParam } = useParams();
@@ -43,31 +67,6 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
     String(today.getDate()).padStart(2, '0');
 
   const userInterventions = userData?.user?.interventions || [];
-
-  // Example color palette
-  const interventionColors = [
-    '#e6194b', // red
-    '#3cb44b', // green
-    '#ffe119', // yellow
-    '#4363d8', // blue
-    '#f58231', // orange
-    '#911eb4', // purple
-    '#46f0f0', // cyan
-    '#f032e6', // magenta
-    '#bcf60c', // lime
-    '#fabebe', // pink
-  ];
-
-  // Hash function to pick a color based on intervention title or id
-  function getInterventionColor(intervention) {
-    if (!intervention) return '#8884d8'; // default
-    const str = intervention.title || intervention._id || '';
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return interventionColors[Math.abs(hash) % interventionColors.length];
-  }
 
   return (
     <div className='centerBody'>
@@ -129,7 +128,25 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         // Calculate aimline points for this frequency
         const goalValue = 1; // or get from user input/intervention
         const targetDateStr = chartData.length ? chartData[chartData.length - 1].date : undefined;
-        const interventionStartDate = "2024-06-10"; // or get from intervention data
+        let interventionStartDate = null;
+        if (userInterventions.length > 0) {
+          const intervention = userInterventions.find(i => i.behaviorId?._id === freq._id);
+          if (intervention && intervention.createdAt) {
+            let d;
+            if (typeof intervention.createdAt === "number") {
+              d = new Date(intervention.createdAt);
+            } else if (typeof intervention.createdAt === "string") {
+              if (/^\d+$/.test(intervention.createdAt)) {
+                d = new Date(Number(intervention.createdAt));
+              } else {
+                d = new Date(intervention.createdAt);
+              }
+            }
+            if (d && !isNaN(d.getTime())) {
+              interventionStartDate = d.toISOString().slice(0, 10);
+            }
+          }
+        }
         const aimlinePoints = calculateAimline(chartData, goalValue, targetDateStr, interventionStartDate);
 
         console.log('aimlinePoints:', aimlinePoints);
@@ -224,33 +241,19 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         const assignedInterventionsForThisBehavior = userInterventions.filter(
           i => i.behaviorId?._id === freq._id
         );
-        let interventionDate = null;
-        let interventionColor = '#8884d8'; // default
-        if (assignedInterventionsForThisBehavior.length > 0) {
-          const intervention = assignedInterventionsForThisBehavior[0];
-          if (intervention.createdAt) {
-            let d;
-            if (typeof intervention.createdAt === "number") {
-              d = new Date(intervention.createdAt);
-            } else if (typeof intervention.createdAt === "string") {
-              // If it's a numeric string, treat as timestamp
-              if (/^\d+$/.test(intervention.createdAt)) {
-                d = new Date(Number(intervention.createdAt));
-              } else {
-                d = new Date(intervention.createdAt);
-              }
-            }
-            if (d && !isNaN(d.getTime())) {
-              interventionDate = d.toISOString().slice(0, 10);
-              interventionColor = getInterventionColor(intervention);
+        const interventionDates = assignedInterventionsForThisBehavior.map(intervention => {
+          let d;
+          if (typeof intervention.createdAt === "number") {
+            d = new Date(intervention.createdAt);
+          } else if (typeof intervention.createdAt === "string") {
+            if (/^\d+$/.test(intervention.createdAt)) {
+              d = new Date(Number(intervention.createdAt));
             } else {
-              console.warn('Invalid assignedIntervention.createdAt:', intervention.createdAt, intervention);
-              interventionDate = null;
+              d = new Date(intervention.createdAt);
             }
           }
-        }
-        console.log('Intervention assignedInterventionsForThisBehavior:', assignedInterventionsForThisBehavior);
-        console.log('Intervention createdAt:', assignedInterventionsForThisBehavior?.createdAt, 'Parsed:', interventionDate);
+          return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : null;
+        }).filter(Boolean);
 
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
@@ -276,7 +279,13 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 type="monotone"
                 dataKey="count"
                 stroke="#8884d8"
-                dot={props => <CustomDot {...props} interventionDate={interventionDate} interventionColor={interventionColor} />}
+                dot={props => (
+                  <CustomDot
+                    {...props}
+                    interventionDates={interventionDates}
+                    assignedInterventions={assignedInterventionsForThisBehavior}
+                  />
+                )}
                 activeDot={{ r: 7 }}
               />
               <Line
@@ -289,7 +298,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 yAxisId="right"
               />
               {/* If you want to highlight intervention days, keep this: */}
-              <Scatter data={filledChartData.filter(d => d.intervention)} fill={interventionColor} />
+              <Scatter data={filledChartData.filter(d => d.intervention)} fill={interventionDates.length > 0 ? getInterventionColor(assignedInterventionsForThisBehavior[0]) : '#8884d8'} />
             </LineChart>
             <div>
               <h4>Assigned Interventions</h4>
@@ -385,15 +394,17 @@ function fillMissingDates(chartData, startDateStr, endDateStr) {
 }
 
 function CustomDot(props) {
-  const { cx, cy, payload, interventionDate, interventionColor } = props;
+  const { cx, cy, payload, interventionDates, assignedInterventions } = props;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
 
   if (payload.date <= todayStr) {
-    if (interventionDate && payload.date === interventionDate) {
-      // Use the interventionColor for the ring
+    // Find if this date matches any intervention assignment
+    const idx = interventionDates ? interventionDates.indexOf(payload.date) : -1;
+    if (idx !== -1 && assignedInterventions && assignedInterventions[idx]) {
+      const interventionColor = getInterventionColor(assignedInterventions[idx]);
       return (
         <>
           <circle
