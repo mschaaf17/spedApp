@@ -102,8 +102,8 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             console.log('dc.date:', dc.date, 'typeof:', typeof dc.date, 'parsed:', d, 'isNaN:', d && isNaN(d.getTime()));
             if (d && !isNaN(d.getTime())) {
               dateString = d.getUTCFullYear() + '-' +
-                String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
-                String(d.getUTCDate()).padStart(2, '0');
+              String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getUTCDate()).padStart(2, '0');
             }
           }
           if (!dateString) {
@@ -270,9 +270,9 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             }
           }
           if (d && !isNaN(d.getTime())) {
-            const dateStr = d.getUTCFullYear() + '-' +
-              String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
-              String(d.getUTCDate()).padStart(2, '0');
+            const dateStr = d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0');
             interventionDateMap[dateStr] = intervention;
           }
         });

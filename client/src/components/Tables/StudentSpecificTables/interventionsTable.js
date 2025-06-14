@@ -31,9 +31,18 @@ export default function InterventionsTable({
       title: 'Assigned Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (createdAt) => createdAt ? new Date(
-        typeof createdAt === "number" ? createdAt : /^\d+$/.test(createdAt) ? Number(createdAt) : createdAt
-      ).toLocaleDateString() : '—',
+      render: (createdAt) => {
+        if (!createdAt) return '—';
+        let dateObj;
+        if (typeof createdAt === "number") {
+          dateObj = new Date(createdAt);
+        } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
+          dateObj = new Date(Number(createdAt));
+        } else {
+          dateObj = new Date(createdAt);
+        }
+        return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
+      },
     },
     {
       title: 'Function',
