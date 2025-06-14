@@ -28,31 +28,31 @@ export default function AccommodationsTab() {
   };
 
   const [isAccommodationModalOpen, setAccommodationModalOpen] = useState(false);
-  const [selectedAccommodationId, setSelectedAccommodationId] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null)
-  const [addedStudents, setAddedStudents] = useState({});
+  //const [selectedAccommodationId, setSelectedAccommodationId] = useState(null);
+  //const [selectedStudent, setSelectedStudent] = useState(null)
+  //const [addedStudents, setAddedStudents] = useState({});
 
-  const handleAccommodationSelect = (accommodationId) => {
-    setSelectedAccommodationId(accommodationId);
-  };
-  const handleAccommodationClick = (accommodationId) => {
-    setSelectedAccommodationId(accommodationId);
-  };
+  // const handleAccommodationSelect = (accommodationId) => {
+  //   setSelectedAccommodationId(accommodationId);
+  // };
+  // const handleAccommodationClick = (accommodationId) => {
+  //   setSelectedAccommodationId(accommodationId);
+  // };
 
-  const submitAccommodationForStudent = async(selectedAccommodationId, selectedStudentId) => {
-    if(!selectedStudent) return;
-    try{
-      await addAccommodationForStudent({
-        variables: { studentId: selectedStudentId, accommodationId: selectedAccommodationId }
-      })
-      setAddedStudents(prevAddedStudents => ({
-        ...prevAddedStudents,
-        [selectedStudent]: true,
-      }))
-    } catch (error) {
-      console.error('Error saving accommodation: ', error)
-    }
-  }
+  // const submitAccommodationForStudent = async(selectedAccommodationId, selectedStudentId) => {
+  //   if(!selectedStudent) return;
+  //   try{
+  //     await addAccommodationForStudent({
+  //       variables: { studentId: selectedStudentId, accommodationId: selectedAccommodationId }
+  //     })
+  //     setAddedStudents(prevAddedStudents => ({
+  //       ...prevAddedStudents,
+  //       [selectedStudent]: true,
+  //     }))
+  //   } catch (error) {
+  //     console.error('Error saving accommodation: ', error)
+  //   }
+  // }
 
   const openAccommodationModal = () => {
     console.log("Opening Accommodation Modal");

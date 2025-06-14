@@ -59,8 +59,6 @@ export default function StudentInterventions() {
 
   return (
     <div>
-        <p>will need to stop users from adding an intervention on the same day!!! they will need to be notified an intervention was already assigned for that date!!!</p>
-        <p>need to get remove button to work</p>
         <h2>{user?.username} assigned interventions</h2>
          <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <Select

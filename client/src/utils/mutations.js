@@ -223,12 +223,16 @@ mutation AddAccommodationForStudent($accommodationId: ID!, $studentId: ID!) {
 `;
 
 export const REMOVE_ACCOMMODATION_FROM_STUDENT = gql`
-mutation RemoveAccommodationFromStudent($accommodationId: ID!, $username: String!) {
-  removeAccommodationFromStudent(accommodationId: $accommodationId, username: $username) {
+mutation RemoveAccommodationFromStudent($accommodationId: ID!, $studentId: ID!) {
+  removeAccommodationFromStudent(accommodationId: $accommodationId, studentId: $studentId) {
+    _id
+    username
+    firstName
+    lastName
+    studentSchoolId
     accommodations {
-      title
-      image
       _id
+      title
     }
   }
 }
@@ -356,12 +360,16 @@ mutation RemoveIntervention($id: ID) {
 `;
 
 export const REMOVE_INTERVENTION_FROM_STUDENT = gql`
-mutation RemoveInterventionFromStudent($interventionId: ID!, $username: String!) {
-  removeInterventionFromStudent(interventionId: $interventionId, username: $username) {
-    userInterventions {
-      title
+mutation RemoveInterventionForStudent($interventionId: ID!, $studentId: ID!) {
+  removeInterventionForStudent(interventionId: $interventionId, studentId: $studentId) {
+    _id
+    username
+    firstName
+    lastName
+    studentSchoolId
+    interventions {
       _id
-      username
+      title
     }
   }
 }
