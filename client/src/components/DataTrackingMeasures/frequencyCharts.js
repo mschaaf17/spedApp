@@ -149,7 +149,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             }
           }
         }
-        const aimlinePoints = calculateAimline(chartData, goalValue, targetDateStr, interventionStartDate);
+        const aimlinePoints = calculateAimline(chartData, goalValue, targetDateStr, interventionStartDate, 3);
 
         console.log('aimlinePoints:', aimlinePoints);
 
@@ -236,7 +236,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         console.log('Types:', filledChartData.map(d => typeof d.count));
 
         // Use filledChartData for chart and aimline
-        const aimlinePointsFilled = calculateAimline(filledChartData, goalValue, extendedEndDateStr, startDateStr);
+        const aimlinePointsFilled = calculateAimline(filledChartData, goalValue, extendedEndDateStr, startDateStr, 3);
 
         console.log('Result from fillMissingDates:', filledChartData);
 
@@ -345,7 +345,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   );
 };
 
-function calculateAimline(frequencyData, goalValue, targetDateStr, startDateStr) {
+function calculateAimline(frequencyData, goalValue, targetDateStr, startDateStr, baselineDays = 3) {
   if (!frequencyData.length) return [];
 
   // Sort by date
@@ -353,7 +353,10 @@ function calculateAimline(frequencyData, goalValue, targetDateStr, startDateStr)
   const startDate = startDateStr ? new Date(startDateStr) : new Date(sorted[0].date);
   const endDate = targetDateStr ? new Date(targetDateStr) : new Date(sorted[sorted.length - 1].date);
 
-  const startValue = sorted.find(d => d.date === startDateStr)?.count ?? sorted[0].count;
+  // Get the highest value from the first N (baseline) days
+  const baseline = sorted.slice(0, baselineDays);
+  const startValue = Math.max(...baseline.map(d => d.count));
+
   const days = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
   const slope = (goalValue - startValue) / days;
 
