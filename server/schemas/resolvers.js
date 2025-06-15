@@ -267,8 +267,10 @@ const resolvers = {
     },
 
     //need data to check these
-    duration: async () => {
-      return Duration.find();
+    duration: async (parent, args) => {
+      const filter = {};
+      if (args.studentId) filter.createdFor = args.studentId;
+      return Duration.find(filter);
     },
 
     interventionList: async (parent, args) => {
@@ -307,6 +309,30 @@ const resolvers = {
     //   }
     //   return InterventionList.find(params)
     // },
+
+    getRunningTimers: async (parent, { studentId, behaviorTitle }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
+
+      // Find all durations for this student and behavior
+      const durations = await Duration.find({
+        createdFor: studentId,
+        behaviorTitle: behaviorTitle,
+        isActive: true
+      });
+
+      // Collect all running timers
+      let runningTimers = [];
+      durations.forEach(duration => {
+        const running = duration.timers.filter(timer => timer.status === 'running' && timer.isActive);
+        runningTimers = runningTimers.concat(running);
+      });
+
+      return runningTimers;
+    },
+
+    timersForDuration: async (parent, { durationId }) => {
+      return Duration.findById(durationId);
+    },
   },
 
   Mutation: {
@@ -573,44 +599,6 @@ const resolvers = {
     }, 
       
     
-    // addFrequencyToTrackForStudent: async (_, { frequencyId, studentId }, context) => {
-    //   if (!context.user || !context.user.isAdmin) {
-    //     throw new AuthenticationError(
-    //       "You must be logged in as an administrator!",
-    //     );
-    //   }
-    
-    //   if (!studentId) {
-    //     throw new UserInputError("Student ID is required");
-    //   }
-    
-    //   try {
-    //     // Find the frequency document
-    //     const frequency = await Frequency.findById(frequencyId);
-    //     if (!frequency) {
-    //       throw new UserInputError("Frequency not found");
-    //     }
-    
-    //     // Find the user document (student)
-    //     const user = await User.findById(studentId);
-    //     if (!user) {
-    //       throw new UserInputError("Student not found");
-    //     }
-    
-    //     // Update the user document to include the frequency
-    //     user.behaviorFrequencies.push(frequencyId);
-    //     await user.save();
-    
-    //     return user;
-    //   } catch (error) {
-    //     throw new ApolloError(
-    //       "Failed to add frequency of behavior for student",
-    //       "ADD_FREQUENCY_ERROR",
-    //       { originalError: error },
-    //     );
-    //   }
-    // },
-    
 
     removeFrequencyBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
@@ -653,48 +641,6 @@ const resolvers = {
         );
       }
     },
-
-    // addDurationToTrackForStudent: async (_, { behaviorTitle, operationalDefinition, studentId }, context) => {
-    //   if (!context.user || !context.user.isAdmin) {
-    //     throw new AuthenticationError(
-    //       "You must be logged in as an administrator!",
-    //     );
-    //   }
-    
-    //   if (!studentId) {
-    //     throw new UserInputError("Student ID is required");
-    //   }
-    
-    //   try {
-    //     // Create a new Duration document
-    //     const newDuration = await Duration.create({
-    //       behaviorTitle,
-    //       operationalDefinition,
-    //       duration: 0,
-    //       createdAt: new Date(),
-    //       createdBy: context.user._id,
-    //       createdFor: studentId,
-    //     });
-    
-    //     // Find the user document (student)
-    //     const user = await User.findById(studentId);
-    //     if (!user) {
-    //       throw new UserInputError("Student not found");
-    //     }
-    
-    //     // Update the user document to include the new duration
-    //     user.behaviorDurations.push(newDuration._id);
-    //     await user.save();
-    
-    //     return user;
-    //   } catch (error) {
-    //     throw new ApolloError(
-    //       "Failed to add duration of behavior for student",
-    //       "ADD_DURATION_ERROR",
-    //       { originalError: error },
-    //     );
-    //   }
-    // },
     
     removeDurationBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
@@ -721,6 +667,9 @@ const resolvers = {
 
         user.behaviorDurations.splice(index, 1);
         await user.save();
+
+        // Soft delete the duration
+        await Duration.findByIdAndUpdate(durationId, { isActive: false });
 
         return user;
       } catch (error) {
@@ -872,66 +821,6 @@ const resolvers = {
     return frequency;
   },
 
-    // frequencyIncreased: async (parent, args, context) => {
-    //   if (!context.user) {
-    //     throw new AuthenticationError("You must be logged in!");
-    //   }
-    
-    //   const { frequencyId, studentId } = args;
-    
-    //   if (!frequencyId || !studentId) {
-    //     throw new UserInputError("Frequency ID and Student ID are required");
-    //   }
-    
-    //   try {
-    //     // Find the frequency document associated with the given frequencyId and studentId
-    //     const frequency = await Frequency.findOne({ _id: frequencyId, createdFor: studentId });
-    
-    //     if (!frequency) {
-    //       throw new UserInputError("Frequency not found for the specified student");
-    //     }
-    
-    //     // Ensure that count is a valid numeric value before incrementing
-    //     if (typeof frequency.count !== 'number' || isNaN(frequency.count)) {
-    //       // Initialize count with a valid numeric value (e.g., 0)
-    //       frequency.count = 0;
-    //     }
-    
-    //     // Increment the count for the specific frequency document
-    //     frequency.count++;
-    //     frequency.updatedAt = new Date();
-    //     frequency.log.push({ time: new Date() });
-    //     await frequency.save();
-    
-    //     // Update the user's behaviorFrequencies array
-    //     const user = await User.findById(studentId);
-    //     if (!user) {
-    //       throw new UserInputError("Student not found");
-    //     }
-    
-    //     const updatedBehaviorFrequencies = user.behaviorFrequencies.map(behavior => {
-    //       if (behavior._id.toString() === frequencyId) {
-    //         // Increment the count for the corresponding behavior frequency
-    //         behavior.count++;
-    //       }
-    //       return behavior;
-    //     });
-    
-    //     user.behaviorFrequencies = updatedBehaviorFrequencies;
-    //     await user.save();
-    
-    //     return frequency;
-    //   } catch (error) {
-    //     throw new ApolloError(
-    //       "Failed to increase frequency count",
-    //       "FREQUENCY_INCREASE_ERROR",
-    //       { originalError: error },
-    //     );
-    //   }
-    // },
-    
-    
-
     removeFrequencyIncrement: async (parent, args, context) => {
       if (!context.user) {
         throw new AuthenticationError("You must be logged in!");
@@ -966,134 +855,73 @@ const resolvers = {
       }
     },
 
-    startDurationTimer: async (parent, args, context) => {
-      try {
-        // Check if user is logged in
-        if (!context.user) {
-          throw new Error("User not logged in.");
-        }
+    startDurationTimer: async (parent, { durationId }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
 
-        const { durationId, studentId } = args;
+      // Find the duration document
+      const duration = await Duration.findById(durationId);
+      if (!duration) throw new UserInputError("Duration not found");
 
-        if (!durationId || !studentId) {
-          throw new UserInputError("Duration ID and Student ID are required");
-        }
+      // Create a new timer object
+      const newTimer = {
+        startTime: new Date(),
+        status: 'running',
+        createdBy: context.user._id,
+        // timerId will be auto-generated
+      };
 
-        // Retrieve the duration document
-        const duration = await Duration.findById(durationId);
+      // Add the timer to the timers array
+      duration.timers.push(newTimer);
+      await duration.save();
 
-        // Check if the duration exists
-        if (!duration) {
-          throw new UserInputError("Duration not found");
-        }
-
-        // Generate a new ObjectId for the start duration ID
-        const startDurationId = new mongoose.Types.ObjectId();
-
-        // Update the start time of the duration
-        duration.startTimes.push(new Date());
-
-        // Associate the duration with the logged-in user
-        duration.createdBy = context.user._id;
-
-        // Associate the start time with the duration
-        duration.startDurationId.push([startDurationId]);
-
-        // Save the changes to the duration document
-        await duration.save();
-
-        // Retrieve the user document
-        const user = await User.findById(studentId);
-
-        // Check if the user exists
-        if (!user) {
-          throw new UserInputError("Student not found");
-        }
-
-        // Add the duration ID to the behaviorDurations array of the user
-        user.behaviorDurations.push(duration._id);
-
-        // Save the changes to the user document
-        await user.save();
-
-        // Return the updated user
-        return user;
-      } catch (error) {
-        console.error("Failed to start duration timer:", error.message);
-        throw new Error(
-          "Failed to start duration timer. Please try again later.",
-        );
-      }
+      // Return the new timer (or the updated duration, as you prefer)
+      return duration.timers[duration.timers.length - 1];
     },
 
-    endDurationTimer: async (
-      parent,
-      { durationId, startDurationId },
-      context,
-    ) => {
-      // Check if user is logged in
-      if (!context.user) {
-        throw new Error("User not logged in.");
-      }
+    endDurationTimer: async (parent, { durationId, timerId }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
 
-      try {
-        // Find the duration entry by ID
-        const duration = await Duration.findById(durationId);
+      const duration = await Duration.findById(durationId);
+      if (!duration) throw new UserInputError("Duration not found");
 
-        // Check if the duration exists
-        if (!duration) {
-          throw new Error("Duration not found.");
-        }
+      // Find the timer by timerId (ensure both are strings for comparison)
+      const timer = duration.timers.find(
+        t => t.timerId.toString() === timerId.toString()
+      );
+      if (!timer) throw new UserInputError("Timer not found");
 
-        // Find the index of the startDurationId within the startDurationId array
-        const index = duration.startDurationId.findIndex(
-          (id) => id.toString() === startDurationId,
-        );
+      timer.endTime = new Date();
+      timer.status = 'stopped';
+      await duration.save();
 
-        // Check if the startDurationId exists in the array
-        if (index === -1) {
-          throw new Error("Start time not found for the given duration.");
-        }
-
-        // Associate the end time with the corresponding start time
-        duration.endTimes[index] = new Date();
-
-        // Save the changes to the duration document
-        await duration.save();
-
-        // Return the updated duration entry
-        return duration;
-      } catch (error) {
-        console.error(error);
-        throw new Error("Failed to end duration timer.");
-      }
+      return timer;
     },
 
-    removeLastDurationTimer: async (parent, args, context) => {
-      // Check if user is logged in
-      if (!context.user) {
-        throw new Error("User not logged in.");
-      }
+    // removeLastDurationTimer: async (parent, args, context) => {
+    //   // Check if user is logged in
+    //   if (!context.user) {
+    //     throw new Error("User not logged in.");
+    //   }
 
-      try {
-        // Find the last duration entry created by the user and who it was created for then remove it
-        //can I just remove the duration id since that is what will be updated with all thisinfo?
-        const lastDuration = await Duration.findByIdAndDelete(args._id);
+    //   try {
+    //     // Find the last duration entry created by the user and who it was created for then remove it
+    //     //can I just remove the duration id since that is what will be updated with all thisinfo?
+    //     const lastDuration = await Duration.findByIdAndDelete(args._id);
 
-        // If no duration found
-        if (!lastDuration) {
-          throw new Error("No duration found to remove.");
-        }
+    //     // If no duration found
+    //     if (!lastDuration) {
+    //       throw new Error("No duration found to remove.");
+    //     }
 
-        // Return the ID of the removed duration entry
-        return {
-          id: lastDuration._id,
-        };
-      } catch (error) {
-        console.error(error);
-        throw new Error("Failed to remove last duration timer.");
-      }
-    },
+    //     // Return the ID of the removed duration entry
+    //     return {
+    //       id: lastDuration._id,
+    //     };
+    //   } catch (error) {
+    //     console.error(error);
+    //     throw new Error("Failed to remove last duration timer.");
+    //   }
+    // },
 
     addInterventionTemplate: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
@@ -1233,6 +1061,62 @@ const resolvers = {
           { originalError: error },
         );
       }
+    },
+
+    resumeDurationTimer: async (parent, { durationId, timerId }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
+
+      const duration = await Duration.findById(durationId);
+      if (!duration) throw new UserInputError("Duration not found");
+
+      // Use .find() to match custom timerId
+      const timer = duration.timers.find(
+        t => t.timerId.toString() === timerId.toString()
+      );
+      if (!timer) throw new UserInputError("Timer not found");
+
+      timer.status = 'running';
+      await duration.save();
+
+      return timer;
+    },
+
+    resetDurationTimer: async (parent, { durationId, timerId }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
+
+      const duration = await Duration.findById(durationId);
+      if (!duration) throw new UserInputError("Duration not found");
+
+      // Use .find() to match custom timerId
+      const timer = duration.timers.find(
+        t => t.timerId.toString() === timerId.toString()
+      );
+      if (!timer) throw new UserInputError("Timer not found");
+
+      timer.startTime = new Date();
+      timer.endTime = null;
+      timer.status = 'running';
+      await duration.save();
+
+      return timer;
+    },
+
+    saveDurationTimer: async (parent, { durationId, timerId }, context) => {
+      if (!context.user) throw new Error("User not logged in.");
+
+      const duration = await Duration.findById(durationId);
+      if (!duration) throw new UserInputError("Duration not found");
+
+      // Use .find() to match custom timerId
+      const timer = duration.timers.find(
+        t => t.timerId.toString() === timerId.toString()
+      );
+      if (!timer) throw new UserInputError("Timer not found");
+
+      timer.status = 'saved';
+      await duration.save();
+
+      return timer;
     },
   },
 

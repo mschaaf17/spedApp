@@ -5,6 +5,7 @@ mutation login($username: String!, $password: String!) {
   login(username: $username, password: $password) {
     token
   user {
+    _id
     username
     isAdmin
   }  
@@ -66,34 +67,6 @@ export const ADD_DURATION_TITLE = gql`
  `;
 
 
-
-
-//  export const ADD_FREQUENCY_TO_STUDENT = gql`
-//   mutation AddFrequencyToTrackForStudent($frequencyId: ID!, $studentId: ID!) {
-//   addFrequencyToTrackForStudent(frequencyId: $frequencyId, studentId: $studentId) {
-//     _id
-//     behaviorFrequencies {
-//       _id
-//       behaviorTitle
-//       operationalDefinition
-//     }
-//   }
-// }
-//  `;
-//remove frequency from student 
-
-//  export const ADD_DURATION_TO_STUDENT = gql`
-//  mutation AddDurationToTrackForStudent($durationId: ID!, $studentId: ID!) {
-//   addDurationToTrackForStudent(durationId: $durationId, studentId: $studentId) {
-//     _id
-//     behaviorDurations {
-//       _id
-//       behaviorTitle
-//       operationalDefinition
-//     }
-//   }
-// }
-//  `;
  export const ADD_DATA_MEASURE_TO_STUDENT = gql`
 mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
   addDataMeasureToStudent(dataMeasureId: $dataMeasureId, studentId: $studentId) {
@@ -374,3 +347,68 @@ mutation RemoveInterventionForStudent($interventionId: ID!, $studentId: ID!) {
   }
 }
 `;
+
+// Start a new timer for a duration
+// export const START_DURATION_TIMER = gql`
+// mutation StartDurationTimer($durationId: ID!) {
+//   startDurationTimer(durationId: $durationId) {
+//     timerId
+//     startTime
+//     endTime
+//     status
+//     isActive
+//   }
+// }
+// `;
+
+// // End a specific timer
+// export const END_DURATION_TIMER = gql`
+// mutation EndDurationTimer($durationId: ID!, $timerId: ID!) {
+//   endDurationTimer(durationId: $durationId, timerId: $timerId) {
+//     timerId
+//     startTime
+//     endTime
+//     status
+//     isActive
+//   }
+// }
+// `;
+
+// // Resume a stopped timer
+// export const RESUME_DURATION_TIMER = gql`
+// mutation ResumeDurationTimer($durationId: ID!, $timerId: ID!) {
+//   resumeDurationTimer(durationId: $durationId, timerId: $timerId) {
+//     timerId
+//     startTime
+//     endTime
+//     status
+//     isActive
+//   }
+// }
+// `;
+
+// // Reset a timer
+// export const RESET_DURATION_TIMER = gql`
+// mutation ResetDurationTimer($durationId: ID!, $timerId: ID!) {
+//   resetDurationTimer(durationId: $durationId, timerId: $timerId) {
+//     timerId
+//     startTime
+//     endTime
+//     status
+//     isActive
+//   }
+// }
+// `;
+
+// // Save a timer
+// export const SAVE_DURATION_TIMER = gql`
+// mutation SaveDurationTimer($durationId: ID!, $timerId: ID!) {
+//   saveDurationTimer(durationId: $durationId, timerId: $timerId) {
+//     timerId
+//     startTime
+//     endTime
+//     status
+//     isActive
+//   }
+// }
+// `;

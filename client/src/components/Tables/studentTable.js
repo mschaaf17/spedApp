@@ -176,7 +176,7 @@ useEffect(()=> {
             </div>
 
           <div className='tooltip'>
-            <DeleteForeverIcon onClick={() => removeStudent(record._id)} danger className="deleteIcon"/>
+            <DeleteForeverIcon onClick={() => removeStudent(record._id)} className="deleteIcon"/>
             <span className='tooltipText'>Remove Student</span>
           </div>
           </Space>
@@ -257,6 +257,7 @@ useEffect(()=> {
           onClick: () => { handleRowClick(record._id) }, // Trigger addStudent function when a row is clicked
         })}
         rowClassName={getRowClassName}
+        rowKey="_id"
         />
     </>
   );

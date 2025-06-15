@@ -70,6 +70,8 @@ const typeDefs = gql`
     createdFor: [User!]!
     averageTimeSpentDaily: String!
     timeMostOccurrences: String!
+    isActive: Boolean!
+    timers: [Timer!]!
   }
 
   type InterventionList {
@@ -92,6 +94,15 @@ const typeDefs = gql`
     user: User
   }
 
+  type Timer {
+    timerId: ID!
+    startTime: String!
+    endTime: String
+    status: String!
+    createdBy: User!
+    isActive: Boolean!
+  }
+
   type Query {
     me: User
     users: [User]
@@ -100,7 +111,9 @@ const typeDefs = gql`
     students: [User]
     accommodationList(isTemplate: Boolean, isActive: Boolean): [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
-    duration: [Duration]
+    duration(studentId: ID): [Duration]
+    timersForDuration(durationId: ID!): Duration
+    getRunningTimers(studentId: ID!, behaviorTitle: String!): [Timer!]!
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
     interventionListForStudent(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
     interventionListForStudentByBehavior(studentId: ID, behaviorId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
@@ -167,8 +180,8 @@ const typeDefs = gql`
     incrementFrequency(frequencyId: ID!, studentId: ID!, date: String!): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
-    startDurationTimer(durationId: ID!, studentId: ID!): User
-    endDurationTimer(durationId: ID!, startDurationId: ID!): User
+    startDurationTimer(durationId: ID!): Timer
+    endDurationTimer(durationId: ID!, timerId: ID!): Timer
     removeLastDurationTimer(studentId: ID!): User
 
     addInterventionTemplate(
@@ -186,6 +199,10 @@ const typeDefs = gql`
       behaviorId: ID
     ): InterventionList
     removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
+
+    resumeDurationTimer(durationId: ID!, timerId: ID!): Timer
+    resetDurationTimer(durationId: ID!, timerId: ID!): Timer
+    saveDurationTimer(durationId: ID!, timerId: ID!): Timer
   }
 `;
 

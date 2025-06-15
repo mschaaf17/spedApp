@@ -4,7 +4,7 @@ import React, {useEffect, useState} from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {useQuery} from '@apollo/client'
 import {QUERY_USER, QUERY_ME} from '../../utils/queries.js'
-import Duration from '../../components/DataTrackingMeasures/duration.js'
+import DurationTimers from '../../components/DataTrackingMeasures/durationTimers.js'
 import ABC from '../../components/DataTrackingMeasures/ABC.js'
 import Frequency from '../../components/DataTrackingMeasures/frequency.js'
 import Observation from '../../components/DataTrackingMeasures/observation.js'
@@ -55,7 +55,9 @@ export default function SideMenuLandingPage() {
 
     const forms = {
       '1': <Frequency />,
-      '2': <Duration />,
+      // '2': <DurationTimers 
+      // studentId={userParam}/>,
+      // '2': <Duration />,
       '3': (
         <FrequencyCharts
           frequencies={frequencies}
