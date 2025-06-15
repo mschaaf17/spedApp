@@ -16,7 +16,7 @@ query Me {
       username
       firstName
       lastName
-      password
+      
       studentSchoolId
       
       accommodations {
