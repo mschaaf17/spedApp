@@ -333,6 +333,10 @@ query User($identifier: String!, $isUsername: Boolean!) {
         firstName
         lastName
       }
+      dailyCounts {
+        date
+        count
+      }
     }
     behaviorDurations {
       _id
@@ -374,6 +378,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
     }
   }
 }
+
 
 `;
 
@@ -432,6 +437,10 @@ query Frequency($studentId: ID) {
     log {
       time
     }
+    dailyCounts {
+        date
+        count
+      }
     isTemplate
     templateId
   }

@@ -16,7 +16,7 @@ import {
   RESET_DURATION_TIMER,
   SAVE_DURATION_TIMER
 } from '../../utils/mutations';
-export default function DurationTimers({ durationId, studentId }) {
+export default function DurationTimers({ studentId }) {
   const [showModal, setShow] = useState(false)
   const handleClose = ()=> setShow(false)
   const handleShow =() =>setShow(true)
@@ -41,14 +41,22 @@ export default function DurationTimers({ durationId, studentId }) {
       return () => clearInterval(interval)
   }, [timerOn])
 
+  
+
   // Fetch all timers for this duration
   const { data: durationData, loading: durationLoading, refetch: durationRefetch } = useQuery(QUERY_DURATIONS_FOR_STUDENT, {
     variables: { studentId }
   });
 
+  const durations = durationData?.duration || [];
+  console.log('Durations:', durations);
+  const durationId = durations._id;
+  
   const { data: timersData, loading: timersLoading, refetch: timersRefetch } = useQuery(QUERY_TIMERS_FOR_DURATION, {
     variables: { durationId, studentId }
   });
+
+
 
   const [startTimer] = useMutation(START_DURATION_TIMER, {
     variables: { durationId },
@@ -62,7 +70,7 @@ export default function DurationTimers({ durationId, studentId }) {
   if (durationLoading || timersLoading) return <div>Loading...</div>;
   const timers = timersData?.duration?.timers || [];
 
-  const durations = durationData?.behaviorTitle || [];
+ 
 
   const assignedTemplateIds = durations
     .filter(d => d.templateId)
@@ -80,7 +88,8 @@ export default function DurationTimers({ durationId, studentId }) {
        <ul>
          {durations.map(duration => (
            <li key={duration._id}>
-             <DurationTimers durationId={duration._id} behaviorTitle={duration.behaviorTitle} />
+             <b>{duration.behaviorTitle}</b>
+             {/* ...other info... */}
            </li>
        ))}
       </ul>

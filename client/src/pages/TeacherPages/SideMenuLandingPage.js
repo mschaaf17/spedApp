@@ -47,7 +47,7 @@ export default function SideMenuLandingPage() {
     }
 
     console.log('student:', user?.username);
-    console.log('user:', user);
+    console.log('user:', user._id);
     console.log('frequencies:', frequencies);
     console.log('studentInterventions:', studentInterventions);
     console.log('aimlineValue:', aimlineValue);
@@ -56,7 +56,7 @@ export default function SideMenuLandingPage() {
     const forms = {
       '1': <Frequency />,
        '2': <DurationTimers 
-       studentId={userParam}/>,
+       studentId={user._id || userParam }/>,
       // '2': <Duration />,
       '3': (
         <FrequencyCharts
