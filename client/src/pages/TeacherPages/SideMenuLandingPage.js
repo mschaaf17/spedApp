@@ -55,8 +55,8 @@ export default function SideMenuLandingPage() {
 
     const forms = {
       '1': <Frequency />,
-      // '2': <DurationTimers 
-      // studentId={userParam}/>,
+       '2': <DurationTimers 
+       studentId={userParam}/>,
       // '2': <Duration />,
       '3': (
         <FrequencyCharts

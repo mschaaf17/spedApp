@@ -16,7 +16,7 @@ query Me {
       username
       firstName
       lastName
-    
+
       studentSchoolId
       
       accommodations {
@@ -71,9 +71,11 @@ query Me {
         mostFrequentTime
         isTemplate
         isActive
+        templateId
       }
       behaviorDurations {
       _id
+      studentId
       behaviorTitle
       operationalDefinition
       createdAt
@@ -90,6 +92,7 @@ query Me {
        
         isActive
       }
+      templateId
     }
 
       interventions {
@@ -129,6 +132,7 @@ query Me {
       behaviorTitle
       isTemplate
       isActive
+      templateId
       createdBy {
         _id
         isAdmin
@@ -166,6 +170,7 @@ query Me {
         }
         isActive
       }
+      templateId
     }
 
     interventions {
@@ -204,7 +209,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
       username
       firstName
       lastName
-      
+   
       studentSchoolId
       
       accommodations {
@@ -259,9 +264,11 @@ query User($identifier: String!, $isUsername: Boolean!) {
         mostFrequentTime
         isTemplate
         isActive
+        templateId
       }
       behaviorDurations {
       _id
+      studentId
       behaviorTitle
       operationalDefinition
       createdAt
@@ -278,6 +285,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
        
         isActive
       }
+      templateId
     }
 
       interventions {
@@ -317,6 +325,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
       behaviorTitle
       isTemplate
       isActive
+      templateId
       createdBy {
         _id
         isAdmin
@@ -347,6 +356,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
         status
         isActive
       }
+      templateId
     }
 
     interventions {
@@ -406,10 +416,9 @@ export const QUERY_FREQUENCY_TEMPLATES = gql`
 `;
 
 export const QUERY_FREQUENCY_LIST = gql`
-query Frequency($studentId: ID!) {
+query Frequency($studentId: ID) {
   frequency(studentId: $studentId) {
     _id
-
     behaviorTitle
     isActive
     operationalDefinition
@@ -420,23 +429,18 @@ query Frequency($studentId: ID!) {
       username
     }
     count
-    createdFor {
-      _id
-      firstName
-      lastName
-      username
-      studentSchoolId
-    }
     log {
       time
     }
+    isTemplate
+    templateId
   }
 }
 `;
 
 export const QUERY_DURATION_LIST = gql`
-query Duration {
-  duration {
+query Duration($studentId: ID) {
+  duration(studentId: $studentId) {
     _id
     behaviorTitle
     operationalDefinition
@@ -445,10 +449,22 @@ query Duration {
       lastName
       firstName
       username
+    }
+    isTemplate
+    templateId
+    isActive
+    timers {
+      timerId
+      startTime
+      endTime
+      status
+      isActive
+    }
   }
 }
-}
 `;
+
+
 
 export const QUERY_ACCOMMODATION_TEMPLATES = gql`
 query AccommodationList($isTemplate: Boolean, $isActive: Boolean) {
@@ -533,49 +549,71 @@ query AssignedInterventions($isTemplate: Boolean, $isActive: Boolean) {
 `;
 
 // Query for all running timers for a student and behavior
-// export const QUERY_RUNNING_TIMERS = gql`
-// query GetRunningTimers($studentId: ID!, $behaviorTitle: String!) {
-//   getRunningTimers(studentId: $studentId, behaviorTitle: $behaviorTitle) {
-//     timerId
-//     startTime
-//     endTime
-//     status
-//     isActive
-//   }
-// }
-// `;
+export const QUERY_RUNNING_TIMERS = gql`
+query GetRunningTimers($studentId: ID!, $behaviorTitle: String!) {
+  getRunningTimers(studentId: $studentId, behaviorTitle: $behaviorTitle) {
+    timerId
+    startTime
+    endTime
+    status
+    isActive
+  }
+}
+`;
 
-// // Query for all timers for a specific duration (for timer management UI)
-//  export const QUERY_TIMERS_FOR_DURATION = gql`
-//   query TimersForDuration($durationId: ID!) {
-//     timersForDuration(durationId: $durationId) {
-//       _id
-//       behaviorTitle
-//       timers {
-//         timerId
-//         startTime
-//         endTime
-//         status
-//         isActive
-//       }
-//     }
-//   }
-// `;
+// Query for all timers for a specific duration (for timer management UI)
+ export const QUERY_TIMERS_FOR_DURATION = gql`
+  query TimersForDuration($durationId: ID!) {
+    timersForDuration(durationId: $durationId) {
+      _id
+      behaviorTitle
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
+`;
 
-// export const QUERY_DURATIONS_FOR_STUDENT = gql`
-//   query Durations($studentId: ID!) {
-//     duration(studentId: $studentId) {
-//       _id
-//       behaviorTitle
-//       operationalDefinition
-//       isActive
-//       timers {
-//         timerId
-//         startTime
-//         endTime
-//         status
-//         isActive
-//       }
-//     }
-//   }
-// `;
+export const QUERY_DURATIONS_FOR_STUDENT = gql`
+  query Durations($studentId: ID!) {
+    duration(studentId: $studentId) {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isActive
+      templateId
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
+`;
+
+export const QUERY_DURATION_TEMPLATES = gql`
+  query DurationTemplates {
+    duration(isTemplate: true) {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isTemplate
+      isActive
+      createdAt
+      templateId
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
+`;

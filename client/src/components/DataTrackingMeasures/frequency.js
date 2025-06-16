@@ -249,8 +249,14 @@ const { confirm } = Modal;
   const assignedTitles = user.behaviorFrequencies.map(b => b.behaviorTitle);
 
   // Filter templates to only those not already assigned
+  const assignedTemplateIds = user.behaviorFrequencies
+    .filter(b => b.templateId) // only those with a templateId
+    .map(b => b.templateId.toString());
+
   const availableTemplates = templatesData?.frequency?.filter(
-    template => !assignedTitles.includes(template.behaviorTitle)
+    template =>
+      !assignedTemplateIds.includes(template._id) &&
+      !assignedTitles.includes(template.behaviorTitle)
   );
 
   const activeFrequencies = user?.behaviorFrequencies?.filter(b => b.isActive) || [];

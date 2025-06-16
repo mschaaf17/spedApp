@@ -16,7 +16,7 @@ const { startOfDay, endOfDay, isEqual } = require("date-fns");
 const mongoose = require("mongoose");
 
     
-const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefinition, studentId }, context) => {
+const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefinition, studentId, templateId }, context) => {
   if (!context.user || !context.user.isAdmin) {
     throw new AuthenticationError("You must be logged in as an administrator!");
   }
@@ -43,6 +43,7 @@ const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefi
     dailyCounts: [],
     log: [],
     isTemplate: false, // <-- This marks it as a student-assigned frequency
+    templateId,
   });
 
   // 2. Add the Frequency's _id to the student's behaviorFrequencies array
@@ -106,11 +107,19 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
   }
 
   try {
-    const duration = await Duration.findById(durationId);
-    if (!duration) {
-      throw new UserInputError('Duration not found')
-    }
-    
+    const template = await Duration.findById(durationId);
+    if (!template) throw new UserInputError('Duration template not found');
+
+    const newDuration = await Duration.create({
+      behaviorTitle: template.behaviorTitle,
+      operationalDefinition: template.operationalDefinition,
+      createdBy: context.user._id,
+      createdFor: studentId,
+      isTemplate: false,
+      templateId: template._id,
+      isActive: true,
+      // ...other fields as needed
+    });
 
     // Find the user document (student)
     const user = await User.findById(studentId);
@@ -118,8 +127,8 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
       throw new UserInputError("Student not found");
     }
 
-    // Update the user document to include the new duration
-    user.behaviorDurations.push(durationId);
+    // Add to student's behaviorDurations
+    user.behaviorDurations.push(newDuration._id);
     await user.save();
 
     return user;
@@ -266,12 +275,28 @@ const resolvers = {
       return results;
     },
 
-    //need data to check these
-    duration: async (parent, args) => {
+    duration: async (_, { studentId, isTemplate }, context) => {
       const filter = {};
-      if (args.studentId) filter.createdFor = args.studentId;
-      return Duration.find(filter);
+      if (isTemplate !== undefined) filter.isTemplate = isTemplate;
+      if (studentId) filter.studentId = studentId;
+      console.log('Duration FILTER:', filter);
+      const results = await Duration.find(filter);
+      console.log('Direct Mongoose Query Results:', results);
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      return results;
     },
+
+    //need data to check these
+    // duration: async (parent, args) => {
+    //   const filter = {};
+    //   if (isTemplate !== undefined) filter.isTemplate = isTemplate;
+    //   if (studentId) filter.studentId = studentId;
+    //   if (args.isTemplate !== undefined) filter.isTemplate = args.isTemplate;
+    //   if (args.isActive !== undefined) filter.isActive = args.isActive;
+    //   return Duration.find(filter).populate('createdBy');
+    // },
 
     interventionList: async (parent, args) => {
       const filter = {};
@@ -758,7 +783,8 @@ const resolvers = {
             count: 0,
             dailyCounts: [],
             log: [],
-            isTemplate: false
+            isTemplate: false,
+            templateId: frequency._id,
           });
 
           // Add to student's behaviorFrequencies

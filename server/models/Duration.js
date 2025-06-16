@@ -13,6 +13,11 @@ const TimerSchema = new Schema({
 });
 
 const DurationSchema = new Schema({
+  studentId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
   duration: {
     type: String,
   },
@@ -53,7 +58,11 @@ const DurationSchema = new Schema({
   },
   isActive: { type: Boolean, default: true },
   timers: [TimerSchema],
+  isTemplate: { type: Boolean, default: false },
+  templateId: { type: Schema.Types.ObjectId, ref: 'Duration' },
 });
 
 const Duration = model("Duration", DurationSchema);
 module.exports = Duration;
+
+//need to uodate this to use template logic so that that the out of seat duration will filter out students that have already been assigned that behavior

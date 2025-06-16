@@ -66,6 +66,7 @@ const FrequencySchema = new Schema({
     type: Boolean,
     default: false,
   },
+  templateId: { type: Schema.Types.ObjectId, ref: 'Frequency' },
    isActive: { type: Boolean, default: true }
 });
 

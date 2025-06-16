@@ -49,6 +49,7 @@ const typeDefs = gql`
     todayTotal: Int
     mostFrequentTime: String
     isTemplate: Boolean
+    templateId: ID
     isActive: Boolean
    
   }
@@ -59,6 +60,7 @@ const typeDefs = gql`
 
   type Duration {
     _id: ID!
+    studentId: ID
     duration: String!
     behaviorTitle: String!
     operationalDefinition: String!
@@ -70,7 +72,9 @@ const typeDefs = gql`
     createdFor: [User!]!
     averageTimeSpentDaily: String!
     timeMostOccurrences: String!
-    isActive: Boolean!
+    isTemplate: Boolean
+    templateId: ID
+    isActive: Boolean
     timers: [Timer!]!
   }
 
@@ -111,7 +115,7 @@ const typeDefs = gql`
     students: [User]
     accommodationList(isTemplate: Boolean, isActive: Boolean): [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
-    duration(studentId: ID): [Duration]
+    duration(studentId: ID, isTemplate: Boolean): [Duration]
     timersForDuration(durationId: ID!): Duration
     getRunningTimers(studentId: ID!, behaviorTitle: String!): [Timer!]!
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
