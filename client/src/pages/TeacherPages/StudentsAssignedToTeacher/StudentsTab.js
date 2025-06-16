@@ -13,11 +13,10 @@ export default function StudentTab() {
   const [addedStudents, setAddedStudents] = useState({});
 
   const { loading: studentListLoading, data: studentListData } = useQuery(QUERY_STUDENT_LIST);
-  //const { data: userData } = useQuery(QUERY_USER);
   const getAllStudents = studentListData?.students || [];
 
-  const { data: meData, refetch: refetchMe } = useQuery(QUERY_ME);
-  const getMyStudentList = meData?.me.students || [];
+  const { data: meData, loading: meLoading, refetch: refetchMe } = useQuery(QUERY_ME);
+  const getMyStudentList = meData?.me?.students || [];
 
   const [removeStudentFromList, { error: removeError }] = useMutation(REMOVE_STUDENT_FROM_LIST);
   const [addStudentToList, { error: addError }] = useMutation(ADD_STUDENT_TO_LIST);
@@ -68,6 +67,14 @@ export default function StudentTab() {
     }
   };
 
+  if (studentListLoading || meLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!meData?.me) {
+    return <div>Error: User data not found</div>;
+  }
+
   return (
     <div>
       <div className='titleSection'>
@@ -83,7 +90,6 @@ export default function StudentTab() {
         addStudent={addStudent}
       />
      
-
       {showConfirmationModal && (
         <Modal show={showConfirmationModal} onHide={handleCancelConfirmation}>
           <Modal.Header closeButton>

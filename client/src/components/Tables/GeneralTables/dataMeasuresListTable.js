@@ -52,13 +52,24 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
      
       // Only include students who do NOT already have this template assigned
       const options = (meData.students || [])
-        .filter(student =>
-          !((student.behaviorFrequencies || [])
-            .filter(freq => freq.isActive)
-            .some(freq =>
-              freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
-            ))
-        )
+        .filter(student => {
+          if (selectedTemplate.__typename === 'Frequency') {
+            // Exclude students who already have this frequency assigned
+            return !((student.behaviorFrequencies || [])
+              .filter(freq => freq.isActive)
+              .some(freq =>
+                freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+              ));
+          } else if (selectedTemplate.__typename === 'Duration') {
+            // Exclude students who already have this duration assigned
+            return !((student.behaviorDurations || [])
+              .filter(dur => dur.isActive)
+              .some(dur =>
+                dur.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+              ));
+          }
+          return true;
+        })
         .map(student => ({
           value: student._id,
           label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`
@@ -130,11 +141,18 @@ const displaySelect = (rowId) => {
   const getSelectOptionsForRow = (record) => {
     if (!meData || !meData.students) return [];
     return meData.students
-      .filter(student =>
-        !(student.behaviorFrequencies || [])
-          .filter(freq => freq.isActive)
-          .some(freq => freq.behaviorTitle === record.behaviorTitle)
-      )
+      .filter(student => {
+        if (record.__typename === 'Frequency') {
+          return !(student.behaviorFrequencies || [])
+            .filter(freq => freq.isActive)
+            .some(freq => freq.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+        } else if (record.__typename === 'Duration') {
+          return !(student.behaviorDurations || [])
+            .filter(dur => dur.isActive)
+            .some(dur => dur.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+        }
+        return true;
+      })
       .map(student => ({
         value: student._id,
         label: `${student.lastName}, ${student.firstName} (${student.studentSchoolId})`

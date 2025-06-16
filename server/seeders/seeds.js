@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Frequency = require('../models/Frequency');
 const InterventionList = require('../models/InterventionList');
 const AccommodationList = require('../models/AccommodationList');
+const Duration = require('../models/Duration');
 
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/inclusion-student-app';
@@ -15,6 +16,7 @@ async function seed() {
   await Frequency.deleteMany({});
   await InterventionList.deleteMany({});
   await AccommodationList.deleteMany({});
+  await Duration.deleteMany({});
 
 
   // Create users
@@ -92,6 +94,7 @@ async function seed() {
     createdBy: admin._id,
     isTemplate: false,
     isActive: true,
+    templateId: frequencyTemplate._id,
     createdAt: new Date('2025-06-07T00:00:00.000Z'),
     dailyCounts: [
       { date: '2025-06-07T00:00:00.000Z', count: 3 },
@@ -164,6 +167,47 @@ async function seed() {
   student.interventions.push(assignedIntervention._id);
   student.behaviorFrequencies.push(callingOutFrequency._id);
    student.accommodations.push(assignedAccommodation._id);
+  await student.save();
+
+  // Create a duration template for out of seat
+  const durationTemplate = await Duration.create({
+    behaviorTitle: 'Out of Seat',
+    operationalDefinition: 'Student leaves assigned seat without permission',
+    createdBy: admin._id,
+    isTemplate: true,
+    isActive: true,
+    createdAt: new Date('2025-06-07T00:00:00.000Z')
+  });
+
+  // Create a student-specific duration instance
+  const outOfSeatDuration = await Duration.create({
+    behaviorTitle: durationTemplate.behaviorTitle,
+    operationalDefinition: durationTemplate.operationalDefinition,
+    createdBy: admin._id,
+    studentId: student._id,
+    isTemplate: false,
+    isActive: true,
+    templateId: durationTemplate._id,
+    createdAt: new Date('2025-06-08T00:00:00.000Z'),
+    timers: [
+      {
+        startTime: new Date('2025-06-08T10:00:00.000Z'),
+        endTime: new Date('2025-06-08T10:05:00.000Z'),
+        status: 'stopped',
+        createdBy: admin._id,
+        isActive: true
+      },
+      {
+        startTime: new Date('2025-06-08T11:30:00.000Z'),
+        endTime: new Date('2025-06-08T11:35:00.000Z'),
+        status: 'stopped',
+        createdBy: admin._id,
+        isActive: true
+      }
+    ]
+  });
+
+  student.behaviorDurations.push(outOfSeatDuration._id);
   await student.save();
 
   console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);

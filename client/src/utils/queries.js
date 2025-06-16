@@ -71,33 +71,30 @@ query Me {
         mostFrequentTime
         isTemplate
         isActive
+        templateId
       }
       behaviorDurations {
-        _id
-        duration
-        behaviorTitle
-        operationalDefinition
-        createdAt
-        startTimes
-        startDurationId
-        endTimes
-        createdBy {
-          _id
-          isAdmin
-          username
-          firstName
-          lastName
-        }
-        createdFor {
-          _id
-          isAdmin
-          username
-          firstName
-          lastName
-        }
-        averageTimeSpentDaily
-        timeMostOccurrences
+      _id
+      studentId
+      behaviorTitle
+      operationalDefinition
+      createdAt
+      startTimes
+      startDurationId
+      endTimes
+      
+      isActive
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+       
+        isActive
       }
+      templateId
+    }
+
       interventions {
         _id
         title
@@ -135,6 +132,7 @@ query Me {
       behaviorTitle
       isTemplate
       isActive
+      templateId
       createdBy {
         _id
         isAdmin
@@ -146,15 +144,35 @@ query Me {
     behaviorDurations {
       _id
       behaviorTitle
+      operationalDefinition
+      createdAt
+      startTimes
+      startDurationId
+      endTimes
       createdBy {
         _id
-        isAdmin
         username
         firstName
         lastName
       }
-      duration
+      isActive
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        createdBy {
+          _id
+          username
+          firstName
+          lastName
+          isAdmin
+        }
+        isActive
+      }
+      templateId
     }
+
     interventions {
       _id
       title
@@ -173,88 +191,17 @@ query Me {
 `;
 
 
-export const QUERY_USERS = gql`
-query Users {
-  username
-    _id
-    students {
-      username
-      _id
-      studentSchoolId
-      lastName
-      firstName
-    }
-    accommodations {
-  _id
-  title
-  image
-  description
-  templateId {
-    _id
-    title
-  }
-  createdBy {
-    _id
-    isAdmin
-    username
-    firstName
-    lastName
-  }
-  createdAt
-}
-    firstName
-    isAdmin
-    lastName
-    studentSchoolId
-    interventions {
-      title
-      _id
-    }
-    behaviorDurations {
-      behaviorTitle
-      _id
-      operationalDefinition
-      # createdAt
-      # endTimes
-      # startTimes
-      # startDurationId
-      # createdFor {
-      #   username
-      # }
-      # createdBy {
-      #   username
-      # }
-    }
-    behaviorFrequencies {
-      _id
-      behaviorTitle
-      operationalDefinition
-      isActive
-     
-      # count
-      # createdAt
-      # createdBy {
-      #   username
-      # }
-      # createdFor {
-      #   username
-      # }
-      # log {
-      #   time
-      # }
-      # updatedAt
-    }
-  }
-`;
 
 export const QUERY_USER = gql`
 query User($identifier: String!, $isUsername: Boolean!) {
   user(identifier: $identifier, isUsername: $isUsername) {
+
     _id
     isAdmin
     username
     firstName
     lastName
+
     studentSchoolId
     students {
       _id
@@ -262,7 +209,9 @@ query User($identifier: String!, $isUsername: Boolean!) {
       username
       firstName
       lastName
+   
       studentSchoolId
+      
       accommodations {
   _id
   title
@@ -281,6 +230,77 @@ query User($identifier: String!, $isUsername: Boolean!) {
   }
   createdAt
 }
+      behaviorFrequencies {
+        _id
+        studentId
+        dailyCounts {
+          date
+          count
+        }
+        count
+        behaviorTitle
+        operationalDefinition
+        createdAt
+        updatedAt
+        createdBy {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
+        }
+        createdFor {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
+        }
+        log {
+          time
+        }
+        averageCountByDay
+        todayTotal
+        mostFrequentTime
+        isTemplate
+        isActive
+        templateId
+      }
+      behaviorDurations {
+      _id
+      studentId
+      behaviorTitle
+      operationalDefinition
+      createdAt
+      startTimes
+      startDurationId
+      endTimes
+      
+      isActive
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+       
+        isActive
+      }
+      templateId
+    }
+
+      interventions {
+        _id
+        title
+        summary
+        function
+        createdBy {
+          _id
+          isAdmin
+          username
+          firstName
+          lastName
+        }
+      }
     }
     accommodations {
   _id
@@ -302,16 +322,10 @@ query User($identifier: String!, $isUsername: Boolean!) {
 }
     behaviorFrequencies {
       _id
-      studentId
-      dailyCounts {
-        date
-        count
-      }
-      count
       behaviorTitle
-      operationalDefinition
-      createdAt
-      updatedAt
+      isTemplate
+      isActive
+      templateId
       createdBy {
         _id
         isAdmin
@@ -319,26 +333,13 @@ query User($identifier: String!, $isUsername: Boolean!) {
         firstName
         lastName
       }
-      createdFor {
-        _id
-        isAdmin
-        username
-        firstName
-        lastName
-        studentSchoolId
+      dailyCounts {
+        date
+        count
       }
-      log {
-        time
-      }
-      averageCountByDay
-      todayTotal
-      mostFrequentTime
-      isTemplate
-      isActive
     }
     behaviorDurations {
       _id
-      duration
       behaviorTitle
       operationalDefinition
       createdAt
@@ -347,41 +348,24 @@ query User($identifier: String!, $isUsername: Boolean!) {
       endTimes
       createdBy {
         _id
-        isAdmin
         username
         firstName
         lastName
-        studentSchoolId
       }
-      createdFor {
-        _id
-        isAdmin
-        username
-        firstName
-        lastName
-        studentSchoolId
+      isActive
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
       }
-      averageTimeSpentDaily
-      timeMostOccurrences
+      templateId
     }
-  
+
     interventions {
       _id
       title
-     
-      studentId {
-        _id
-        username
-        
-      }
-      isTemplate
-      isActive
-      behaviorId {
-        behaviorTitle
-        operationalDefinition
-        _id
-      }
-      behaviorTitle
       summary
       function
       createdBy {
@@ -391,11 +375,11 @@ query User($identifier: String!, $isUsername: Boolean!) {
         firstName
         lastName
       }
-      createdAt
     }
-    
   }
 }
+
+
 `;
 
 export const QUERY_STUDENT_LIST = gql`
@@ -437,10 +421,9 @@ export const QUERY_FREQUENCY_TEMPLATES = gql`
 `;
 
 export const QUERY_FREQUENCY_LIST = gql`
-query Frequency($studentId: ID!) {
+query Frequency($studentId: ID) {
   frequency(studentId: $studentId) {
     _id
-    studentId
     behaviorTitle
     isActive
     operationalDefinition
@@ -451,23 +434,22 @@ query Frequency($studentId: ID!) {
       username
     }
     count
-    createdFor {
-      _id
-      firstName
-      lastName
-      username
-      studentSchoolId
-    }
     log {
       time
     }
+    dailyCounts {
+        date
+        count
+      }
+    isTemplate
+    templateId
   }
 }
 `;
 
 export const QUERY_DURATION_LIST = gql`
-query Duration {
-  duration {
+query Duration($studentId: ID) {
+  duration(studentId: $studentId) {
     _id
     behaviorTitle
     operationalDefinition
@@ -476,10 +458,22 @@ query Duration {
       lastName
       firstName
       username
+    }
+    isTemplate
+    templateId
+    isActive
+    timers {
+      timerId
+      startTime
+      endTime
+      status
+      isActive
+    }
   }
 }
-}
 `;
+
+
 
 export const QUERY_ACCOMMODATION_TEMPLATES = gql`
 query AccommodationList($isTemplate: Boolean, $isActive: Boolean) {
@@ -513,16 +507,6 @@ createdAt
 }
 `;
 
-
-// export const QUERY_ACCOMMODATIONS = gql`
-// query accommodations {
-//   accommodations {
-//   title
-//   image
-//   username
-//   }
-// }
-// `;
 
 export const QUERY_INTERVENTION_TEMPLATES = gql`
 query InterventionList($isTemplate: Boolean, $isActive: Boolean) {
@@ -571,4 +555,74 @@ query AssignedInterventions($isTemplate: Boolean, $isActive: Boolean) {
     isActive
   }
 }
+`;
+
+// Query for all running timers for a student and behavior
+export const QUERY_RUNNING_TIMERS = gql`
+query GetRunningTimers($studentId: ID!, $behaviorTitle: String!) {
+  getRunningTimers(studentId: $studentId, behaviorTitle: $behaviorTitle) {
+    timerId
+    startTime
+    endTime
+    status
+    isActive
+  }
+}
+`;
+
+// Query for all timers for a specific duration (for timer management UI)
+ export const QUERY_TIMERS_FOR_DURATION = gql`
+  query TimersForDuration($durationId: ID!) {
+    timersForDuration(durationId: $durationId) {
+      _id
+      behaviorTitle
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
+`;
+
+export const QUERY_DURATIONS_FOR_STUDENT = gql`
+  query Durations($studentId: ID!) {
+    duration(studentId: $studentId) {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isActive
+      templateId
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
+`;
+
+export const QUERY_DURATION_TEMPLATES = gql`
+  query DurationTemplates {
+    duration(isTemplate: true) {
+      _id
+      behaviorTitle
+      operationalDefinition
+      isTemplate
+      isActive
+      createdAt
+      templateId
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
+      }
+    }
+  }
 `;

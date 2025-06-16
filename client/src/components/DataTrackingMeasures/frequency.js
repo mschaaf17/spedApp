@@ -10,14 +10,13 @@ import Auth from '../../utils/auth';
 
 const { confirm } = Modal;
 
-  const Frequency = () => {
+const Frequency = () => {
   const { username: usernameFromUrl } = useParams();
   const { loading, data } = useQuery(QUERY_USER, {
     variables: { identifier: usernameFromUrl, isUsername: true },
   });
 
   const studentId = data?.user?._id;
-
 
   const { loading: meLoading, data: meData } = useQuery(QUERY_ME);
   
@@ -26,8 +25,6 @@ const { confirm } = Modal;
   });
 
   const { loading: templatesLoading, data: templatesData, refetch: refetchTemplates } = useQuery(QUERY_FREQUENCY_TEMPLATES);
-
-  
 
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [showRedXIcons, setShowRedXIcons] = useState(false);
@@ -44,12 +41,10 @@ const { confirm } = Modal;
   const [selectedBehaviorTitleForDelete, setSelectedBehaviorTitleForDelete] = useState('');
   const [behaviorCounts, setBehaviorCounts] = useState({});
 
-  const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
-  const [removeDataMeasureFromStudent] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
+  const [addDataMeasureToStudent, { loading: addLoading }] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
+  const [removeDataMeasureFromStudent, { loading: removeLoading }] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
   const [incrementFrequency] = useMutation(INCREMENT_FREQUENCY);
   const [user, setUser] = useState(null);
-
-
 
   useEffect(() => {
     if (!loading && data) {
@@ -62,12 +57,29 @@ const { confirm } = Modal;
   };
 
   function getTodayCount(dailyCounts) {
-    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-    return dailyCounts
-      ?.filter(dc => {
-        // Convert the timestamp to a date string
-        const dateString = new Date(Number(dc.date)).toISOString().slice(0, 10);
-        return dateString === today;
+    const today = new Date();
+    const todayString = today.toLocaleDateString();
+    console.log('Today (local):', todayString);
+
+    return (dailyCounts || [])
+      .filter(dc => {
+        if (!dc.date) return false;
+        let d;
+        if (typeof dc.date === 'number') {
+          d = new Date(dc.date);
+        } else if (typeof dc.date === 'string') {
+          if (/^\d+$/.test(dc.date)) {
+            d = new Date(Number(dc.date));
+          } else {
+            d = new Date(dc.date);
+          }
+        }
+        if (!d || isNaN(d.getTime())) return false;
+        const dString = d.toLocaleDateString();
+        if (dString === todayString) {
+          console.log('Matched date:', dString, 'Count:', dc.count);
+        }
+        return dString === todayString;
       })
       .reduce((sum, dc) => sum + dc.count, 0);
   }
@@ -77,34 +89,13 @@ const { confirm } = Modal;
     setShowDeleteIcons(false);
   };
 
-  const handleSaveClickForAddingFrequency = async () => {
-    try {
-      if (!selectedBehaviorTitles || selectedBehaviorTitles.length === 0) {
-        console.error('No behaviors selected to add.');
-        return;
-      }
-
-      // Handle multiple behaviors using Promise.all for better performance
-      if (Array.isArray(selectedBehaviorTitles)) {
-        await Promise.all(
-          selectedBehaviorTitles.map((dataMeasureId) =>
-            addDataMeasureToStudent({
-              variables: { dataMeasureId, studentId: user._id },
-            })
-          )
-        );
-      } else {
-        // Handle single behavior case
-        await addDataMeasureToStudent({
-          variables: { dataMeasureId: selectedBehaviorTitles, studentId: user._id },
-        });
-      }
-
-      console.log('Data measure(s) added to student successfully');
-      setShowSelect(false); // Ensure UI updates after saving
-    } catch (error) {
-      console.error('Error adding data measure to student: ', error);
-    }
+  const handleAdd = async (dataMeasureId) => {
+    await addDataMeasureToStudent({
+      variables: { dataMeasureId, studentId },
+    });
+    await refetch();
+    setShowSelect(false);
+    setSelectedBehaviorTitles([]);
   };
 
   const toggleRedXIcons = () => {
@@ -178,33 +169,14 @@ const { confirm } = Modal;
   const handleIncrementFrequency = async (frequencyId) => {
     try {
       const currentDate = new Date().toISOString();
-      console.log("currentDate being sent:", currentDate);
-      const { data: incrementData } = await incrementFrequency({
+      await incrementFrequency({
         variables: { frequencyId, studentId: data.user._id, date: currentDate },
       });
-
-      // Find the behavior in your local state and update its todayTotal
-      setUser(prevUser => {
-        const updatedFrequencies = prevUser.behaviorFrequencies.map(b => {
-          if (b._id === frequencyId) {
-            return {
-              ...b,
-              todayTotal: incrementData.incrementFrequency.todayTotal,
-              dailyCounts: incrementData.incrementFrequency.dailyCounts,
-            };
-          }
-          return b;
-        });
-        return { ...prevUser, behaviorFrequencies: updatedFrequencies };
-      });
-      console.log("button is clicked")
-
-    
+      await refetch(); // <-- This ensures you get the latest data
     } catch (error) {
       console.error('Error incrementing frequency:', error);
     }
   };
-
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -239,26 +211,35 @@ const { confirm } = Modal;
     setInitialMergedData(mergedData);
   }, [loggedInUser, frequencyData, user]);
 
+  const handleRemove = async (frequencyId) => {
+    await removeDataMeasureFromStudent({
+      variables: { frequencyId, studentId },
+    });
+    await refetch();
+  };
+
   if (loading || frequencyLoading  || !user) {
     return <div>Loading...</div>;
   }
 
- 
-
   // Get the titles of behaviors already assigned to the student
-  const assignedTitles = user.behaviorFrequencies.map(b => b.behaviorTitle);
+  const assignedTitles = user.behaviorFrequencies
+    .filter(b => !b.isTemplate)
+    .map(b => b.behaviorTitle);
 
   // Filter templates to only those not already assigned
   const availableTemplates = templatesData?.frequency?.filter(
-    template => !assignedTitles.includes(template.behaviorTitle)
+    template => template.isTemplate && !assignedTitles.includes(template.behaviorTitle)
   );
 
-  const activeFrequencies = user?.behaviorFrequencies?.filter(b => b.isActive) || [];
+  const activeFrequencies = (frequencyData?.frequency || []).filter(b => b.isActive && !b.isTemplate);
+
+  console.log('user:', user);
+  console.log('activeFrequencies:', activeFrequencies);
+  console.log('availableTemplates:', availableTemplates);
 
   return (
     <>
-
-
     <div className='centerBody'>
     <div className='titleSection'>
   <h1 className ="title"> Logging for {usernameFromUrl}</h1>
@@ -285,7 +266,20 @@ const { confirm } = Modal;
                     ))}
                   </Select>
                 )}
-                <Button type='primary' onClick={handleSaveClickForAddingFrequency}>
+                <Button
+                  type='primary'
+                  onClick={async () => {
+                    // Add all selected behaviors
+                    await Promise.all(
+                      selectedBehaviorTitles.map((dataMeasureId) =>
+                        handleAdd(dataMeasureId)
+                      )
+                    );
+                    setShowSelect(false);
+                    setSelectedBehaviorTitles([]);
+                  }}
+                  disabled={selectedBehaviorTitles.length === 0}
+                >
                   Save
                 </Button>
               </>
@@ -315,7 +309,20 @@ const { confirm } = Modal;
                     ))}
                   </Select>
                 )}
-                <Button type='primary' onClick={handleSaveClickForAddingFrequency}>
+                <Button
+                  type='primary'
+                  onClick={async () => {
+                    // Add all selected behaviors
+                    await Promise.all(
+                      selectedBehaviorTitles.map((dataMeasureId) =>
+                        handleAdd(dataMeasureId)
+                      )
+                    );
+                    setShowSelect(false);
+                    setSelectedBehaviorTitles([]);
+                  }}
+                  disabled={selectedBehaviorTitles.length === 0}
+                >
                   Save
                 </Button>
               </>
@@ -350,7 +357,7 @@ const { confirm } = Modal;
                       }
                     }}
                   >
-                    {behavior.behaviorTitle} : ({getTodayCount(behavior.dailyCounts)})
+                    {behavior.behaviorTitle} : ({getTodayCount(behavior.dailyCounts || [])})
                     {showRedXIcons && (
                       <span className='deleteIcon' onClick={e => {
                         e.stopPropagation(); // Prevents triggering the main button click
