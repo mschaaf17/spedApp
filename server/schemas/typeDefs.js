@@ -116,7 +116,7 @@ const typeDefs = gql`
     accommodationList(isTemplate: Boolean, isActive: Boolean): [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration(studentId: ID, isTemplate: Boolean): [Duration]
-    timersForDuration(durationId: ID!): Duration
+    timersForDuration(durationId: ID!, studentId: ID!): Duration
     getRunningTimers(studentId: ID!, behaviorTitle: String!): [Timer!]!
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
     interventionListForStudent(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
@@ -184,8 +184,11 @@ const typeDefs = gql`
     incrementFrequency(frequencyId: ID!, studentId: ID!, date: String!): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
-    startDurationTimer(durationId: ID!): Timer
-    endDurationTimer(durationId: ID!, timerId: ID!): Timer
+    startDurationTimer(durationId: ID!, studentId: ID!): Timer
+    endDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
+    resumeDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
+    resetDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
+    saveDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
     removeLastDurationTimer(studentId: ID!): User
 
     addInterventionTemplate(
@@ -203,10 +206,6 @@ const typeDefs = gql`
       behaviorId: ID
     ): InterventionList
     removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
-
-    resumeDurationTimer(durationId: ID!, timerId: ID!): Timer
-    resetDurationTimer(durationId: ID!, timerId: ID!): Timer
-    saveDurationTimer(durationId: ID!, timerId: ID!): Timer
   }
 `;
 

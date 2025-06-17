@@ -71,22 +71,30 @@ export const ADD_DURATION_TITLE = gql`
 mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
   addDataMeasureToStudent(dataMeasureId: $dataMeasureId, studentId: $studentId) {
     _id
+    username
+    firstName
+    lastName
     behaviorFrequencies {
       _id
       behaviorTitle
+      operationalDefinition
       createdBy {
         _id
         firstName
         lastName
         username
       }
-      operationalDefinition
       isTemplate
-      
+      isActive
+      templateId
+      dailyCounts {
+        date
+        count
+      }
+      log {
+        time
+      }
     }
-    username
-    firstName
-    lastName
     behaviorDurations {
       _id
       behaviorTitle
@@ -96,6 +104,16 @@ mutation AddDataMeasureToStudent($dataMeasureId: ID!, $studentId: ID!) {
         username
         lastName
         firstName
+      }
+      isTemplate
+      isActive
+      templateId
+      timers {
+        timerId
+        startTime
+        endTime
+        status
+        isActive
       }
     }
   }
@@ -110,6 +128,14 @@ mutation RemoveFrequencyBeingTrackedForStudent($frequencyId: ID!, $studentId: ID
       _id
       behaviorTitle
     }
+  }
+}
+`;
+
+export const REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT = gql`
+mutation RemoveDurationBeingTrackedForStudent($durationId: ID!, $studentId: ID!) {
+  removeDurationBeingTrackedForStudent(durationId: $durationId, studentId: $studentId) {
+    _id
   }
 }
 `;
@@ -350,8 +376,8 @@ mutation RemoveInterventionForStudent($interventionId: ID!, $studentId: ID!) {
 
 //Start a new timer for a duration
 export const START_DURATION_TIMER = gql`
-mutation StartDurationTimer($durationId: ID!) {
-  startDurationTimer(durationId: $durationId) {
+mutation StartDurationTimer($durationId: ID!, $studentId: ID!) {
+  startDurationTimer(durationId: $durationId, studentId: $studentId) {
     timerId
     startTime
     endTime
@@ -363,8 +389,8 @@ mutation StartDurationTimer($durationId: ID!) {
 
 // End a specific timer
 export const END_DURATION_TIMER = gql`
-mutation EndDurationTimer($durationId: ID!, $timerId: ID!) {
-  endDurationTimer(durationId: $durationId, timerId: $timerId) {
+mutation EndDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
+  endDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId) {
     timerId
     startTime
     endTime
@@ -376,8 +402,8 @@ mutation EndDurationTimer($durationId: ID!, $timerId: ID!) {
 
 // Resume a stopped timer
 export const RESUME_DURATION_TIMER = gql`
-mutation ResumeDurationTimer($durationId: ID!, $timerId: ID!) {
-  resumeDurationTimer(durationId: $durationId, timerId: $timerId) {
+mutation ResumeDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
+  resumeDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId) {
     timerId
     startTime
     endTime
@@ -389,8 +415,8 @@ mutation ResumeDurationTimer($durationId: ID!, $timerId: ID!) {
 
 // Reset a timer
 export const RESET_DURATION_TIMER = gql`
-mutation ResetDurationTimer($durationId: ID!, $timerId: ID!) {
-  resetDurationTimer(durationId: $durationId, timerId: $timerId) {
+mutation ResetDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
+  resetDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId) {
     timerId
     startTime
     endTime
@@ -402,8 +428,8 @@ mutation ResetDurationTimer($durationId: ID!, $timerId: ID!) {
 
 // Save a timer
 export const SAVE_DURATION_TIMER = gql`
-mutation SaveDurationTimer($durationId: ID!, $timerId: ID!) {
-  saveDurationTimer(durationId: $durationId, timerId: $timerId) {
+mutation SaveDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
+  saveDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId) {
     timerId
     startTime
     endTime

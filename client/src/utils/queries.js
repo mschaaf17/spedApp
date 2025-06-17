@@ -571,11 +571,20 @@ query GetRunningTimers($studentId: ID!, $behaviorTitle: String!) {
 `;
 
 // Query for all timers for a specific duration (for timer management UI)
- export const QUERY_TIMERS_FOR_DURATION = gql`
-  query TimersForDuration($durationId: ID!) {
-    timersForDuration(durationId: $durationId) {
+export const QUERY_TIMERS_FOR_DURATION = gql`
+  query TimersForDuration($durationId: ID!, $studentId: ID!) {
+    timersForDuration(durationId: $durationId, studentId: $studentId) {
       _id
+      studentId
       behaviorTitle
+      operationalDefinition
+      createdAt
+      startTimes
+      startDurationId
+      endTimes
+      isTemplate
+      templateId
+      isActive
       timers {
         timerId
         startTime

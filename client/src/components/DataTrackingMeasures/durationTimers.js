@@ -2,191 +2,242 @@
 
 
 import React, {useState, useEffect} from 'react'
-import { Modal, Button } from "react-bootstrap"
+import { Modal, Button, Select, message } from "antd"
 import "./index.css"
 import { useQuery, useMutation } from '@apollo/client';
 import {
   QUERY_TIMERS_FOR_DURATION,
-  QUERY_DURATIONS_FOR_STUDENT
+  QUERY_DURATIONS_FOR_STUDENT,
+  QUERY_DURATION_TEMPLATES
 } from '../../utils/queries'; // adjust pa
 import {
   START_DURATION_TIMER,
   END_DURATION_TIMER,
   RESUME_DURATION_TIMER,
   RESET_DURATION_TIMER,
-  SAVE_DURATION_TIMER
+  SAVE_DURATION_TIMER,
+  ADD_DATA_MEASURE_TO_STUDENT,
+  REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT
 } from '../../utils/mutations';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import AddIcon from '@mui/icons-material/Add';
+
 export default function DurationTimers({ studentId }) {
-  const [showModal, setShow] = useState(false)
-  const handleClose = ()=> setShow(false)
-  const handleShow =() =>setShow(true)
+  const [showSelect, setShowSelect] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [selectedBehaviorIds, setSelectedBehaviorIds] = useState([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [deleteIconBehaviorId, setDeleteIconBehaviorId] = useState(null);
+  const [selectedBehaviorTitleForDelete, setSelectedBehaviorTitleForDelete] = useState('');
 
-  const [time, setTime] = useState(0)
-  const [timerOn, setTimerOn] = useState(false)
-
-  const handleClickStop = () => {
-      setTimerOn(false)
-  }
-
-  useEffect(()=> {
-      let interval = null
-
-      if(timerOn) {
-          interval = setInterval(() => {
-              setTime(prevTime => prevTime + 1000)
-          }, 1000)
-      } else {
-          clearInterval(interval)
-      }
-      return () => clearInterval(interval)
-  }, [timerOn])
-
-  
-
-  // Fetch all timers for this duration
+  // Query all durations assigned to this student
   const { data: durationData, loading: durationLoading, refetch: durationRefetch } = useQuery(QUERY_DURATIONS_FOR_STUDENT, {
     variables: { studentId }
   });
-
   const durations = durationData?.duration || [];
-  console.log('Durations:', durations);
-  const durationId = durations._id;
-  
-  const { data: timersData, loading: timersLoading, refetch: timersRefetch } = useQuery(QUERY_TIMERS_FOR_DURATION, {
-    variables: { durationId, studentId }
+
+  // Query all duration templates
+  const { data: templateData, loading: templateLoading, refetch: refetchTemplates } = useQuery(QUERY_DURATION_TEMPLATES);
+  const durationTemplates = templateData?.duration?.filter(t => t.isTemplate) || [];
+
+  // Add duration to student
+  const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT, {
+    onCompleted: () => {
+      durationRefetch();
+      refetchTemplates();
+      setShowSelect(false);
+      setSelectedTemplateId(null);
+      message.success('Duration added!');
+    }
   });
 
-
-
-  const [startTimer] = useMutation(START_DURATION_TIMER, {
-    variables: { durationId },
-    onCompleted: () => durationRefetch()
+  // Remove duration from student
+  const [removeDurationBeingTrackedForStudent] = useMutation(REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT, {
+    onCompleted: () => {
+      durationRefetch();
+      message.success('Duration removed!');
+    }
   });
-  const [endTimer] = useMutation(END_DURATION_TIMER, { onCompleted: () => timersRefetch() });
-  const [resumeTimer] = useMutation(RESUME_DURATION_TIMER, { onCompleted: () => timersRefetch() });
-  const [resetTimer] = useMutation(RESET_DURATION_TIMER, { onCompleted: () => timersRefetch() });
-  const [saveTimer] = useMutation(SAVE_DURATION_TIMER, { onCompleted: () => timersRefetch() });
 
-  if (durationLoading || timersLoading) return <div>Loading...</div>;
-  const timers = timersData?.duration?.timers || [];
+  // For each duration, manage its own timer state
+  const [timersState, setTimersState] = useState({}); // { [durationId]: { time, timerOn, pendingStop } }
 
- 
+  // Add duration (from template) to student
+  const handleAddDuration = async () => {
+    if (!selectedTemplateId) return;
+    await addDataMeasureToStudent({
+      variables: { dataMeasureId: selectedTemplateId, studentId }
+    });
+  };
 
-  const assignedTemplateIds = durations
-    .filter(d => d.templateId)
-    .map(d => d.templateId.toString());
+  // Remove duration from student
+  const handleRemoveDuration = async (durationId) => {
+    await removeDurationBeingTrackedForStudent({
+      variables: { durationId, studentId }
+    });
+  };
 
- 
+  // Get templates not already assigned
+  const assignedTitles = durations.map(d => d.behaviorTitle);
+  const availableTemplates = durationTemplates.filter(
+    t => !assignedTitles.includes(t.behaviorTitle)
+  );
+
+  // Timer controls for each duration
+  const TimerControls = ({ duration }) => {
+    const durationId = duration._id;
+    const { data: timersData, loading: timersLoading, refetch: timersRefetch } = useQuery(QUERY_TIMERS_FOR_DURATION, {
+      variables: { durationId, studentId }
+    });
+    const timers = timersData?.duration?.timers || [];
+    const runningTimer = timers.find(t => t.status === 'running');
+
+    // Timer state for this duration
+    const timerState = timersState[durationId] || { time: 0, timerOn: false, pendingStop: false };
+    const setTimerState = (newState) => setTimersState(prev => ({ ...prev, [durationId]: { ...prev[durationId], ...newState } }));
+
+    // Mutations
+    const [startTimer] = useMutation(START_DURATION_TIMER, {
+      onCompleted: () => { durationRefetch(); timersRefetch(); setTimerState({ timerOn: true }); }
+    });
+    const [endTimer] = useMutation(END_DURATION_TIMER, {
+      onCompleted: () => { timersRefetch(); setTimerState({ timerOn: false, pendingStop: false }); }
+    });
+    const [resumeTimer] = useMutation(RESUME_DURATION_TIMER, {
+      onCompleted: () => { timersRefetch(); setTimerState({ timerOn: true }); }
+    });
+    const [resetTimer] = useMutation(RESET_DURATION_TIMER, {
+      onCompleted: () => { timersRefetch(); setTimerState({ time: 0, timerOn: false }); }
+    });
+    const [saveTimer] = useMutation(SAVE_DURATION_TIMER, {
+      onCompleted: () => { timersRefetch(); setTimerState({ timerOn: false }); }
+    });
+
+    // Timer interval effect
+    useEffect(() => {
+      let interval = null;
+      let isMounted = true;
+      if (timerState.timerOn) {
+        interval = setInterval(() => {
+          if (isMounted) {
+            setTimerState(prev => ({ ...prev, time: (prev.time || 0) + 1000 }));
+          }
+        }, 1000);
+      }
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }, [timerState.timerOn]);
+
+    // Pending stop effect
+    useEffect(() => {
+      if (timerState.pendingStop && runningTimer) {
+        endTimer({ variables: { durationId, timerId: runningTimer.timerId, studentId } });
+        setTimerState({ pendingStop: false });
+      }
+    }, [timerState.pendingStop, runningTimer]);
+
+    // Initialize timer state only once when component mounts
+    useEffect(() => {
+      if (!timersState[durationId]) {
+        setTimersState(prev => ({
+          ...prev,
+          [durationId]: { time: 0, timerOn: false, pendingStop: false }
+        }));
+      }
+    }, [durationId]); // Only depend on durationId
+
+    // Timer controls
+    const handleStart = async () => {
+      setTimerState({ timerOn: true, time: 0 });
+      await startTimer({ variables: { durationId, studentId } });
+    };
+    const handleStop = () => {
+      setTimerState({ timerOn: false });
+      if (runningTimer) {
+        endTimer({ variables: { durationId, timerId: runningTimer.timerId, studentId } });
+        setTimerState({ pendingStop: false });
+      } else {
+        setTimerState({ pendingStop: true });
+      }
+    };
+    const handleResume = () => setTimerState({ timerOn: true });
+    const handleReset = () => setTimerState({ time: 0, timerOn: false });
+    const handleSave = async () => { setTimerState({ timerOn: false }); await saveTimer({ variables: { durationId, timerId: runningTimer?.timerId, studentId } }); };
+
+    return (
+      <div className="timer-card">
+        <div className="timer-display">
+          {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
+          {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
+          {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
+        </div>
+        {!timerState.timerOn && timerState.time === 0 && (
+          <Button className="green time-btn" onClick={handleStart}>Start</Button>
+        )}
+        {timerState.timerOn && (
+          <Button className="red time-btn" onClick={handleStop}>Stop</Button>
+        )}
+        {!timerState.timerOn && timerState.time !== 0 && (
+          <>
+            <Button className="green time-btn" onClick={handleResume}>Resume</Button>
+            <Button className="yellow time-btn" onClick={handleReset}>Reset</Button>
+            <Button className="blue time-btn" onClick={handleSave}>Save</Button>
+          </>
+        )}
+        <Button danger icon={<DeleteForeverIcon />} onClick={() => handleRemoveDuration(durationId)} style={{ marginLeft: 8 }}>Remove</Button>
+      </div>
+    );
+  };
+
+  if (durationLoading || templateLoading) return <div>Loading...</div>;
 
   return (
     <div className="data-logging-container">
       <h2>Duration Data</h2>
-      <p>
       <div>
-       <h2>Duration Behaviors</h2>
-       {durations.length === 0 && <div>No durations found for this student.</div>}
-       <ul>
-         {durations.map(duration => (
-           <li key={duration._id}>
-             <b>{duration.behaviorTitle}</b>
-             {/* ...other info... */}
-           </li>
-       ))}
-      </ul>
-     </div>
-      </p>
-      <p>Start timer when behavior occurs/Stop when behavior is over</p>
-      <div className="timer">  
-            <span>{('0' + Math.floor((time / 3600000) % 60)).slice(-2)}:</span>
-              <span>{('0' + Math.floor((time / 60000) % 60)).slice(-2)}:</span>
-              <span>{('0' + Math.floor((time / 1000) % 60)).slice(-2)}</span>
-              {/* <span>{("0" + ((time / 10) % 100)).slice(-2)}</span> */}
-
-              <div className="timer-button-container">
-              {!timerOn && time === 0 && (
-                <button className="green time-btn" onClick={()=> setTimerOn(true)}>
-                  Start
-                </button>
-              )}
-              {timerOn && (
-                <button className="red time-btn" onClick={handleClickStop}>
-                  Stop
-                </button>
-              )}
-
-              {!timerOn && time !== 0 && (
-                <button className="green time-btn" onClick={() => setTimerOn(true)}>
-                  Resume
-                </button>
-              )}
-
-              {!timerOn && time > 0 && (
-                <button className="yellow time-btn" onClick={() => setTime(0)}>
-                  Reset
-                </button>
-              )}
-
-{!timerOn && time !== 0 && (
-                <button className="blue time-btn" onClick={()=>{handleClickStop(); handleShow()}}>
-                  Save
-                </button>
-              )}
-              <div className="entire-modal">
-              <Modal show={showModal} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title className="modal-title">Type of Behavior</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-               <form>
-                <input list="typelist" type="text" name="behavior" autoComplete="off" placeholder="Add/Select Behavior"
-                />
-                <datalist>
-                  <option>elopement</option>
-                </datalist>
-
-               </form>
-              </Modal.Body>
-        <Modal.Footer>
-          <button className="modal-btn-close" variant="secondary" onClick={handleClose}>
-            Close
-          </button>
-          {/*  handle submit function for form*/}
-          <button className="modal-btn-save" variant="primary" onClick={handleClose}>
-            Save Changes
-          </button>
-        </Modal.Footer>
-      </Modal>
+        <h2>Duration Behaviors</h2>
+        {durations.length === 0 && <div>No durations found for this student.</div>}
+        <ul>
+          {durations.map(duration => (
+            <li key={duration._id}>
+              <b>{duration.behaviorTitle}</b>
+              <TimerControls duration={duration} />
+            </li>
+          ))}
+        </ul>
       </div>
-              {/* <button onClick = {submitTime}>Save</button> */}
-  {/*need to be able to save type of behavior for duration quickly  */}
-              
-            </div>
+      <div style={{ margin: '16px 0' }}>
+        <Button icon={<AddIcon />} onClick={() => setShowSelect(!showSelect)}>
+          Add Data Measure
+        </Button>
+        {showSelect && (
+          <>
+            <Select
+              showSearch
+              style={{ width: 300, marginLeft: 8 }}
+              placeholder="Select duration behavior"
+              optionFilterProp="children"
+              value={selectedTemplateId}
+              onChange={setSelectedTemplateId}
+              filterOption={(input, option) =>
+                option?.children.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {availableTemplates.map(template => (
+                <Select.Option key={template._id} value={template._id}>
+                  {template.behaviorTitle}
+                </Select.Option>
+              ))}
+            </Select>
+            <Button type="primary" onClick={handleAddDuration} disabled={!selectedTemplateId} style={{ marginLeft: 8 }}>
+              Save
+            </Button>
+          </>
+        )}
       </div>
-
-      <h2>Duration Timers</h2>
-      <button onClick={() => startTimer()}>Start New Timer</button>
-      <ul>
-        {timers.map(timer => (
-          <li key={timer.timerId}>
-            <div>
-              <b>Status:</b> {timer.status} <br />
-              <b>Start:</b> {timer.startTime ? new Date(timer.startTime).toLocaleTimeString() : 'N/A'} <br />
-              <b>End:</b> {timer.endTime ? new Date(timer.endTime).toLocaleTimeString() : 'N/A'}
-            </div>
-            {timer.status === 'running' && (
-              <button onClick={() => endTimer({ variables: { durationId, timerId: timer.timerId } })}>Stop</button>
-            )}
-            {timer.status === 'stopped' && (
-              <>
-                <button onClick={() => resumeTimer({ variables: { durationId, timerId: timer.timerId } })}>Resume</button>
-                <button onClick={() => resetTimer({ variables: { durationId, timerId: timer.timerId } })}>Reset</button>
-                <button onClick={() => saveTimer({ variables: { durationId, timerId: timer.timerId } })}>Save</button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-
     </div>
   )
 }

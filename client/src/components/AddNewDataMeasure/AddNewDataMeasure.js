@@ -20,6 +20,7 @@ const normFile = (e) => {
 const AddNewDataMeasure = ({onClose, updateMergedData, mergedData}) => {
 
   const { data, loading, error, refetch } = useQuery(QUERY_FREQUENCY_TEMPLATES);
+  const { refetch: refetchDurationTemplates } = useQuery(require('../../utils/queries').QUERY_DURATION_TEMPLATES);
 
   const [componentDisabled, setComponentDisabled] = useState(false);
   const [addFrequencyTitle] = useMutation(ADD_FREQUENCY_TITLE)
@@ -50,11 +51,11 @@ useEffect(() => {
             operationalDefinition
           }
         });
-        // Refetch templates here
-        refetch(); // (if using Apollo's useQuery, call the refetch function)
+        refetch(); // refetch frequency templates
         showMessage(behaviorTitle);
         setTableData([...tableData, { behaviorTitle, dataType, operationalDefinition }]);
         updateMergedData([...mergedData, { behaviorTitle, dataType, operationalDefinition }]);
+        onClose();
       } catch (error) {
         console.error('Error saving frequency template: ', error);
       }
@@ -66,9 +67,10 @@ useEffect(() => {
             operationalDefinition: operationalDefinition
           }
         });
-        setTableData([...tableData, {behaviorTitle, dataType, operationalDefinition}])
+        await refetchDurationTemplates(); // refetch duration templates
         showMessage(behaviorTitle);
-        updateMergedData([...mergedData, {behaviorTitle, dataType, operationalDefinition}])  
+        // Do NOT updateMergedData here; let parent useEffect update mergedData from backend
+        onClose();
       } catch(error) {
         console.error('Error saving duration data measure: ', error)
       }
@@ -104,18 +106,7 @@ useEffect(() => {
         name="operationalDefinition" rules={[{ required: true, message: 'Please input the operational definition!' }]}>
           <TextArea rows={4} />
         </Form.Item>
-     
-        <Checkbox
-          checked={componentDisabled}
-          onChange={(e) => setComponentDisabled(e.target.checked)}
-        >
-          Need to be enabled to add student
-        </Checkbox>
-        <Form.Item disabled={componentDisabled} label="Select student">
-          <Select>
-            <Select.Option value="demo">Demo</Select.Option>
-          </Select>
-        </Form.Item>
+  
         <Button type="primary" htmlType="submit">
           Submit
         </Button>

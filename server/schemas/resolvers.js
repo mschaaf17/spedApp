@@ -355,8 +355,11 @@ const resolvers = {
       return runningTimers;
     },
 
-    timersForDuration: async (parent, { durationId }) => {
-      return Duration.findById(durationId);
+    timersForDuration: async (parent, { durationId, studentId }) => {
+      return Duration.findOne({ 
+        _id: durationId,
+        studentId: studentId 
+      });
     },
   },
 
@@ -520,6 +523,8 @@ const resolvers = {
           );
         }
         args.createdBy = context.user._id;
+        args.isTemplate = true;
+        args.templateId = null;
 
         const duration = await Duration.create(args);
         return duration;
@@ -1089,11 +1094,14 @@ const resolvers = {
       }
     },
 
-    resumeDurationTimer: async (parent, { durationId, timerId }, context) => {
+    resumeDurationTimer: async (parent, { durationId, timerId, studentId }, context) => {
       if (!context.user) throw new Error("User not logged in.");
 
-      const duration = await Duration.findById(durationId);
-      if (!duration) throw new UserInputError("Duration not found");
+      const duration = await Duration.findOne({ 
+        _id: durationId,
+        studentId: studentId 
+      });
+      if (!duration) throw new UserInputError("Duration not found for this student");
 
       // Use .find() to match custom timerId
       const timer = duration.timers.find(
@@ -1107,11 +1115,14 @@ const resolvers = {
       return timer;
     },
 
-    resetDurationTimer: async (parent, { durationId, timerId }, context) => {
+    resetDurationTimer: async (parent, { durationId, timerId, studentId }, context) => {
       if (!context.user) throw new Error("User not logged in.");
 
-      const duration = await Duration.findById(durationId);
-      if (!duration) throw new UserInputError("Duration not found");
+      const duration = await Duration.findOne({ 
+        _id: durationId,
+        studentId: studentId 
+      });
+      if (!duration) throw new UserInputError("Duration not found for this student");
 
       // Use .find() to match custom timerId
       const timer = duration.timers.find(
@@ -1127,11 +1138,14 @@ const resolvers = {
       return timer;
     },
 
-    saveDurationTimer: async (parent, { durationId, timerId }, context) => {
+    saveDurationTimer: async (parent, { durationId, timerId, studentId }, context) => {
       if (!context.user) throw new Error("User not logged in.");
 
-      const duration = await Duration.findById(durationId);
-      if (!duration) throw new UserInputError("Duration not found");
+      const duration = await Duration.findOne({ 
+        _id: durationId,
+        studentId: studentId 
+      });
+      if (!duration) throw new UserInputError("Duration not found for this student");
 
       // Use .find() to match custom timerId
       const timer = duration.timers.find(
