@@ -1071,7 +1071,12 @@ const resolvers = {
         }
 
         console.log('Creating new intervention for student...');
-        const behavior = await Frequency.findById(behaviorId);
+        // Try to find behavior in Frequency first, then Duration
+        let behavior = await Frequency.findById(behaviorId);
+        if (!behavior) {
+          behavior = await Duration.findById(behaviorId);
+        }
+        
         const newIntervention = await InterventionList.create({
           title: interventionTemplate.title,
           summary: interventionTemplate.summary,
@@ -1241,7 +1246,7 @@ const resolvers = {
     interventions: async (parent, args, context) => {
       const userInterventions = await InterventionList.find({
         _id: { $in: parent.interventions },
-      }).populate('behaviorId');
+      });
       return userInterventions ? userInterventions : [];
     },
   },
@@ -1279,7 +1284,16 @@ const resolvers = {
     },
     behaviorId: async (parent) => {
       if (!parent.behaviorId) return null;
-      return await Frequency.findById(parent.behaviorId);
+      
+      // Try to find in Frequency first
+      let behavior = await Frequency.findById(parent.behaviorId);
+      
+      // If not found in Frequency, try Duration
+      if (!behavior) {
+        behavior = await Duration.findById(parent.behaviorId);
+      }
+      
+      return behavior;
     },
   },
 };
