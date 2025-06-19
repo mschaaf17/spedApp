@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import {useQuery} from '@apollo/client'
 import {QUERY_USER, QUERY_ME} from '../../utils/queries.js'
 import DurationTimers from '../../components/DataTrackingMeasures/durationTimers.js'
+import DurationCharts from '../../components/DataTrackingMeasures/durationCharts.js'
 import ABC from '../../components/DataTrackingMeasures/ABC.js'
 import Frequency from '../../components/DataTrackingMeasures/frequency.js'
 import Observation from '../../components/DataTrackingMeasures/observation.js'
@@ -37,18 +38,22 @@ export default function SideMenuLandingPage() {
    
 
     let frequencies = [];
+    let durations = [];
     if (userParam) {
       // Viewing a specific student
       frequencies = user?.behaviorFrequencies || [];
+      durations = user?.behaviorDurations || [];
     } else {
       // Viewing as teacher/admin, pick a student (e.g., the first one)
       const selectedStudent = user.students?.[0];
       frequencies = selectedStudent?.behaviorFrequencies || [];
+      durations = selectedStudent?.behaviorDurations || [];
     }
 
     console.log('student:', user?.username);
     console.log('user:', user._id);
     console.log('frequencies:', frequencies);
+    console.log('durations:', durations);
     console.log('studentInterventions:', studentInterventions);
     console.log('aimlineValue:', aimlineValue);
     console.log('userParam:', userParam);
@@ -65,8 +70,13 @@ export default function SideMenuLandingPage() {
           aimline={aimlineValue}
         />
       ),
-      '4': <StudentInterventions/>,
-      '5': <StudentAccommodations/>,
+      '4': (
+        <DurationCharts
+          durations={durations}
+        />
+      ),
+      '5': <StudentInterventions/>,
+      '6': <StudentAccommodations/>,
       abc: <ABC/>,
       observation: <Observation/>,
       contracts: <Contracts/>

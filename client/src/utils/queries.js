@@ -589,13 +589,10 @@ export const QUERY_TIMERS_FOR_DURATION = gql`
   query TimersForDuration($durationId: ID!, $studentId: ID!) {
     timersForDuration(durationId: $durationId, studentId: $studentId) {
       _id
-      studentId
       behaviorTitle
       operationalDefinition
+      createdFor
       createdAt
-      startTimes
-      startDurationId
-      endTimes
       isTemplate
       templateId
       isActive

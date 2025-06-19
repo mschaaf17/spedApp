@@ -47,28 +47,26 @@ const MenuSideBar = ({ userParam, onItemClick }) => {
         ],
       },
       {
-        //this is being rendered on data logging so I will need to change how the student list words to go to graphs
-        key: '3',
+        key: 'sub2',
         label: 'Charts',
-        // label: (
-        //   <Link className="link-to-page" to={`/studentProfile/${userParam}/studentCharts`}>
-        //     Student Charts
-        //   </Link>
-        // ),
         icon: <AssessmentOutlinedIcon />,
+        children: [
+            { key: '3', label: 'Frequency Charts', icon: null },
+            { key: '4', label: 'Duration Charts', icon: null },
+        ],
       },
       {
-        key: '4',
+        key: '5',
         label: 'Interventions',
         icon: <PieChartOutlined />,
       },
       {
-        key: '5',
+        key: '6',
         label: 'Accommodations',
         icon: <GroupAddOutlinedIcon />,
       },
       {
-        key: '6',
+        key: '7',
         label: (
           <Link className="link-to-page" to={`/studentList/${userParam}`}>
             ← Back to Student List
@@ -97,7 +95,7 @@ const MenuSideBar = ({ userParam, onItemClick }) => {
         </Button>
         <Menu
           defaultSelectedKeys={['1']}
-          defaultOpenKeys={['sub1']}
+          defaultOpenKeys={['sub1', 'sub2']}
           mode="inline"
           theme=""
           inlineCollapsed={collapsed}
@@ -105,7 +103,7 @@ const MenuSideBar = ({ userParam, onItemClick }) => {
         >
         {items.map((item) => (
     <React.Fragment key={item.key}>
-      {item.key === 'sub1' ? (
+      {item.key === 'sub1' || item.key === 'sub2' ? (
         <Menu.SubMenu key={item.key} icon={item.icon} title={item.label}>
           {item.children &&
             item.children.map((child) => (

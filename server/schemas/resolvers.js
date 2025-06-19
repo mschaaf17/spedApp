@@ -1235,6 +1235,7 @@ const resolvers = {
     behaviorDurations: async (parent, args, context) => {
       const userBehaviorDurations = await Duration.find({
         _id: { $in: parent.behaviorDurations },
+        isActive: true // Only return active durations
       });
       return userBehaviorDurations ? userBehaviorDurations : [];
     },

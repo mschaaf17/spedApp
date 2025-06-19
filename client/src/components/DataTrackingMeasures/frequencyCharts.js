@@ -116,20 +116,43 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           dateCountMap[dateString] += dc.count;
         });
 
-        // 2. Build chartData from the grouped/summed map
-        const chartData = Object.entries(dateCountMap).map(([date, count]) => ({
-          date,
-          count,
+        // 2. Find the date range for this frequency
+        let startDateStr, endDateStr;
+        if (freq.createdAt !== undefined && freq.createdAt !== null) {
+          const d = new Date(Number(freq.createdAt));
+          if (!isNaN(d.getTime())) {
+            startDateStr = d.toISOString().slice(0, 10);
+          }
+        }
+        
+        // If no createdAt, use the earliest date from dailyCounts
+        if (!startDateStr && Object.keys(dateCountMap).length > 0) {
+          startDateStr = Object.keys(dateCountMap).sort()[0];
+        }
+        
+        // Use the latest date from dailyCounts as end date, or today if no data
+        if (Object.keys(dateCountMap).length > 0) {
+          endDateStr = Object.keys(dateCountMap).sort().pop();
+        } else {
+          endDateStr = todayStr;
+        }
+
+        // 3. Fill in missing dates with 0 counts
+        const filledChartData = fillMissingDatesWithZeros(dateCountMap, startDateStr, endDateStr);
+
+        // 4. Add intervention data to the filled chart data
+        const chartDataWithInterventions = filledChartData.map(dataPoint => ({
+          ...dataPoint,
           intervention: safeInterventions.find(i =>
             i.frequencyId === freq._id &&
             i.startDate &&
-            new Date(i.startDate).toISOString().slice(0, 10) === date
+            new Date(i.startDate).toISOString().slice(0, 10) === dataPoint.date
           )
         }));
 
         // Calculate aimline points for this frequency
         const goalValue = 1; // or get from user input/intervention
-        const targetDateStr = chartData.length ? chartData[chartData.length - 1].date : undefined;
+        const targetDateStr = chartDataWithInterventions.length ? chartDataWithInterventions[chartDataWithInterventions.length - 1].date : undefined;
         let interventionStartDate = null;
         if (userInterventions.length > 0) {
           const intervention = userInterventions.find(i => i.behaviorId?._id === freq._id);
@@ -149,28 +172,28 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             }
           }
         }
-        const aimlinePoints = calculateAimline(chartData, goalValue, targetDateStr, interventionStartDate, 3);
+        const aimlinePoints = calculateAimline(chartDataWithInterventions, goalValue, targetDateStr, interventionStartDate, 3);
 
         console.log('aimlinePoints:', aimlinePoints);
 
-        // Check for 3 consecutive points below aimline (using the aimline value for each date)
-        let belowCount = 0, notification = false;
-        for (let i = 0; i < chartData.length; i++) {
+        // Check for 3 consecutive points above aimline (behavior getting worse)
+        let aboveCount = 0, notification = false;
+        for (let i = 0; i < chartDataWithInterventions.length; i++) {
           const aimlineValueForDay = aimlinePoints[i]?.value ?? 0;
-          if (chartData[i].count < aimlineValueForDay) {
-            belowCount++;
-            if (belowCount === 3) {
+          if (chartDataWithInterventions[i].count > aimlineValueForDay) {
+            aboveCount++;
+            if (aboveCount === 3) {
               notification = true;
               break;
             }
           } else {
-            belowCount = 0;
+            aboveCount = 0;
           }
         }
 
-        const validChartData = chartData; // for debugging
+        const validChartData = chartDataWithInterventions; // for debugging
 
-        console.log('chartData:', chartData);
+        console.log('chartData:', chartDataWithInterventions);
         console.log('validChartData:', validChartData);
         
 
@@ -196,23 +219,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           console.log('No data for most frequent hour');
         }
 
-        let startDateStr;
-        if (freq.createdAt !== undefined && freq.createdAt !== null) {
-          // Accept both string and number
-          const d = new Date(Number(freq.createdAt));
-          if (!isNaN(d.getTime())) {
-            startDateStr = d.toISOString().slice(0, 10);
-          } else {
-            console.warn('Invalid freq.createdAt:', freq.createdAt, freq);
-            startDateStr = undefined;
-          }
-        } else {
-          startDateStr = undefined;
-        }
-
-        const endDateStr = chartData.length ? chartData[chartData.length - 1].date : startDateStr;
-
-        // Extend end date by 5 days
+        // Extend end date by 5 days for better chart visualization
         let extendedEndDateStr = endDateStr;
         if (endDateStr) {
           const end = new Date(endDateStr);
@@ -220,25 +227,17 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           extendedEndDateStr = end.toISOString().slice(0, 10);
         }
 
-        let filledChartData = chartData;
-        if (
-          startDateStr &&
-          extendedEndDateStr &&
-          !isNaN(new Date(startDateStr).getTime()) &&
-          !isNaN(new Date(extendedEndDateStr).getTime())
-        ) {
-          console.log('Calling fillMissingDates with:', { startDateStr, extendedEndDateStr, chartData });
-          filledChartData = fillMissingDates(chartData, startDateStr, extendedEndDateStr);
-        }
+        // Use the filled chart data for the final chart
+        const finalChartData = chartDataWithInterventions;
 
-        console.log('filledChartData:', filledChartData);
-        console.log('filledChartData for chart:', filledChartData);
-        console.log('Types:', filledChartData.map(d => typeof d.count));
+        console.log('finalChartData:', finalChartData);
+        console.log('finalChartData for chart:', finalChartData);
+        console.log('Types:', finalChartData.map(d => typeof d.count));
 
-        // Use filledChartData for chart and aimline
-        const aimlinePointsFilled = calculateAimline(filledChartData, goalValue, extendedEndDateStr, startDateStr, 3);
+        // Use finalChartData for chart and aimline
+        const aimlinePointsFilled = calculateAimline(finalChartData, goalValue, extendedEndDateStr, startDateStr, 3);
 
-        console.log('Result from fillMissingDates:', filledChartData);
+        console.log('Result from fillMissingDates:', finalChartData);
 
         const assignedInterventionsForThisBehavior = userInterventions.filter(
           i => i.behaviorId?._id === freq._id
@@ -277,11 +276,14 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           }
         });
 
+        // Calculate total count from dailyCounts
+        const totalCount = (freq.dailyCounts || []).reduce((sum, dc) => sum + (dc.count || 0), 0);
+
         return (
           <div key={freq._id} style={{ marginBottom: 32 }}>
             <h3>{freq.behaviorTitle}</h3>
             <div>
-              <b>Total count:</b> {freq.count}
+              <b>Total count:</b> {totalCount}
             </div>
             {mostFrequentHour && (
               <div>
@@ -289,9 +291,9 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
               </div>
             )}
             {notification && (
-              <Alert message="Change your intervention: 3 consecutive days below aimline" type="warning" showIcon />
+              <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon />
             )}
-            <LineChart width={600} height={300} data={filledChartData}>
+            <LineChart width={600} height={300} data={finalChartData}>
               <XAxis dataKey="date" />
               <YAxis domain={[0, dataMax => Math.ceil(dataMax * 1.1)]} />
               <YAxis yAxisId="right" orientation="right" hide={true} />
@@ -319,7 +321,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 yAxisId="right"
               />
               {/* If you want to highlight intervention days, keep this: */}
-              <Scatter data={filledChartData.filter(d => d.intervention)} fill={interventionDates.length > 0 ? getInterventionColor(assignedInterventionsForThisBehavior[0]) : '#8884d8'} />
+              <Scatter data={finalChartData.filter(d => d.intervention)} fill={interventionDates.length > 0 ? getInterventionColor(assignedInterventionsForThisBehavior[0]) : '#8884d8'} />
             </LineChart>
             <div>
               <h4>Assigned Interventions</h4>
@@ -414,6 +416,44 @@ function fillMissingDates(chartData, startDateStr, endDateStr) {
     current.setDate(current.getDate() + 1);
   }
   console.log('Result from fillMissingDates:', result);
+  return result;
+}
+
+function fillMissingDatesWithZeros(dateCountMap, startDateStr, endDateStr) {
+  if (!startDateStr || !endDateStr) {
+    console.warn('Missing start or end date:', startDateStr, endDateStr);
+    // Fallback: return data points for dates that exist
+    return Object.entries(dateCountMap).map(([date, count]) => ({
+      date,
+      count
+    }));
+  }
+
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.warn('Invalid start or end date:', start, end);
+    // Fallback: return data points for dates that exist
+    return Object.entries(dateCountMap).map(([date, count]) => ({
+      date,
+      count
+    }));
+  }
+
+  const result = [];
+  let current = new Date(start);
+  
+  while (current <= end) {
+    const dateStr = current.toISOString().slice(0, 10);
+    result.push({
+      date: dateStr,
+      count: dateCountMap[dateStr] || 0
+    });
+    current.setDate(current.getDate() + 1);
+  }
+  
+  console.log('fillMissingDatesWithZeros result:', result);
   return result;
 }
 

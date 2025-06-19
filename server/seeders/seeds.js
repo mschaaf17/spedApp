@@ -98,9 +98,14 @@ async function seed() {
     createdAt: new Date('2025-06-07T00:00:00.000Z'),
     dailyCounts: [
       { date: '2025-06-07T00:00:00.000Z', count: 3 },
-      { date: '2025-06-09T00:00:00.000Z', count: 8 }
+      { date: '2025-06-09T00:00:00.000Z', count: 8 },
+      { date: '2025-06-10T00:00:00.000Z', count: 2 },
+      { date: '2025-06-12T00:00:00.000Z', count: 0 },
+      { date: '2025-06-13T00:00:00.000Z', count: 10 },
+      { date: '2025-06-14T00:00:00.000Z', count: 11 },
+      { date: '2025-06-15T00:00:00.000Z', count: 15 },
     ],
-    count: 11 // total count (3 + 8)
+    count: 49 // total count (3 + 8)
   });
 
   // Create an intervention template

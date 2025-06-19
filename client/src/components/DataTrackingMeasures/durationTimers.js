@@ -5,7 +5,6 @@ import { Modal, Button, Select, message } from "antd"
 import "./index.css"
 import { useQuery, useMutation } from '@apollo/client';
 import {
-  QUERY_TIMERS_FOR_DURATION,
   QUERY_DURATIONS_FOR_STUDENT,
   QUERY_DURATION_TEMPLATES
 } from '../../utils/queries'; // adjust pa
@@ -22,12 +21,9 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AddIcon from '@mui/icons-material/Add';
 
 // Timer controls component moved outside to prevent recreation
-const TimerControls = ({ duration, studentId, onRemoveDuration }) => {
+const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => {
   const durationId = duration._id;
-  const { data: timersData, loading: timersLoading, refetch: timersRefetch } = useQuery(QUERY_TIMERS_FOR_DURATION, {
-    variables: { durationId, studentId }
-  });
-  const timers = timersData?.duration?.timers || [];
+  const timers = duration.timers || [];
   const runningTimer = timers.find(t => t.status === 'running');
 
   // Local timer state for this specific duration
@@ -35,19 +31,34 @@ const TimerControls = ({ duration, studentId, onRemoveDuration }) => {
 
   // Mutations
   const [startTimer] = useMutation(START_DURATION_TIMER, {
-    onCompleted: () => { timersRefetch(); setTimerState(prev => ({ ...prev, timerOn: true })); }
+    onCompleted: () => { 
+      setTimerState(prev => ({ ...prev, timerOn: true })); 
+      onRefetch();
+    }
   });
   const [endTimer] = useMutation(END_DURATION_TIMER, {
-    onCompleted: () => { timersRefetch(); setTimerState(prev => ({ ...prev, timerOn: false, pendingStop: false })); }
+    onCompleted: () => { 
+      setTimerState(prev => ({ ...prev, timerOn: false, pendingStop: false })); 
+      onRefetch();
+    }
   });
   const [resumeTimer] = useMutation(RESUME_DURATION_TIMER, {
-    onCompleted: () => { timersRefetch(); setTimerState(prev => ({ ...prev, timerOn: true })); }
+    onCompleted: () => { 
+      setTimerState(prev => ({ ...prev, timerOn: true })); 
+      onRefetch();
+    }
   });
   const [resetTimer] = useMutation(RESET_DURATION_TIMER, {
-    onCompleted: () => { timersRefetch(); setTimerState({ time: 0, timerOn: false }); }
+    onCompleted: () => { 
+      setTimerState({ time: 0, timerOn: false }); 
+      onRefetch();
+    }
   });
   const [saveTimer] = useMutation(SAVE_DURATION_TIMER, {
-    onCompleted: () => { timersRefetch(); setTimerState(prev => ({ ...prev, timerOn: false })); }
+    onCompleted: () => { 
+      setTimerState(prev => ({ ...prev, timerOn: false })); 
+      onRefetch();
+    }
   });
 
   // Timer interval effect
@@ -81,21 +92,59 @@ const TimerControls = ({ duration, studentId, onRemoveDuration }) => {
     await startTimer({ variables: { durationId, studentId } });
   };
   
-  const handleStop = () => {
+  const handleStop = async () => {
     setTimerState(prev => ({ ...prev, timerOn: false }));
     if (runningTimer) {
-      endTimer({ variables: { durationId, timerId: runningTimer.timerId, studentId } });
-      setTimerState(prev => ({ ...prev, pendingStop: false }));
+      try {
+        // First stop the timer
+        await endTimer({ variables: { durationId, timerId: runningTimer.timerId, studentId } });
+        // Then automatically save it
+        await saveTimer({ variables: { durationId, timerId: runningTimer.timerId, studentId } });
+        setTimerState(prev => ({ ...prev, pendingStop: false }));
+        message.success('Timer stopped and saved successfully!');
+      } catch (error) {
+        console.error('Error stopping/saving timer:', error);
+        message.error('Failed to stop timer. Please try again.');
+      }
     } else {
       setTimerState(prev => ({ ...prev, pendingStop: true }));
     }
   };
   
-  const handleResume = () => setTimerState(prev => ({ ...prev, timerOn: true }));
-  const handleReset = () => setTimerState({ time: 0, timerOn: false, pendingStop: false });
-  const handleSave = async () => { 
-    setTimerState(prev => ({ ...prev, timerOn: false })); 
-    await saveTimer({ variables: { durationId, timerId: runningTimer?.timerId, studentId } }); 
+  const handleResume = async () => {
+    // Find the most recent stopped timer to resume
+    const stoppedTimer = timers.find(t => t.status === 'stopped' && t.startTime && t.endTime);
+    if (stoppedTimer) {
+      try {
+        await resumeTimer({ variables: { durationId, timerId: stoppedTimer.timerId, studentId } });
+        setTimerState(prev => ({ ...prev, timerOn: true }));
+      } catch (error) {
+        console.error('Error resuming timer:', error);
+        message.error('Failed to resume timer. Please try again.');
+      }
+    } else {
+      message.warning('No stopped timer found to resume.');
+    }
+  };
+  
+  const handleReset = async () => {
+    // Find the most recent stopped timer to reset
+    const stoppedTimer = timers.find(t => t.status === 'stopped' && t.startTime && t.endTime);
+    if (stoppedTimer) {
+      try {
+        // First save the stopped timer
+        await saveTimer({ variables: { durationId, timerId: stoppedTimer.timerId, studentId } });
+        // Then reset it
+        await resetTimer({ variables: { durationId, timerId: stoppedTimer.timerId, studentId } });
+        setTimerState({ time: 0, timerOn: false, pendingStop: false });
+        message.success('Timer saved and reset successfully!');
+      } catch (error) {
+        console.error('Error saving/resetting timer:', error);
+        message.error('Failed to save/reset timer. Please try again.');
+      }
+    } else {
+      setTimerState({ time: 0, timerOn: false, pendingStop: false });
+    }
   };
 
   return (
@@ -114,8 +163,7 @@ const TimerControls = ({ duration, studentId, onRemoveDuration }) => {
       {!timerState.timerOn && timerState.time !== 0 && (
         <>
           <Button className="green time-btn" onClick={handleResume}>Resume</Button>
-          <Button className="yellow time-btn" onClick={handleReset}>Reset</Button>
-          <Button className="blue time-btn" onClick={handleSave}>Save</Button>
+          <Button className="yellow time-btn" onClick={handleReset}>Reset/Save</Button>
         </>
       )}
       <Button danger icon={<DeleteForeverIcon />} onClick={() => onRemoveDuration(durationId)} style={{ marginLeft: 8 }}>Remove</Button>
@@ -198,6 +246,7 @@ export default function DurationTimers({ studentId }) {
                 duration={duration} 
                 studentId={studentId}
                 onRemoveDuration={handleRemoveDuration}
+                onRefetch={durationRefetch}
               />
             </li>
           ))}
