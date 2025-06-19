@@ -64,6 +64,9 @@ const Header = () => {
           <li class='left-item'>
             Inclusion App Logo
           </li>
+          <li class={`center ${activeLink === '/dashboard' ? 'active' : ''}`}>
+            <a href="/dashboard" onClick={(event) => handleLinkClick('/dashboard')}>Dashboard</a>
+          </li>
           <li class={`center ${activeLink=== "/studentList/" + data?.me.username ? 'active' : ''}`} >
             <a href={`/studentList/${data?.me.username}`} onClick={(event) => handleLinkClick(`/studentList/${data?.me.username}`)}>Students</a>
           </li>

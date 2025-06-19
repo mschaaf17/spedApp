@@ -1,0 +1,246 @@
+.dashboard-layout {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.dashboard-header {
+  background: white;
+  padding: 16px 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 24px;
+}
+
+.header-actions span {
+  cursor: pointer;
+  color: #666;
+}
+
+.header-actions span:hover {
+  color: #1890ff;
+}
+
+.dashboard-content {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.student-selector-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.student-dropdown {
+  flex: 1;
+}
+
+.add-student-section {
+  flex: 1;
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.search-result-item:hover {
+  background: #f5f5f5;
+}
+
+.add-icon {
+  color: #1890ff;
+}
+
+.student-data-section {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.student-header {
+  margin-bottom: 24px;
+}
+
+.student-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.student-header p {
+  margin: 4px 0 0;
+  color: #666;
+}
+
+.charts-section {
+  padding: 20px 0;
+}
+
+.behavior-selector {
+  margin-bottom: 24px;
+}
+
+.charts-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.behavior-data,
+.duration-data {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+/* Ant Design overrides */
+.ant-tabs-nav {
+  margin-bottom: 24px !important;
+}
+
+.ant-select-selector {
+  height: 40px !important;
+}
+
+.ant-select-selection-placeholder,
+.ant-select-selection-item {
+  line-height: 38px !important;
+}
+
+/* Table styling */
+.ant-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* Alternating row colors */
+.ant-table-row:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Hover effect */
+.ant-table-row:hover {
+  background-color: #f0f0f0 !important;
+}
+
+/* Card styling */
+.ant-card {
+  border-radius: 8px;
+}
+
+/* Student selector styling */
+.student-selector .ant-select {
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 16px;
+  }
+
+  .student-data {
+    padding: 16px;
+  }
+}
+
+/* Interventions section styling */
+.interventions-content {
+  padding: 0;
+}
+
+.interventions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.interventions-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Accommodations section styling */
+.accommodations-content {
+  padding: 0;
+}
+
+.accommodations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.accommodations-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Modal styling for add intervention */
+.ant-modal-content {
+  border-radius: 8px;
+}
+
+.ant-modal-header {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+} 

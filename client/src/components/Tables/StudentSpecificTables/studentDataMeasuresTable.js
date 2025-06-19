@@ -1,0 +1,263 @@
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Modal, Tag, Tooltip } from 'antd';
+import { useQuery, useMutation } from '@apollo/client';
+import { QUERY_ME } from '../../../utils/queries';
+import { REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT } from '../../../utils/mutations';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import TimerIcon from '@mui/icons-material/Timer';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import './studentDataMeasuresTable.css';
+
+const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure }) => {
+  const [filteredInfo, setFilteredInfo] = useState({});
+  const [sortedInfo, setSortedInfo] = useState({});
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteRecord, setDeleteRecord] = useState(null);
+
+  // Get user data for mutations
+  const { data: userData } = useQuery(QUERY_ME);
+
+  // Mutations for removing data measures
+  const [removeFrequency] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
+  const [removeDuration] = useMutation(REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT);
+
+  // Combine frequencies and durations into one data source
+  const getDataMeasures = () => {
+    if (!student) return [];
+
+    const frequencies = (student.behaviorFrequencies || [])
+      .filter(freq => freq.isActive)
+      .map(freq => ({
+        ...freq,
+        dataMeasureType: 'Frequency',
+        type: 'frequency',
+        icon: <TrendingUpIcon style={{ color: '#1890ff' }} />,
+        status: freq.isActive ? 'Active' : 'Inactive'
+      }));
+
+    const durations = (student.behaviorDurations || [])
+      .filter(dur => dur.isActive)
+      .map(dur => ({
+        ...dur,
+        dataMeasureType: 'Duration',
+        type: 'duration',
+        icon: <TimerIcon style={{ color: '#52c41a' }} />,
+        status: dur.isActive ? 'Active' : 'Inactive'
+      }));
+
+    return [...frequencies, ...durations];
+  };
+
+  const handleChange = (pagination, filters, sorter) => {
+    setFilteredInfo(filters);
+    setSortedInfo(sorter);
+  };
+
+  const generateFilters = (key) => {
+    const dataMeasures = getDataMeasures();
+    if (!dataMeasures.length) return [];
+    const values = [...new Set(dataMeasures.map(item => item[key]))];
+    return values.map(value => ({
+      text: value,
+      value: value,
+    }));
+  };
+
+  const getRowClassName = (record, index) => {
+    return index % 2 === 0 ? 'whiteRow' : 'coloredRow';
+  };
+
+  const confirmDelete = (record) => {
+    setDeleteRecord(record);
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteRecord) return;
+
+    try {
+      if (deleteRecord.type === 'frequency') {
+        await removeFrequency({
+          variables: {
+            frequencyId: deleteRecord._id,
+            studentId: student._id
+          }
+        });
+      } else if (deleteRecord.type === 'duration') {
+        await removeDuration({
+          variables: {
+            durationId: deleteRecord._id,
+            studentId: student._id
+          }
+        });
+      }
+
+      // Call the parent callback if provided
+      if (onRemoveDataMeasure) {
+        onRemoveDataMeasure(deleteRecord);
+      }
+
+      setDeleteModalVisible(false);
+      setDeleteRecord(null);
+    } catch (error) {
+      console.error('Error removing data measure:', error);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setDeleteRecord(null);
+  };
+
+  const handleViewChart = (record) => {
+    if (onViewChart) {
+      onViewChart(record);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
+  };
+
+  const columns = [
+    {
+      title: 'Type',
+      dataIndex: 'dataMeasureType',
+      key: 'dataMeasureType',
+      width: 120,
+      render: (text, record) => (
+        <Space>
+          {record.icon}
+          <span>{text}</span>
+        </Space>
+      ),
+      filters: generateFilters('dataMeasureType'),
+      filteredValue: filteredInfo.dataMeasureType || null,
+      onFilter: (value, record) => record.dataMeasureType === value,
+    },
+    {
+      title: 'Behavior Title',
+      dataIndex: 'behaviorTitle',
+      key: 'behaviorTitle',
+      filterSearch: true,
+      filters: generateFilters('behaviorTitle'),
+      filteredValue: filteredInfo.behaviorTitle || null,
+      onFilter: (value, record) => record.behaviorTitle.toLowerCase().includes(value.toLowerCase()),
+      sorter: (a, b) => a.behaviorTitle.localeCompare(b.behaviorTitle),
+      sortOrder: sortedInfo.columnKey === 'behaviorTitle' ? sortedInfo.order : null,
+      render: (text) => (
+        <span style={{ fontWeight: 500 }}>{text}</span>
+      )
+    },
+    {
+      title: 'Operational Definition',
+      dataIndex: 'operationalDefinition',
+      key: 'operationalDefinition',
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (text) => (
+        <Tooltip placement="topLeft" title={text}>
+          <span>{text || '—'}</span>
+        </Tooltip>
+      )
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status) => (
+        <Tag color={status === 'Active' ? 'green' : 'red'}>
+          {status}
+        </Tag>
+      ),
+      filters: generateFilters('status'),
+      filteredValue: filteredInfo.status || null,
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: 'Created',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 120,
+      render: (date) => formatDate(date),
+      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      sortOrder: sortedInfo.columnKey === 'createdAt' ? sortedInfo.order : null,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 200,
+      render: (_, record) => (
+        <Space>
+          <Tooltip title="View Chart">
+            <Button
+              type="primary"
+              icon={<AssessmentOutlinedIcon />}
+              onClick={() => handleViewChart(record)}
+              size="small"
+            >
+              Chart
+            </Button>
+          </Tooltip>
+          <Tooltip title="Remove Data Measure">
+            <Button
+              type="text"
+              danger
+              icon={<DeleteForeverIcon />}
+              onClick={() => confirmDelete(record)}
+              size="small"
+            />
+          </Tooltip>
+        </Space>
+      ),
+    }
+  ];
+
+  const dataMeasures = getDataMeasures();
+
+  return (
+    <div className="student-data-measures-table">
+      <Table
+        columns={columns}
+        dataSource={dataMeasures}
+        rowKey="_id"
+        onChange={handleChange}
+        rowClassName={getRowClassName}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} data measures`,
+        }}
+        locale={{
+          emptyText: 'No data measures found for this student'
+        }}
+      />
+
+      <Modal
+        title="Confirm Removal"
+        open={deleteModalVisible}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Remove"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+      >
+        <p>
+          Are you sure you want to remove the data measure "{deleteRecord?.behaviorTitle}" 
+          from {student?.firstName} {student?.lastName}?
+        </p>
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          This action cannot be undone and will remove all associated data.
+        </p>
+      </Modal>
+    </div>
+  );
+};
+
+export default StudentDataMeasuresTable; 

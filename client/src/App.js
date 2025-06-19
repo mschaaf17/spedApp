@@ -11,6 +11,7 @@ import { setContext } from '@apollo/client/link/context';
 import Home from './pages/Home/'
 import NoMatch from './pages/NoMatch';
 import LoadingPage from './pages/LoadingPage'
+import Dashboard from './components/Dashboard/Dashboard';
 
 import StudentAccommodations  from './pages/StudentPages/StudentAccommodations/StudentAccommodations';
 import BreakTimer from './pages/StudentPages/BreakTimer'
@@ -60,6 +61,7 @@ function App() {
       <Router>
         <Header />
         <Routes>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path ="/" element = {<Home/>} />
           <Route path ="/login" element = {<Login/>} />
           <Route path ="/signup" element = {<Signup/>} />

@@ -1,0 +1,107 @@
+.student-data-measures-table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.student-data-measures-table .ant-table-wrapper {
+  background: white;
+  border-radius: 8px;
+}
+
+/* Alternating row colors */
+.student-data-measures-table .whiteRow {
+  background-color: #ffffff;
+}
+
+.student-data-measures-table .coloredRow {
+  background-color: #f9f9f9;
+}
+
+/* Hover effect */
+.student-data-measures-table .ant-table-row:hover {
+  background-color: #f0f0f0 !important;
+}
+
+/* Table header styling */
+.student-data-measures-table .ant-table-thead > tr > th {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Action buttons styling */
+.student-data-measures-table .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.student-data-measures-table .ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.student-data-measures-table .ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.student-data-measures-table .ant-btn-dangerous {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.student-data-measures-table .ant-btn-dangerous:hover {
+  color: #ff7875;
+  border-color: #ff7875;
+}
+
+/* Tag styling */
+.student-data-measures-table .ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+  padding: 2px 8px;
+}
+
+/* Tooltip styling */
+.student-data-measures-table .ant-tooltip {
+  font-size: 12px;
+}
+
+/* Pagination styling */
+.student-data-measures-table .ant-pagination {
+  margin: 16px 0;
+  text-align: right;
+}
+
+/* Modal styling */
+.student-data-measures-table .ant-modal-content {
+  border-radius: 8px;
+}
+
+.student-data-measures-table .ant-modal-header {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.student-data-measures-table .ant-modal-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .student-data-measures-table .ant-table {
+    font-size: 12px;
+  }
+  
+  .student-data-measures-table .ant-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .student-data-measures-table .ant-space {
+    gap: 4px !important;
+  }
+} 
