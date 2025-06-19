@@ -213,10 +213,18 @@ const DurationCharts = ({ durations = [] }) => {
         const chartDataWithAimline = chartDataWithInterventions.map((dataPoint, index) => {
           // Find the corresponding aimline point by date
           const aimlinePoint = aimlinePoints.find(ap => ap.date === dataPoint.date);
+          
+          // Determine bar color - if this is the intervention start date, use intervention color
+          let barColor = '#8884d8'; // default purple
+          if (dataPoint.intervention && userInterventions.filter(i => i.behaviorId?._id === duration._id).length > 0) {
+            barColor = getInterventionColor(userInterventions.find(i => i.behaviorId?._id === duration._id));
+          }
+          
           return {
             ...dataPoint,
             aimline: aimlinePoint?.value || 0,
-            key: `${duration._id}-${dataPoint.date}`
+            key: `${duration._id}-${dataPoint.date}`,
+            barColor: barColor
           };
         });
         console.log('chartDataWithAimline:', chartDataWithAimline);
@@ -354,7 +362,11 @@ const DurationCharts = ({ durations = [] }) => {
                       name === 'minutes' ? 'Duration' : name
                     ]}
                   />
-                  <Bar dataKey="minutes" fill="#8884d8" name="Duration" key={`bar-${duration._id}`} />
+                  <Bar dataKey="minutes" name="Duration" key={`bar-${duration._id}`}>
+                    {chartDataWithAimline.map((entry, index) => (
+                      <Cell key={`cell-${duration._id}-${index}`} fill={entry.barColor} />
+                    ))}
+                  </Bar>
                   {/* Add aimline at goal value */}
                   <ReferenceLine
                     y={30}
@@ -376,7 +388,24 @@ const DurationCharts = ({ durations = [] }) => {
                         ●
                       </span> 
                       Intervention started: {assignedInterventionsForThisBehavior[0].title} on {
-                        new Date(assignedInterventionsForThisBehavior[0].createdAt).toLocaleDateString()
+                        (() => {
+                          const intervention = assignedInterventionsForThisBehavior[0];
+                          let interventionDate;
+                          if (typeof intervention.createdAt === "number") {
+                            interventionDate = new Date(intervention.createdAt);
+                          } else if (typeof intervention.createdAt === "string") {
+                            if (/^\d+$/.test(intervention.createdAt)) {
+                              interventionDate = new Date(Number(intervention.createdAt));
+                            } else {
+                              interventionDate = new Date(intervention.createdAt);
+                            }
+                          } else {
+                            interventionDate = new Date(intervention.createdAt);
+                          }
+                          return interventionDate && !isNaN(interventionDate.getTime()) 
+                            ? interventionDate.toLocaleDateString() 
+                            : 'Unknown date';
+                        })()
                       }
                     </p>
                   </div>
