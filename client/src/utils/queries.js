@@ -293,6 +293,13 @@ query User($identifier: String!, $isUsername: Boolean!) {
         title
         summary
         function
+        behaviorId {
+          _id
+          behaviorTitle
+          operationalDefinition
+        }
+        behaviorTitle
+        createdAt
         createdBy {
           _id
           isAdmin
@@ -368,6 +375,13 @@ query User($identifier: String!, $isUsername: Boolean!) {
       title
       summary
       function
+      behaviorId {
+        _id
+        behaviorTitle
+        operationalDefinition
+      }
+      behaviorTitle
+      createdAt
       createdBy {
         _id
         isAdmin

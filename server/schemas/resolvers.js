@@ -110,6 +110,42 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
     const template = await Duration.findById(durationId);
     if (!template) throw new UserInputError('Duration template not found');
 
+    // Check for existing active duration with same template
+    const existingActive = await Duration.findOne({
+      createdFor: studentId,
+      templateId: template._id,
+      isTemplate: false,
+      isActive: true
+    });
+    
+    if (existingActive) {
+      throw new UserInputError(`Student is already tracking the behavior '${template.behaviorTitle}'`);
+    }
+
+    // Check for inactive duration and restore it
+    const existingInactive = await Duration.findOne({
+      createdFor: studentId,
+      templateId: template._id,
+      isTemplate: false,
+      isActive: false
+    });
+    
+    if (existingInactive) {
+      existingInactive.isActive = true;
+      await existingInactive.save();
+      
+      // Add to student's behaviorDurations if not present
+      await User.findByIdAndUpdate(
+        studentId,
+        { $addToSet: { behaviorDurations: existingInactive._id } }
+      );
+      
+      // Return updated user
+      const user = await User.findById(studentId).populate('behaviorDurations');
+      return user;
+    }
+
+    // Create new duration if none exists
     const newDuration = await Duration.create({
       behaviorTitle: template.behaviorTitle,
       operationalDefinition: template.operationalDefinition,
@@ -278,7 +314,8 @@ const resolvers = {
     duration: async (_, { studentId, isTemplate }, context) => {
       const filter = {};
       if (isTemplate !== undefined) filter.isTemplate = isTemplate;
-      if (studentId) filter.studentId = studentId;
+      if (studentId) filter.createdFor = studentId;
+      filter.isActive = true; // Only return active durations
       console.log('Duration FILTER:', filter);
       const results = await Duration.find(filter);
       console.log('Direct Mongoose Query Results:', results);
@@ -358,7 +395,7 @@ const resolvers = {
     timersForDuration: async (parent, { durationId, studentId }) => {
       return Duration.findOne({ 
         _id: durationId,
-        studentId: studentId 
+        createdFor: studentId
       });
     },
   },
@@ -886,12 +923,15 @@ const resolvers = {
       }
     },
 
-    startDurationTimer: async (parent, { durationId }, context) => {
+    startDurationTimer: async (parent, { durationId, studentId }, context) => {
       if (!context.user) throw new Error("User not logged in.");
 
-      // Find the duration document
-      const duration = await Duration.findById(durationId);
-      if (!duration) throw new UserInputError("Duration not found");
+      // Find the duration document for this specific student
+      const duration = await Duration.findOne({ 
+        _id: durationId,
+        createdFor: studentId
+      });
+      if (!duration) throw new UserInputError("Duration not found for this student");
 
       // Create a new timer object
       const newTimer = {
@@ -909,11 +949,14 @@ const resolvers = {
       return duration.timers[duration.timers.length - 1];
     },
 
-    endDurationTimer: async (parent, { durationId, timerId }, context) => {
+    endDurationTimer: async (parent, { durationId, timerId, studentId }, context) => {
       if (!context.user) throw new Error("User not logged in.");
 
-      const duration = await Duration.findById(durationId);
-      if (!duration) throw new UserInputError("Duration not found");
+      const duration = await Duration.findOne({ 
+        _id: durationId,
+        createdFor: studentId
+      });
+      if (!duration) throw new UserInputError("Duration not found for this student");
 
       // Find the timer by timerId (ensure both are strings for comparison)
       const timer = duration.timers.find(
@@ -1099,7 +1142,7 @@ const resolvers = {
 
       const duration = await Duration.findOne({ 
         _id: durationId,
-        studentId: studentId 
+        createdFor: studentId
       });
       if (!duration) throw new UserInputError("Duration not found for this student");
 
@@ -1120,7 +1163,7 @@ const resolvers = {
 
       const duration = await Duration.findOne({ 
         _id: durationId,
-        studentId: studentId 
+        createdFor: studentId
       });
       if (!duration) throw new UserInputError("Duration not found for this student");
 
@@ -1143,7 +1186,7 @@ const resolvers = {
 
       const duration = await Duration.findOne({ 
         _id: durationId,
-        studentId: studentId 
+        createdFor: studentId
       });
       if (!duration) throw new UserInputError("Duration not found for this student");
 
@@ -1198,7 +1241,7 @@ const resolvers = {
     interventions: async (parent, args, context) => {
       const userInterventions = await InterventionList.find({
         _id: { $in: parent.interventions },
-      });
+      }).populate('behaviorId');
       return userInterventions ? userInterventions : [];
     },
   },
