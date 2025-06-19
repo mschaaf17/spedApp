@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle, BarChart, Bar, PieChart, Pie, Cell, ComposedChart } from 'recharts';
 import { Select, Alert } from 'antd';
 import { useQuery } from '@apollo/client';
 import { QUERY_USER } from '../../utils/queries';
@@ -10,6 +10,16 @@ const chartColors = [
   '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000',
   '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'
 ];
+
+function getInterventionColor(intervention) {
+  if (!intervention) return '#8884d8'; // default
+  const str = intervention._id ? intervention._id.toString() : '';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return chartColors[Math.abs(hash) % chartColors.length];
+}
 
 const DurationCharts = ({ durations = [] }) => {
   const { username: userParam } = useParams();
@@ -33,6 +43,8 @@ const DurationCharts = ({ durations = [] }) => {
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
+
+  const userInterventions = userData?.user?.interventions || [];
 
   return (
     <div className='centerBody'>
@@ -79,6 +91,13 @@ const DurationCharts = ({ durations = [] }) => {
             const durationMs = endTime.getTime() - startTime.getTime();
             const durationMinutes = Math.round(durationMs / (1000 * 60));
             
+            // Skip unrealistic durations (e.g., overnight timers, more than 8 hours)
+            const maxReasonableDuration = 8 * 60; // 8 hours in minutes
+            if (durationMinutes > maxReasonableDuration) {
+              console.log(`Skipping unrealistic timer duration: ${durationMinutes} minutes (${durationMinutes/60} hours) for timer ${timer.timerId}`);
+              return;
+            }
+            
             // Skip negative durations (shouldn't happen but just in case)
             if (durationMinutes < 0) {
               console.log('Negative duration found:', durationMinutes);
@@ -116,33 +135,135 @@ const DurationCharts = ({ durations = [] }) => {
           }
         });
 
-        // 2. Create bar chart data
-        const barChartData = Object.entries(dailyDurationMap)
-          .map(([date, minutes]) => ({
-            date,
-            minutes,
-            hours: (minutes / 60).toFixed(2)
-          }))
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
+        // 2. Get assignment date (createdAt) and fill missing dates
+        let startDateStr, endDateStr;
+        if (duration.createdAt !== undefined && duration.createdAt !== null) {
+          const d = new Date(Number(duration.createdAt));
+          if (!isNaN(d.getTime())) {
+            startDateStr = d.toISOString().slice(0, 10);
+          }
+        }
+        
+        // If no createdAt, use the earliest date from dailyDurationMap
+        if (!startDateStr && Object.keys(dailyDurationMap).length > 0) {
+          startDateStr = Object.keys(dailyDurationMap).sort()[0];
+        }
+        
+        // Use today as end date
+        endDateStr = todayStr;
 
-        // 3. Find most frequent start and end times
+        // 3. Fill in missing dates with 0 durations
+        const filledChartData = fillMissingDatesWithZeros(dailyDurationMap, startDateStr, endDateStr);
+        console.log('filledChartData:', filledChartData);
+        console.log('dailyDurationMap:', dailyDurationMap);
+        console.log('startDateStr:', startDateStr, 'endDateStr:', endDateStr);
+
+        // 4. Add intervention data to the filled chart data
+        const chartDataWithInterventions = filledChartData.map(dataPoint => ({
+          ...dataPoint,
+          intervention: userInterventions.find(i => {
+            if (!i.behaviorId || !i.createdAt) return false;
+            let interventionDate;
+            if (typeof i.createdAt === "number") {
+              interventionDate = new Date(i.createdAt);
+            } else if (typeof i.createdAt === "string") {
+              if (/^\d+$/.test(i.createdAt)) {
+                interventionDate = new Date(Number(i.createdAt));
+              } else {
+                interventionDate = new Date(i.createdAt);
+              }
+            } else {
+              return false;
+            }
+            if (!interventionDate || isNaN(interventionDate.getTime())) return false;
+            return i.behaviorId?._id === duration._id && interventionDate.toISOString().slice(0, 10) === dataPoint.date;
+          })
+        }));
+
+        // 5. Calculate aimline for this duration
+        const goalValue = 30; // 30 minutes goal (or get from user input/intervention)
+        const targetDateStr = chartDataWithInterventions.length ? chartDataWithInterventions[chartDataWithInterventions.length - 1].date : undefined;
+        let interventionStartDate = null;
+        if (userInterventions.length > 0) {
+          const intervention = userInterventions.find(i => i.behaviorId?._id === duration._id);
+          if (intervention && intervention.createdAt) {
+            let d;
+            if (typeof intervention.createdAt === "number") {
+              d = new Date(intervention.createdAt);
+            } else if (typeof intervention.createdAt === "string") {
+              if (/^\d+$/.test(intervention.createdAt)) {
+                d = new Date(Number(intervention.createdAt));
+              } else {
+                d = new Date(intervention.createdAt);
+              }
+            }
+            if (d && !isNaN(d.getTime())) {
+              interventionStartDate = d.toISOString().slice(0, 10);
+            } else {
+              // Defensive: skip or set to null if invalid
+              interventionStartDate = null;
+            }
+          }
+        }
+        const aimlinePoints = calculateAimline(chartDataWithInterventions, goalValue, targetDateStr, interventionStartDate, 3);
+        console.log('aimlinePoints:', aimlinePoints);
+        console.log('interventionStartDate:', interventionStartDate);
+
+        // 5.5. Merge aimline data with chart data
+        const chartDataWithAimline = chartDataWithInterventions.map((dataPoint, index) => {
+          // Find the corresponding aimline point by date
+          const aimlinePoint = aimlinePoints.find(ap => ap.date === dataPoint.date);
+          return {
+            ...dataPoint,
+            aimline: aimlinePoint?.value || 0,
+            key: `${duration._id}-${dataPoint.date}`
+          };
+        });
+        console.log('chartDataWithAimline:', chartDataWithAimline);
+
+        // Debug: Log the chart data to see if aimline values are present
+        console.log('aimlinePoints:', aimlinePoints);
+
+        // 6. Check for 3 consecutive points above aimline (duration getting worse)
+        // Only check if there's an intervention assigned for this behavior
+        let aboveCount = 0, notification = false;
+        const hasIntervention = userInterventions.filter(i => i.behaviorId?._id === duration._id).length > 0;
+        
+        if (hasIntervention) {
+          for (let i = 0; i < chartDataWithAimline.length; i++) {
+            const aimlineValueForDay = chartDataWithAimline[i].aimline;
+            if (chartDataWithAimline[i].minutes > aimlineValueForDay) {
+              aboveCount++;
+              if (aboveCount === 3) {
+                notification = true;
+                break;
+              }
+            } else {
+              aboveCount = 0;
+            }
+          }
+        }
+
+        // 7. Find most frequent start and end times
         const mostFrequentStartHour = Object.entries(startTimeCounts)
           .sort((a, b) => b[1] - a[1])[0];
         const mostFrequentEndHour = Object.entries(endTimeCounts)
           .sort((a, b) => b[1] - a[1])[0];
 
-        // 4. Create pie chart data (duration vs school hours)
+        // 8. Create pie chart data (duration vs school hours)
         const schoolHoursMinutes = 6 * 60; // 6 hours = 360 minutes
         const pieChartData = [
           {
             name: 'Duration Time',
             value: totalDurationMinutes,
-            color: '#8884d8'
+            color: '#8884d8',
+            key: `${duration._id}-duration`
           },
           {
             name: 'Remaining School Time',
             value: Math.max(0, schoolHoursMinutes - totalDurationMinutes),
-            color: '#82ca9d'
+            color: '#82ca9d',
+            key: `${duration._id}-remaining`
           }
         ];
 
@@ -160,6 +281,40 @@ const DurationCharts = ({ durations = [] }) => {
             minute: '2-digit'
           });
         };
+
+        // Get assigned interventions for this behavior
+        const assignedInterventionsForThisBehavior = userInterventions.filter(
+          i => i.behaviorId?._id === duration._id
+        );
+
+        // Debug logging for interventions
+        console.log('All user interventions:', userInterventions);
+        console.log('Duration ID:', duration._id);
+        console.log('Duration ID type:', typeof duration._id);
+        console.log('Assigned interventions for this behavior:', assignedInterventionsForThisBehavior);
+        console.log('Intervention behavior IDs:', userInterventions.map(i => i.behaviorId?._id));
+        console.log('Intervention behavior ID types:', userInterventions.map(i => typeof i.behaviorId?._id));
+        console.log('Intervention behavior titles:', userInterventions.map(i => i.behaviorTitle));
+
+        const interventionDateMap = {};
+        assignedInterventionsForThisBehavior.forEach(intervention => {
+          let d;
+          if (typeof intervention.createdAt === "number") {
+            d = new Date(intervention.createdAt);
+          } else if (typeof intervention.createdAt === "string") {
+            if (/^\d+$/.test(intervention.createdAt)) {
+              d = new Date(Number(intervention.createdAt));
+            } else {
+              d = new Date(intervention.createdAt);
+            }
+          }
+          if (d && !isNaN(d.getTime())) {
+            const dateStr = d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0');
+            interventionDateMap[dateStr] = intervention;
+          }
+        });
 
         return (
           <div key={duration._id} style={{ marginBottom: 32 }}>
@@ -180,22 +335,52 @@ const DurationCharts = ({ durations = [] }) => {
               )}
             </div>
 
-            {/* Daily Duration Bar Chart */}
-            {barChartData.length > 0 && (
+            {/* Intervention Alert */}
+            {notification && (
+              <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+            )}
+
+            {/* Daily Duration Bar Chart with Aimline */}
+            {chartDataWithAimline.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <h4>Daily Duration (Minutes)</h4>
-                <BarChart width={600} height={300} data={barChartData}>
+                <h4>Daily Duration (Minutes) with Aimline</h4>
+                <BarChart width={800} height={300} data={chartDataWithAimline} key={`duration-chart-${duration._id}`}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis />
+                  <YAxis domain={[0, dataMax => Math.max(dataMax, 60)]} />
                   <Tooltip 
                     formatter={(value, name) => [
                       `${value} minutes (${(value / 60).toFixed(2)} hours)`, 
-                      'Duration'
+                      name === 'minutes' ? 'Duration' : name
                     ]}
                   />
-                  <Bar dataKey="minutes" fill="#8884d8" />
+                  <Bar dataKey="minutes" fill="#8884d8" name="Duration" key={`bar-${duration._id}`} />
+                  {/* Add aimline at goal value */}
+                  <ReferenceLine
+                    y={30}
+                    stroke="red"
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    label="Aimline (30 min)"
+                  />
                 </BarChart>
+                
+                {/* Show intervention date separately */}
+                {assignedInterventionsForThisBehavior.length > 0 && (
+                  <div style={{ marginTop: 10, fontSize: '14px', color: '#666' }}>
+                    <p>
+                      <span style={{ 
+                        color: getInterventionColor(assignedInterventionsForThisBehavior[0]),
+                        fontWeight: 'bold'
+                      }}>
+                        ●
+                      </span> 
+                      Intervention started: {assignedInterventionsForThisBehavior[0].title} on {
+                        new Date(assignedInterventionsForThisBehavior[0].createdAt).toLocaleDateString()
+                      }
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -203,7 +388,7 @@ const DurationCharts = ({ durations = [] }) => {
             {totalDurationMinutes > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <h4>Duration vs School Hours (6 hours = 360 minutes)</h4>
-                <PieChart width={400} height={300}>
+                <PieChart width={400} height={300} key={`pie-${duration._id}`}>
                   <Pie
                     data={pieChartData}
                     cx={200}
@@ -215,7 +400,7 @@ const DurationCharts = ({ durations = [] }) => {
                     dataKey="value"
                   >
                     {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${duration._id}-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -232,10 +417,11 @@ const DurationCharts = ({ durations = [] }) => {
             {Object.keys(startTimeCounts).length > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <h4>Start Time Distribution</h4>
-                <BarChart width={600} height={300} data={Object.entries(startTimeCounts).map(([hour, count]) => ({
+                <BarChart width={600} height={300} data={Object.entries(startTimeCounts).map(([hour, count], index) => ({
                   hour: formatHour(hour),
-                  count
-                }))}>
+                  count,
+                  key: `${duration._id}-start-${hour}`
+                }))} key={`start-time-${duration._id}`}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
                   <YAxis />
@@ -249,10 +435,11 @@ const DurationCharts = ({ durations = [] }) => {
             {Object.keys(endTimeCounts).length > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <h4>End Time Distribution</h4>
-                <BarChart width={600} height={300} data={Object.entries(endTimeCounts).map(([hour, count]) => ({
+                <BarChart width={600} height={300} data={Object.entries(endTimeCounts).map(([hour, count], index) => ({
                   hour: formatHour(hour),
-                  count
-                }))}>
+                  count,
+                  key: `${duration._id}-end-${hour}`
+                }))} key={`end-time-${duration._id}`}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
                   <YAxis />
@@ -262,7 +449,25 @@ const DurationCharts = ({ durations = [] }) => {
               </div>
             )}
 
-            {barChartData.length === 0 && (
+            {/* Assigned Interventions */}
+            <div>
+              <h4>Assigned Interventions</h4>
+              {assignedInterventionsForThisBehavior.length > 0 ? (
+                <ul>
+                  {assignedInterventionsForThisBehavior.map(intervention => (
+                    <li key={intervention._id}>
+                      <b style={{ color: getInterventionColor(intervention) }}>
+                        {intervention.title}
+                      </b>: {intervention.summary}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No interventions assigned to this behavior.</p>
+              )}
+            </div>
+
+            {chartDataWithAimline.length === 0 && (
               <div style={{ padding: 20, textAlign: 'center', color: '#666', backgroundColor: '#f9f9f9', borderRadius: 8 }}>
                 <h4>No Completed Timer Sessions</h4>
                 <p>This behavior has no completed timer sessions yet. Start and stop timers, then click Save to see duration data.</p>
@@ -274,6 +479,120 @@ const DurationCharts = ({ durations = [] }) => {
     </div>
   );
 };
+
+function calculateAimline(durationData, goalValue, targetDateStr, startDateStr, baselineDays = 3) {
+  if (!durationData.length) return [];
+
+  // Sort by date
+  const sorted = [...durationData].sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  // Get the highest value from the first N (baseline) days
+  const baseline = sorted.slice(0, baselineDays);
+  const startValue = Math.max(...baseline.map(d => d.minutes));
+
+  // Calculate aimline for each data point in the chart data
+  const aimlinePoints = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const currentDate = new Date(sorted[i].date);
+    const startDate = new Date(sorted[0].date);
+    const daysFromStart = Math.round((currentDate - startDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate aimline value for this day
+    const aimlineValue = startValue + ((goalValue - startValue) / (sorted.length - 1)) * daysFromStart;
+    
+    aimlinePoints.push({
+      date: sorted[i].date,
+      value: Math.max(0, aimlineValue), // Ensure non-negative
+    });
+  }
+  
+  return aimlinePoints;
+}
+
+function fillMissingDatesWithZeros(dailyDurationMap, startDateStr, endDateStr) {
+  if (!startDateStr || !endDateStr) {
+    console.warn('Missing start or end date:', startDateStr, endDateStr);
+    // Fallback: return data points for dates that exist
+    return Object.entries(dailyDurationMap).map(([date, minutes]) => ({
+      date,
+      minutes
+    }));
+  }
+
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.warn('Invalid start or end date:', start, end);
+    // Fallback: return data points for dates that exist
+    return Object.entries(dailyDurationMap).map(([date, minutes]) => ({
+      date,
+      minutes
+    }));
+  }
+
+  const result = [];
+  let current = new Date(start);
+  
+  while (current <= end) {
+    const dateStr = current.toISOString().slice(0, 10);
+    result.push({
+      date: dateStr,
+      minutes: dailyDurationMap[dateStr] || 0
+    });
+    current.setDate(current.getDate() + 1);
+  }
+  
+  console.log('fillMissingDatesWithZeros result:', result);
+  return result;
+}
+
+function CustomDot(props) {
+  const { cx, cy, payload, interventionDateMap } = props;
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  if (payload.date <= todayStr) {
+    const intervention = interventionDateMap[payload.date];
+    if (intervention) {
+      const interventionColor = getInterventionColor(intervention);
+      return (
+        <>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={10}
+            stroke={interventionColor}
+            strokeWidth={4}
+            fill="none"
+          />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={5}
+            stroke="black"
+            strokeWidth={2}
+            fill="black"
+          />
+        </>
+      );
+    }
+    // Default black dot
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        stroke="black"
+        strokeWidth={2}
+        fill="black"
+      />
+    );
+  }
+  return null;
+}
 
 function formatHour(hour) {
   const h = Number(hour);

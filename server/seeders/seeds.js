@@ -189,35 +189,182 @@ async function seed() {
     behaviorTitle: durationTemplate.behaviorTitle,
     operationalDefinition: durationTemplate.operationalDefinition,
     createdBy: admin._id,
-    studentId: student._id,
+    createdFor: student._id,
     isTemplate: false,
     isActive: true,
     templateId: durationTemplate._id,
     createdAt: new Date('2025-06-08T00:00:00.000Z'),
     timers: [
+      // Day 1 (2025-06-08) - 10 minutes total
       {
-        startTime: new Date('2025-06-08T10:00:00.000Z'),
-        endTime: new Date('2025-06-08T10:05:00.000Z'),
-        status: 'stopped',
+        startTime: new Date('2025-06-08T09:00:00.000Z'),
+        endTime: new Date('2025-06-08T09:05:00.000Z'),
+        status: 'saved',
         createdBy: admin._id,
-        isActive: true
+        isActive: false
       },
       {
-        startTime: new Date('2025-06-08T11:30:00.000Z'),
-        endTime: new Date('2025-06-08T11:35:00.000Z'),
-        status: 'stopped',
+        startTime: new Date('2025-06-08T10:30:00.000Z'),
+        endTime: new Date('2025-06-08T10:35:00.000Z'),
+        status: 'saved',
         createdBy: admin._id,
-        isActive: true
+        isActive: false
+      },
+      // Day 2 (2025-06-09) - 25 minutes total
+      {
+        startTime: new Date('2025-06-09T08:45:00.000Z'),
+        endTime: new Date('2025-06-09T09:00:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-09T11:00:00.000Z'),
+        endTime: new Date('2025-06-09T11:10:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 3 (2025-06-10) - 15 minutes total
+      {
+        startTime: new Date('2025-06-10T09:15:00.000Z'),
+        endTime: new Date('2025-06-10T09:25:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-10T14:00:00.000Z'),
+        endTime: new Date('2025-06-10T14:05:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 4 (2025-06-11) - 5 minutes total (improving)
+      {
+        startTime: new Date('2025-06-11T10:00:00.000Z'),
+        endTime: new Date('2025-06-11T10:05:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 5 (2025-06-12) - 0 minutes (no timers)
+      // Day 6 (2025-06-13) - 35 minutes total (worse)
+      {
+        startTime: new Date('2025-06-13T08:30:00.000Z'),
+        endTime: new Date('2025-06-13T08:50:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-13T12:00:00.000Z'),
+        endTime: new Date('2025-06-13T12:05:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 7 (2025-06-14) - 40 minutes total (worse)
+      {
+        startTime: new Date('2025-06-14T09:00:00.000Z'),
+        endTime: new Date('2025-06-14T09:20:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-14T13:00:00.000Z'),
+        endTime: new Date('2025-06-14T13:20:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 8 (2025-06-15) - 45 minutes total (worse - should trigger notification)
+      {
+        startTime: new Date('2025-06-15T08:00:00.000Z'),
+        endTime: new Date('2025-06-15T08:25:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-15T11:00:00.000Z'),
+        endTime: new Date('2025-06-15T11:20:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 9 (2025-06-16) - 50 minutes total (worse - should trigger notification)
+      {
+        startTime: new Date('2025-06-16T09:00:00.000Z'),
+        endTime: new Date('2025-06-16T09:30:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-16T14:00:00.000Z'),
+        endTime: new Date('2025-06-16T14:20:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 10 (2025-06-17) - 55 minutes total (worse - should trigger notification)
+      {
+        startTime: new Date('2025-06-17T08:30:00.000Z'),
+        endTime: new Date('2025-06-17T08:55:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      {
+        startTime: new Date('2025-06-17T12:30:00.000Z'),
+        endTime: new Date('2025-06-17T13:00:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 11 (2025-06-18) - 20 minutes total (improving)
+      {
+        startTime: new Date('2025-06-18T10:00:00.000Z'),
+        endTime: new Date('2025-06-18T10:20:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
+      },
+      // Day 12 (2025-06-19) - 15 minutes total (improving)
+      {
+        startTime: new Date('2025-06-19T09:00:00.000Z'),
+        endTime: new Date('2025-06-19T09:15:00.000Z'),
+        status: 'saved',
+        createdBy: admin._id,
+        isActive: false
       }
     ]
   });
 
+  // Assign intervention to student for the Out of Seat behavior (after duration is created)
+  const outOfSeatIntervention = await InterventionList.create({
+    title: 'Breaks',
+    summary: 'Student will take breaks when needed',
+    function: 'Escape',
+    createdBy: admin._id,
+    studentId: student._id,
+    behaviorId: outOfSeatDuration._id,
+    behaviorTitle: outOfSeatDuration.behaviorTitle,
+    isTemplate: false,
+    isActive: true,
+    createdAt: new Date('2025-06-10T00:00:00.000Z')
+  });
+
   student.behaviorDurations.push(outOfSeatDuration._id);
+  student.interventions.push(outOfSeatIntervention._id);
   await student.save();
 
   console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);
   console.log('assignedIntervention:', assignedIntervention, 'interventionDate:', assignedIntervention.createdAt);
   console.log('assignedAccommodation:', assignedAccommodation, 'accommodationDate:', assignedAccommodation.createdAt);
+  console.log('Student after adding duration:', await User.findById(student._id).populate('behaviorDurations'));
   console.log('Seed data created!');
   mongoose.disconnect();
 }
