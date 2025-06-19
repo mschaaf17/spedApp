@@ -185,23 +185,38 @@ const DurationCharts = ({ durations = [] }) => {
         const targetDateStr = chartDataWithInterventions.length ? chartDataWithInterventions[chartDataWithInterventions.length - 1].date : undefined;
         let interventionStartDate = null;
         if (userInterventions.length > 0) {
-          const intervention = userInterventions.find(i => i.behaviorId?._id === duration._id);
-          if (intervention && intervention.createdAt) {
-            let d;
-            if (typeof intervention.createdAt === "number") {
-              d = new Date(intervention.createdAt);
-            } else if (typeof intervention.createdAt === "string") {
-              if (/^\d+$/.test(intervention.createdAt)) {
-                d = new Date(Number(intervention.createdAt));
-              } else {
-                d = new Date(intervention.createdAt);
+          // Find the earliest intervention for this behavior
+          const interventionsForThisBehavior = userInterventions.filter(i => i.behaviorId?._id === duration._id);
+          if (interventionsForThisBehavior.length > 0) {
+            // Sort by createdAt to get the earliest one
+            const sortedInterventions = interventionsForThisBehavior.sort((a, b) => {
+              const aDate = typeof a.createdAt === "number" ? a.createdAt : 
+                           typeof a.createdAt === "string" && /^\d+$/.test(a.createdAt) ? Number(a.createdAt) : 
+                           new Date(a.createdAt).getTime();
+              const bDate = typeof b.createdAt === "number" ? b.createdAt : 
+                           typeof b.createdAt === "string" && /^\d+$/.test(b.createdAt) ? Number(b.createdAt) : 
+                           new Date(b.createdAt).getTime();
+              return aDate - bDate;
+            });
+            
+            const earliestIntervention = sortedInterventions[0];
+            if (earliestIntervention && earliestIntervention.createdAt) {
+              let d;
+              if (typeof earliestIntervention.createdAt === "number") {
+                d = new Date(earliestIntervention.createdAt);
+              } else if (typeof earliestIntervention.createdAt === "string") {
+                if (/^\d+$/.test(earliestIntervention.createdAt)) {
+                  d = new Date(Number(earliestIntervention.createdAt));
+                } else {
+                  d = new Date(earliestIntervention.createdAt);
+                }
               }
-            }
-            if (d && !isNaN(d.getTime())) {
-              interventionStartDate = d.toISOString().slice(0, 10);
-            } else {
-              // Defensive: skip or set to null if invalid
-              interventionStartDate = null;
+              if (d && !isNaN(d.getTime())) {
+                interventionStartDate = d.toISOString().slice(0, 10);
+              } else {
+                // Defensive: skip or set to null if invalid
+                interventionStartDate = null;
+              }
             }
           }
         }
@@ -509,25 +524,33 @@ const DurationCharts = ({ durations = [] }) => {
   );
 };
 
-function calculateAimline(durationData, goalValue, targetDateStr, startDateStr, baselineDays = 3) {
+function calculateAimline(durationData, goalValue, targetDateStr, interventionStartDate, baselineDays = 3) {
   if (!durationData.length) return [];
 
   // Sort by date
   const sorted = [...durationData].sort((a, b) => new Date(a.date) - new Date(b.date));
   
-  // Get the highest value from the first N (baseline) days
-  const baseline = sorted.slice(0, baselineDays);
+  // If there's an intervention start date, filter data to only include points after that date
+  let relevantData = sorted;
+  if (interventionStartDate) {
+    relevantData = sorted.filter(d => d.date >= interventionStartDate);
+  }
+  
+  if (relevantData.length === 0) return [];
+
+  // Get the highest value from the first N (baseline) days after intervention starts
+  const baseline = relevantData.slice(0, baselineDays);
   const startValue = Math.max(...baseline.map(d => d.minutes));
 
   // Calculate aimline for each data point in the chart data
   const aimlinePoints = [];
   for (let i = 0; i < sorted.length; i++) {
     const currentDate = new Date(sorted[i].date);
-    const startDate = new Date(sorted[0].date);
+    const startDate = new Date(relevantData[0].date);
     const daysFromStart = Math.round((currentDate - startDate) / (1000 * 60 * 60 * 24));
     
     // Calculate aimline value for this day
-    const aimlineValue = startValue + ((goalValue - startValue) / (sorted.length - 1)) * daysFromStart;
+    const aimlineValue = startValue + ((goalValue - startValue) / (relevantData.length - 1)) * daysFromStart;
     
     aimlinePoints.push({
       date: sorted[i].date,
