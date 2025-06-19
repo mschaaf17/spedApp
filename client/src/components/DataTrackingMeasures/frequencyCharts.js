@@ -235,7 +235,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         console.log('Types:', finalChartData.map(d => typeof d.count));
 
         // Use finalChartData for chart and aimline
-        const aimlinePointsFilled = calculateAimline(finalChartData, goalValue, extendedEndDateStr, startDateStr, 3);
+        const aimlinePointsFilled = calculateAimline(finalChartData, goalValue, extendedEndDateStr, interventionStartDate, 3);
 
         console.log('Result from fillMissingDates:', finalChartData);
 
@@ -347,31 +347,40 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   );
 };
 
-function calculateAimline(frequencyData, goalValue, targetDateStr, startDateStr, baselineDays = 3) {
+function calculateAimline(frequencyData, goalValue, targetDateStr, interventionStartDate, baselineDays = 3) {
   if (!frequencyData.length) return [];
 
   // Sort by date
   const sorted = [...frequencyData].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const startDate = startDateStr ? new Date(startDateStr) : new Date(sorted[0].date);
-  const endDate = targetDateStr ? new Date(targetDateStr) : new Date(sorted[sorted.length - 1].date);
+  
+  // If there's an intervention start date, filter data to only include points after that date
+  let relevantData = sorted;
+  if (interventionStartDate) {
+    relevantData = sorted.filter(d => d.date >= interventionStartDate);
+  }
+  
+  if (relevantData.length === 0) return [];
 
-  // Get the highest value from the first N (baseline) days
-  const baseline = sorted.slice(0, baselineDays);
+  // Get the highest value from the first N (baseline) days after intervention starts
+  const baseline = relevantData.slice(0, baselineDays);
   const startValue = Math.max(...baseline.map(d => d.count));
 
-  const days = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
-  const slope = (goalValue - startValue) / days;
-
-  // Generate aimline points for each date in the range
+  // Calculate aimline for each data point in the chart data
   const aimlinePoints = [];
-  for (let i = 0; i <= days; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
+  for (let i = 0; i < sorted.length; i++) {
+    const currentDate = new Date(sorted[i].date);
+    const startDate = new Date(relevantData[0].date);
+    const daysFromStart = Math.round((currentDate - startDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate aimline value for this day
+    const aimlineValue = startValue + ((goalValue - startValue) / (relevantData.length - 1)) * daysFromStart;
+    
     aimlinePoints.push({
-      date: date.toISOString().slice(0, 10),
-      value: startValue + slope * i,
+      date: sorted[i].date,
+      value: Math.max(0, aimlineValue), // Ensure non-negative
     });
   }
+  
   return aimlinePoints;
 }
 
