@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES } from '../../utils/queries';
+import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER } from '../../utils/queries';
 import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT } from '../../utils/mutations';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -68,6 +68,12 @@ const Dashboard = () => {
     variables: { isTemplate: true, isActive: true }
   });
 
+  // Get detailed student data with interventions that have behaviorId
+  const { loading: selectedStudentLoading, data: selectedStudentData } = useQuery(QUERY_USER, {
+    variables: { identifier: selectedStudent?.username || '', isUsername: true },
+    skip: !selectedStudent?.username
+  });
+
   // Mutations for adding/removing students, interventions, and accommodations
   const [addStudentToList] = useMutation(ADD_STUDENT_TO_LIST);
   const [removeStudentFromList] = useMutation(REMOVE_STUDENT_FROM_LIST);
@@ -82,11 +88,19 @@ const Dashboard = () => {
   const interventionTemplates = templateData?.interventionList || [];
   const allAccommodations = accommodationData?.accommodationList || [];
   const accommodationTemplates = accommodationTemplateData?.accommodationList || [];
-  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading;
+  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading || selectedStudentLoading;
 
   // Get interventions for the selected student with complete data
   const getStudentInterventions = () => {
-    if (!selectedStudent || !allInterventions) return [];
+    if (!selectedStudent) return [];
+    
+    // Use detailed student data if available (includes behaviorId field)
+    if (selectedStudentData?.user) {
+      return selectedStudentData.user.interventions || [];
+    }
+    
+    // Fallback to basic intervention data from QUERY_ME
+    if (!allInterventions) return [];
     
     return allInterventions.filter(intervention => 
       intervention.studentId?._id === selectedStudent._id
@@ -144,7 +158,8 @@ const Dashboard = () => {
           behaviorId: selectedBehaviorForIntervention
         },
         refetchQueries: [
-          { query: QUERY_ME }
+          { query: QUERY_ME },
+          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
         ]
       });
 
@@ -220,18 +235,30 @@ const Dashboard = () => {
 
     if (!behavior) return null;
 
+    // Get interventions for this specific behavior
+    const behaviorInterventions = getStudentInterventions().filter(intervention => 
+      intervention.behaviorId?._id === behavior.id
+    );
+
     if (selectedBehavior.type === 'frequency') {
       return (
-        <FrequencyCharts 
-          frequencies={[behavior.data]}
-          interventions={selectedStudent.interventions}
-        />
+        <div>
+          <h3>{behavior.data.behaviorTitle}</h3>
+          <FrequencyCharts 
+            frequencies={[behavior.data]}
+            interventions={behaviorInterventions}
+          />
+        </div>
       );
     } else {
       return (
-        <DurationCharts 
-          durations={[behavior.data]}
-        />
+        <div>
+          <h3>{behavior.data.behaviorTitle}</h3>
+          <DurationCharts 
+            durations={[behavior.data]}
+            interventions={behaviorInterventions}
+          />
+        </div>
       );
     }
   };
@@ -308,7 +335,8 @@ const Dashboard = () => {
           studentId: selectedStudent._id
         },
         refetchQueries: [
-          { query: QUERY_ME }
+          { query: QUERY_ME },
+          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
         ]
       });
       

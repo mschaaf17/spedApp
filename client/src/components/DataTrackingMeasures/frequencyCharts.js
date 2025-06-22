@@ -8,8 +8,6 @@ import { Link, useParams } from 'react-router-dom'
 // import Contracts from '../../../components/DataTrackingMeasures/Contracts'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle } from 'recharts';
 import { Select, Alert } from 'antd';
-import { useQuery } from '@apollo/client';
-import { QUERY_USER } from '../../utils/queries';
 
 const data = [
   { name: 'Date', uv: 4000, pv: 2400, amt: 2400 },
@@ -52,9 +50,8 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   // Set up selectedIds only after frequencies are loaded
   const [selectedIds, setSelectedIds] = useState(safeFrequencies.map(f => f._id));
 
-  const { data: userData, loading: userLoading, error: userError } = useQuery(QUERY_USER, {
-    variables: { identifier: userParam, isUsername: true }
-  });
+  // Use interventions passed as props instead of making a separate query
+  const userInterventions = safeInterventions;
 
   if (!safeFrequencies.length) return <div>Loading or no frequency data available.</div>;
 
@@ -65,8 +62,6 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
-
-  const userInterventions = userData?.user?.interventions || [];
 
   return (
     <div className='centerBody'>

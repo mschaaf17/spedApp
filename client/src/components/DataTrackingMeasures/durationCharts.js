@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle, BarChart, Bar, PieChart, Pie, Cell, ComposedChart } from 'recharts';
 import { Select, Alert } from 'antd';
-import { useQuery } from '@apollo/client';
-import { QUERY_USER } from '../../utils/queries';
 
 // Color palette for charts
 const chartColors = [
@@ -21,18 +19,18 @@ function getInterventionColor(intervention) {
   return chartColors[Math.abs(hash) % chartColors.length];
 }
 
-const DurationCharts = ({ durations = [] }) => {
+const DurationCharts = ({ durations = [], interventions = [] }) => {
   const { username: userParam } = useParams();
 
   // Defensive: if durations is undefined or not an array, treat as empty array
   const safeDurations = Array.isArray(durations) ? durations : [];
+  const safeInterventions = Array.isArray(interventions) ? interventions : [];
 
   // Set up selectedIds only after durations are loaded
   const [selectedIds, setSelectedIds] = useState(safeDurations.map(d => d._id));
 
-  const { data: userData, loading: userLoading, error: userError } = useQuery(QUERY_USER, {
-    variables: { identifier: userParam, isUsername: true }
-  });
+  // Use interventions passed as props instead of making a separate query
+  const userInterventions = safeInterventions;
 
   if (!safeDurations.length) return <div>No duration data available for this student.</div>;
 
@@ -43,8 +41,6 @@ const DurationCharts = ({ durations = [] }) => {
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
-
-  const userInterventions = userData?.user?.interventions || [];
 
   return (
     <div className='centerBody'>
