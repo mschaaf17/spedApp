@@ -57,6 +57,10 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('analyze');
   const [activeTab, setActiveTab] = useState('accommodations');
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  
+  // Student View Configuration State
+  const [showAccommodations, setShowAccommodations] = useState(false);
+  const [selectedCharts, setSelectedCharts] = useState([]);
 
   // Query logged-in user and their student list
   const { loading: meLoading, data: meData, refetch: refetchMe } = useQuery(QUERY_ME);
@@ -610,6 +614,14 @@ const Dashboard = () => {
               >
                 Track Data
               </Button>
+              <Button 
+                type={activeSection === 'studentView' ? 'primary' : 'default'}
+                size="large"
+                style={{ flex: 1, height: '60px', fontSize: '16px' }}
+                onClick={() => setActiveSection('studentView')}
+              >
+                Student View
+              </Button>
             </div>
 
             {/* Content Sections */}
@@ -914,6 +926,238 @@ const Dashboard = () => {
                       key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}
                       refetchTrigger={refetchTrigger}
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'studentView' && (
+              <div className="student-view-section">
+                <div className="student-view-header">
+                  <h3>Student View Configuration</h3>
+                  <p>Configure what {selectedStudent.firstName} will see on their student view</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '24px', marginTop: '24px' }}>
+                  {/* Configuration Panel */}
+                  <div style={{ flex: 1, backgroundColor: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
+                    <h4>Available Options</h4>
+                    
+                    {/* Accommodations Section */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        padding: '12px',
+                        backgroundColor: 'white',
+                        borderRadius: '6px',
+                        border: '1px solid #d9d9d9'
+                      }}>
+                        <div>
+                          <h5 style={{ margin: 0 }}>Accommodations</h5>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#666' }}>
+                            Show all assigned accommodations
+                          </p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={showAccommodations}
+                          onChange={(e) => setShowAccommodations(e.target.checked)}
+                          style={{ transform: 'scale(1.2)' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Charts Section */}
+                    <div>
+                      <h5>Individual Charts</h5>
+                      <p style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
+                        Select specific behavior charts to show
+                      </p>
+                      
+                      {getBehaviors().map(behavior => (
+                        <div key={`${behavior.type}-${behavior.id}`} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px',
+                          border: '1px solid #d9d9d9',
+                          marginBottom: '8px'
+                        }}>
+                          <div>
+                            <span style={{ fontWeight: 500 }}>{behavior.title}</span>
+                            <span style={{ fontSize: '12px', color: '#666', marginLeft: '8px' }}>
+                              ({behavior.type})
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={selectedCharts.some(chart => 
+                              chart.type === behavior.type && chart.id === behavior.id
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCharts([...selectedCharts, { type: behavior.type, id: behavior.id, title: behavior.title }]);
+                              } else {
+                                setSelectedCharts(selectedCharts.filter(chart => 
+                                  !(chart.type === behavior.type && chart.id === behavior.id)
+                                ));
+                              }
+                            }}
+                            style={{ transform: 'scale(1.1)' }}
+                          />
+                        </div>
+                      ))}
+                      
+                      {getBehaviors().length === 0 && (
+                        <div style={{ 
+                          padding: '16px', 
+                          backgroundColor: 'white', 
+                          borderRadius: '6px',
+                          border: '1px dashed #d9d9d9',
+                          textAlign: 'center',
+                          color: '#666'
+                        }}>
+                          No data measures available. Add data measures first to configure charts.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Preview Panel */}
+                  <div style={{ flex: 1, backgroundColor: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
+                    <h4>Student View Preview</h4>
+                    <div style={{ 
+                      backgroundColor: 'white', 
+                      minHeight: '400px', 
+                      padding: '20px',
+                      borderRadius: '6px',
+                      border: '1px solid #d9d9d9'
+                    }}>
+                      {!showAccommodations && selectedCharts.length === 0 ? (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '40px',
+                          color: '#666'
+                        }}>
+                          <p>No items selected for student view</p>
+                          <p style={{ fontSize: '14px' }}>Select options from the left panel to see preview</p>
+                        </div>
+                      ) : (
+                        <div>
+                          {/* Accommodations Preview */}
+                          {showAccommodations && (
+                            <div style={{ marginBottom: '24px' }}>
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                marginBottom: '12px'
+                              }}>
+                                <h5 style={{ margin: 0 }}>Accommodations</h5>
+                                <button
+                                  onClick={() => setShowAccommodations(false)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '18px',
+                                    cursor: 'pointer',
+                                    color: '#ff4d4f',
+                                    padding: '4px'
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                              <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                gap: '12px'
+                              }}>
+                                {getStudentAccommodations().map(accommodation => (
+                                  <div key={accommodation._id} style={{
+                                    border: '1px solid #d9d9d9',
+                                    borderRadius: '6px',
+                                    padding: '12px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <div style={{
+                                      width: '100%',
+                                      height: '120px',
+                                      backgroundColor: '#f0f0f0',
+                                      borderRadius: '4px',
+                                      marginBottom: '8px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '12px',
+                                      color: '#666'
+                                    }}>
+                                      {accommodation.image ? 'Image' : 'No Image'}
+                                    </div>
+                                    <h6 style={{ margin: '0 0 4px 0' }}>{accommodation.title}</h6>
+                                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+                                      {accommodation.description}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Charts Preview */}
+                          {selectedCharts.length > 0 && (
+                            <div>
+                              <h5 style={{ marginBottom: '12px' }}>Charts</h5>
+                              {selectedCharts.map((chart, index) => (
+                                <div key={`${chart.type}-${chart.id}`} style={{
+                                  border: '1px solid #d9d9d9',
+                                  borderRadius: '6px',
+                                  padding: '12px',
+                                  marginBottom: '12px',
+                                  position: 'relative'
+                                }}>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCharts(selectedCharts.filter((_, i) => i !== index));
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '8px',
+                                      right: '8px',
+                                      background: 'none',
+                                      border: 'none',
+                                      fontSize: '16px',
+                                      cursor: 'pointer',
+                                      color: '#ff4d4f',
+                                      padding: '4px'
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
+                                  <h6 style={{ margin: '0 0 8px 0' }}>{chart.title} ({chart.type})</h6>
+                                  <div style={{
+                                    height: '200px',
+                                    backgroundColor: '#f9f9f9',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
+                                    color: '#666'
+                                  }}>
+                                    Chart Preview
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
