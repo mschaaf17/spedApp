@@ -139,41 +139,9 @@ const Dashboard = () => {
           studentId: selectedStudent._id,
           behaviorId: selectedBehaviorForIntervention
         },
-        update: (cache, { data }) => {
-          // Manually update the cache to avoid the merge warning
-          try {
-            const existingData = cache.readQuery({
-              query: QUERY_ME
-            });
-
-            if (existingData && existingData.me && existingData.me.students && data?.addInterventionForStudent) {
-              const updatedStudents = existingData.me.students.map(student => {
-                if (student._id === selectedStudent._id) {
-                  return {
-                    ...student,
-                    interventions: [...(student.interventions || []), data.addInterventionForStudent]
-                  };
-                }
-                return student;
-              });
-
-              cache.writeQuery({
-                query: QUERY_ME,
-                data: {
-                  ...existingData,
-                  me: {
-                    ...existingData.me,
-                    students: updatedStudents
-                  }
-                }
-              });
-            }
-          } catch (error) {
-            console.log('Cache update error:', error);
-            // Fallback to refetch if cache update fails
-            refetchMe();
-          }
-        }
+        refetchQueries: [
+          { query: QUERY_ME }
+        ]
       });
 
       // Reset form and close modal
@@ -183,8 +151,6 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Error adding intervention:', error);
-      // Fallback to refetch if mutation fails
-      await refetchMe();
     }
   };
 
@@ -337,47 +303,13 @@ const Dashboard = () => {
           interventionId: interventionId,
           studentId: selectedStudent._id
         },
-        update: (cache, { data }) => {
-          // Manually update the cache to avoid the merge warning
-          try {
-            const existingData = cache.readQuery({
-              query: QUERY_ME
-            });
-
-            if (existingData && existingData.me && existingData.me.students) {
-              const updatedStudents = existingData.me.students.map(student => {
-                if (student._id === selectedStudent._id) {
-                  return {
-                    ...student,
-                    interventions: student.interventions.filter(int => int._id !== interventionId)
-                  };
-                }
-                return student;
-              });
-
-              cache.writeQuery({
-                query: QUERY_ME,
-                data: {
-                  ...existingData,
-                  me: {
-                    ...existingData.me,
-                    students: updatedStudents
-                  }
-                }
-              });
-            }
-          } catch (error) {
-            console.log('Cache update error:', error);
-            // Fallback to refetch if cache update fails
-            refetchMe();
-          }
-        }
+        refetchQueries: [
+          { query: QUERY_ME }
+        ]
       });
       
     } catch (error) {
       console.error('Error removing intervention:', error);
-      // Fallback to refetch if mutation fails
-      await refetchMe();
     }
   };
 
@@ -393,41 +325,9 @@ const Dashboard = () => {
           accommodationId: selectedAccommodation,
           studentId: selectedStudent._id
         },
-        update: (cache, { data }) => {
-          // Manually update the cache to avoid the merge warning
-          try {
-            const existingData = cache.readQuery({
-              query: QUERY_ME
-            });
-
-            if (existingData && existingData.me && existingData.me.students && data?.addAccommodationForStudent) {
-              const updatedStudents = existingData.me.students.map(student => {
-                if (student._id === selectedStudent._id) {
-                  return {
-                    ...student,
-                    accommodations: [...(student.accommodations || []), data.addAccommodationForStudent]
-                  };
-                }
-                return student;
-              });
-
-              cache.writeQuery({
-                query: QUERY_ME,
-                data: {
-                  ...existingData,
-                  me: {
-                    ...existingData.me,
-                    students: updatedStudents
-                  }
-                }
-              });
-            }
-          } catch (error) {
-            console.log('Cache update error:', error);
-            // Fallback to refetch if cache update fails
-            refetchMe();
-          }
-        }
+        refetchQueries: [
+          { query: QUERY_ME }
+        ]
       });
 
       // Reset form and close modal
@@ -436,8 +336,6 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Error adding accommodation:', error);
-      // Fallback to refetch if mutation fails
-      await refetchMe();
     }
   };
 
@@ -449,47 +347,13 @@ const Dashboard = () => {
           accommodationId: accommodationId,
           studentId: selectedStudent._id
         },
-        update: (cache, { data }) => {
-          // Manually update the cache to avoid the merge warning
-          try {
-            const existingData = cache.readQuery({
-              query: QUERY_ME
-            });
-
-            if (existingData && existingData.me && existingData.me.students) {
-              const updatedStudents = existingData.me.students.map(student => {
-                if (student._id === selectedStudent._id) {
-                  return {
-                    ...student,
-                    accommodations: student.accommodations.filter(acc => acc._id !== accommodationId)
-                  };
-                }
-                return student;
-              });
-
-              cache.writeQuery({
-                query: QUERY_ME,
-                data: {
-                  ...existingData,
-                  me: {
-                    ...existingData.me,
-                    students: updatedStudents
-                  }
-                }
-              });
-            }
-          } catch (error) {
-            console.log('Cache update error:', error);
-            // Fallback to refetch if cache update fails
-            refetchMe();
-          }
-        }
+        refetchQueries: [
+          { query: QUERY_ME }
+        ]
       });
       
     } catch (error) {
       console.error('Error removing accommodation:', error);
-      // Fallback to refetch if mutation fails
-      await refetchMe();
     }
   };
 
@@ -567,21 +431,72 @@ const Dashboard = () => {
               <p>ID: {selectedStudent.studentSchoolId}</p>
             </div>
 
-            <Tabs defaultActiveKey="dataMeasures">
-              <TabPane tab="Data Measures" key="dataMeasures">
-                <div className="data-measures-content">
-                  <StudentDataMeasuresTable
-                    student={selectedStudent}
-                    onViewChart={(record) => {
-                      // Switch to charts tab and select the behavior
-                      const behaviorType = record.type;
-                      const behaviorId = record._id;
-                      setSelectedBehavior({ type: behaviorType, id: behaviorId });
-                      // You might want to add a way to switch tabs here
-                    }}
-                    onRemoveDataMeasure={(record) => {
-                      // Handle data measure removal
-                      console.log('Data measure removed:', record);
+            <Tabs defaultActiveKey="accommodations">
+              <TabPane tab="Accommodations" key="accommodations">
+                <div className="accommodations-content">
+                  <div className="accommodations-header">
+                    <h3>Current Accommodations</h3>
+                    <Button type="primary" onClick={() => setShowAddAccommodation(true)}>
+                      Add Accommodation
+                    </Button>
+                  </div>
+                  
+                  <Table
+                    columns={[
+                      {
+                        title: 'Title',
+                        dataIndex: 'title',
+                        key: 'title',
+                        render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span>
+                      },
+                      {
+                        title: 'Description',
+                        dataIndex: 'description',
+                        key: 'description',
+                        ellipsis: {
+                          showTitle: false,
+                        },
+                        render: (text) => (
+                          <span>{text || '—'}</span>
+                        )
+                      },
+                      {
+                        title: 'Assigned Date',
+                        dataIndex: 'createdAt',
+                        key: 'createdAt',
+                        render: (createdAt) => {
+                          if (!createdAt) return '—';
+                          let dateObj;
+                          if (typeof createdAt === "number") {
+                            dateObj = new Date(createdAt);
+                          } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
+                            dateObj = new Date(Number(createdAt));
+                          } else {
+                            dateObj = new Date(createdAt);
+                          }
+                          return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
+                        },
+                      },
+                      {
+                        title: 'Actions',
+                        key: 'actions',
+                        render: (_, record) => (
+                          <Popconfirm
+                            title="Remove this accommodation from student?"
+                            onConfirm={() => handleRemoveAccommodation(record._id)}
+                          >
+                            <Button danger size="small">
+                              Remove
+                            </Button>
+                          </Popconfirm>
+                        ),
+                      },
+                    ]}
+                    dataSource={getStudentAccommodations()}
+                    rowKey="_id"
+                    loading={loading}
+                    locale={{
+                      emptyText: 'No accommodations found for this student'
                     }}
                   />
                 </div>
@@ -660,84 +575,38 @@ const Dashboard = () => {
                 </div>
               </TabPane>
 
-              <TabPane tab="Accommodations" key="accommodations">
-                <div className="accommodations-content">
-                  <div className="accommodations-header">
-                    <h3>Current Accommodations</h3>
-                    <Button type="primary" onClick={() => setShowAddAccommodation(true)}>
-                      Add Accommodation
-                    </Button>
-                  </div>
-                  
-                  <Table
-                    columns={[
-                      {
-                        title: 'Title',
-                        dataIndex: 'title',
-                        key: 'title',
-                        render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span>
-                      },
-                      {
-                        title: 'Description',
-                        dataIndex: 'description',
-                        key: 'description',
-                        ellipsis: {
-                          showTitle: false,
-                        },
-                        render: (text) => (
-                          <span>{text || '—'}</span>
-                        )
-                      },
-                      {
-                        title: 'Assigned Date',
-                        dataIndex: 'createdAt',
-                        key: 'createdAt',
-                        render: (createdAt) => {
-                          if (!createdAt) return '—';
-                          let dateObj;
-                          if (typeof createdAt === "number") {
-                            dateObj = new Date(createdAt);
-                          } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
-                            dateObj = new Date(Number(createdAt));
-                          } else {
-                            dateObj = new Date(createdAt);
-                          }
-                          return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
-                        },
-                      },
-                      {
-                        title: 'Actions',
-                        key: 'actions',
-                        render: (_, record) => (
-                          <Popconfirm
-                            title="Remove this accommodation from student?"
-                            onConfirm={() => handleRemoveAccommodation(record._id)}
-                          >
-                            <Button danger size="small">
-                              Remove
-                            </Button>
-                          </Popconfirm>
-                        ),
-                      },
-                    ]}
-                    dataSource={getStudentAccommodations()}
-                    rowKey="_id"
-                    loading={loading}
-                    locale={{
-                      emptyText: 'No accommodations found for this student'
+              <TabPane tab="Data Measures" key="dataMeasures">
+                <div className="data-measures-content">
+                  <StudentDataMeasuresTable
+                    student={selectedStudent}
+                    onViewChart={(record) => {
+                      // Switch to charts tab and select the behavior
+                      const behaviorType = record.type;
+                      const behaviorId = record._id;
+                      setSelectedBehavior({ type: behaviorType, id: behaviorId });
+                      // You might want to add a way to switch tabs here
+                    }}
+                    onRemoveDataMeasure={(record) => {
+                      // Handle data measure removal
+                      console.log('Data measure removed:', record);
                     }}
                   />
                 </div>
               </TabPane>
+            </Tabs>
 
-              <TabPane tab="Charts" key="charts">
-                <div className="charts-section">
+            {/* Charts Section - Only show if student has data measures */}
+            {getBehaviors().length > 0 && (
+              <div className="charts-section" style={{ marginTop: 24 }}>
+                <div className="charts-header">
+                  <h3>Data Charts</h3>
                   <div className="behavior-selector">
                     <Select 
-                      placeholder="Select Behavior" 
+                      placeholder="Select Behavior to View Chart" 
                       style={{ width: 300 }}
                       onChange={handleBehaviorChange}
                       value={selectedBehavior ? `${selectedBehavior.type}-${selectedBehavior.id}` : undefined}
+                      allowClear
                     >
                       {getBehaviors().map(behavior => (
                         <Select.Option 
@@ -749,15 +618,27 @@ const Dashboard = () => {
                       ))}
                     </Select>
                   </div>
-                  
-                  {selectedBehavior && (
-                    <div className="charts-display">
-                      {renderBehaviorChart()}
-                    </div>
-                  )}
                 </div>
-              </TabPane>
-            </Tabs>
+                
+                {selectedBehavior && (
+                  <div className="charts-display" style={{ marginTop: 16 }}>
+                    {renderBehaviorChart()}
+                  </div>
+                )}
+                
+                {!selectedBehavior && (
+                  <div className="charts-placeholder" style={{ 
+                    textAlign: 'center', 
+                    padding: 40, 
+                    color: '#666',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: 8
+                  }}>
+                    <p>Select a behavior from the dropdown above to view its chart</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -52,7 +52,59 @@ const httpLink = createHttpLink({
 
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      User: {
+        fields: {
+          students: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          },
+          accommodations: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          },
+          interventions: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          },
+          behaviorFrequencies: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          },
+          behaviorDurations: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          }
+        }
+      },
+      AccommodationList: {
+        keyFields: ["_id"],
+        fields: {
+          createdAt: {
+            read(existing) {
+              return existing || new Date().toISOString();
+            }
+          }
+        }
+      },
+      InterventionList: {
+        keyFields: ["_id"],
+        fields: {
+          createdAt: {
+            read(existing) {
+              return existing || new Date().toISOString();
+            }
+          }
+        }
+      }
+    }
+  }),
 });
 
 function App() {
