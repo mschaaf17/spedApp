@@ -31,27 +31,49 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
   const getDataMeasures = () => {
     if (!student) return [];
 
+    console.log('Student data in getDataMeasures:', student);
+    console.log('Student behaviorFrequencies:', student.behaviorFrequencies);
+    console.log('Student behaviorDurations:', student.behaviorDurations);
+
     const frequencies = (student.behaviorFrequencies || [])
       .filter(freq => freq.isActive)
-      .map(freq => ({
-        ...freq,
-        dataMeasureType: 'Frequency',
-        type: 'frequency',
-        icon: <TrendingUpIcon style={{ color: '#1890ff' }} />,
-        status: freq.isActive ? 'Active' : 'Inactive'
-      }));
+      .map(freq => {
+        console.log('Processing frequency:', {
+          _id: freq._id,
+          behaviorTitle: freq.behaviorTitle,
+          operationalDefinition: freq.operationalDefinition,
+          createdAt: freq.createdAt
+        });
+        return {
+          ...freq,
+          dataMeasureType: 'Frequency',
+          type: 'frequency',
+          icon: <TrendingUpIcon style={{ color: '#1890ff' }} />,
+          status: freq.isActive ? 'Active' : 'Inactive'
+        };
+      });
 
     const durations = (student.behaviorDurations || [])
       .filter(dur => dur.isActive)
-      .map(dur => ({
-        ...dur,
-        dataMeasureType: 'Duration',
-        type: 'duration',
-        icon: <TimerIcon style={{ color: '#52c41a' }} />,
-        status: dur.isActive ? 'Active' : 'Inactive'
-      }));
+      .map(dur => {
+        console.log('Processing duration:', {
+          _id: dur._id,
+          behaviorTitle: dur.behaviorTitle,
+          operationalDefinition: dur.operationalDefinition,
+          createdAt: dur.createdAt
+        });
+        return {
+          ...dur,
+          dataMeasureType: 'Duration',
+          type: 'duration',
+          icon: <TimerIcon style={{ color: '#52c41a' }} />,
+          status: dur.isActive ? 'Active' : 'Inactive'
+        };
+      });
 
-    return [...frequencies, ...durations];
+    const result = [...frequencies, ...durations];
+    console.log('Final dataMeasures result:', result);
+    return result;
   };
 
   const handleChange = (pagination, filters, sorter) => {
@@ -127,8 +149,31 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
+    
+    console.log('formatDate input:', dateString, 'type:', typeof dateString);
+    
+    let date;
+    if (typeof dateString === 'string' && /^\d+$/.test(dateString)) {
+      // Handle numeric string timestamps
+      date = new Date(parseInt(dateString));
+    } else {
+      date = new Date(dateString);
+    }
+    
+    console.log('formatDate parsed date:', date, 'isValid:', !isNaN(date.getTime()));
+    
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date:', dateString);
+      return '—';
+    }
+    
+    // Check if date is in the future (likely an error)
+    if (date > new Date()) {
+      console.warn('Date is in the future:', date);
+      return '—';
+    }
+    
+    return date.toLocaleDateString();
   };
 
   const columns = [
@@ -189,7 +234,7 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Created',
+      title: 'Assigned Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,

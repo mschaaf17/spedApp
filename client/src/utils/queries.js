@@ -330,9 +330,11 @@ query User($identifier: String!, $isUsername: Boolean!) {
     behaviorFrequencies {
       _id
       behaviorTitle
+      operationalDefinition
       isTemplate
       isActive
       templateId
+      createdAt
       createdBy {
         _id
         isAdmin

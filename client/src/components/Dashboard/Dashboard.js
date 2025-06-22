@@ -55,6 +55,8 @@ const Dashboard = () => {
   const [selectedDataMeasureType, setSelectedDataMeasureType] = useState(null);
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('analyze');
+  const [activeTab, setActiveTab] = useState('accommodations');
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   // Query logged-in user and their student list
   const { loading: meLoading, data: meData, refetch: refetchMe } = useQuery(QUERY_ME);
@@ -75,7 +77,9 @@ const Dashboard = () => {
   // Get detailed student data with interventions that have behaviorId
   const { loading: selectedStudentLoading, data: selectedStudentData, refetch: refetchSelectedStudent } = useQuery(QUERY_USER, {
     variables: { identifier: selectedStudent?.username || '', isUsername: true },
-    skip: !selectedStudent?.username
+    skip: !selectedStudent?.username,
+    pollInterval: 5000, // Poll every 5 seconds to keep duration data fresh
+    notifyOnNetworkStatusChange: true
   });
 
   // Queries for data measure templates
@@ -129,8 +133,31 @@ const Dashboard = () => {
 
   // Handle behavior selection for charts
   const handleBehaviorChange = (value) => {
-    const [type, id] = value.split('-');
-    setSelectedBehavior({ type, id });
+    if (Array.isArray(value)) {
+      // Multiple selections
+      const behaviors = value.map(v => {
+        const [type, id] = v.split('-');
+        return { type, id };
+      });
+      setSelectedBehavior(behaviors);
+      
+      // Refetch student data to ensure we have the latest duration/frequency data
+      if (selectedStudent?.username) {
+        refetchSelectedStudent();
+      }
+    } else if (value) {
+      // Single selection (for backward compatibility)
+      const [type, id] = value.split('-');
+      setSelectedBehavior([{ type, id }]);
+      
+      // Refetch student data to ensure we have the latest duration/frequency data
+      if (selectedStudent?.username) {
+        refetchSelectedStudent();
+      }
+    } else {
+      // No selection
+      setSelectedBehavior(null);
+    }
   };
 
   // Handle adding a student to the teacher's list
@@ -221,14 +248,17 @@ const Dashboard = () => {
   const getBehaviors = () => {
     if (!selectedStudent) return [];
     
-    const durations = (selectedStudent.behaviorDurations || []).map(d => ({
+    // Use detailed student data if available (more up-to-date)
+    const studentData = selectedStudentData?.user || selectedStudent;
+    
+    const durations = (studentData.behaviorDurations || []).map(d => ({
       id: d._id,
       title: d.behaviorTitle,
       type: 'duration',
       data: d
     }));
     
-    const frequencies = (selectedStudent.behaviorFrequencies || []).map(f => ({
+    const frequencies = (studentData.behaviorFrequencies || []).map(f => ({
       id: f._id,
       title: f.behaviorTitle,
       type: 'frequency',
@@ -242,52 +272,58 @@ const Dashboard = () => {
   const renderBehaviorChart = () => {
     if (!selectedBehavior) return null;
 
-    const behavior = getBehaviors().find(b => 
-      b.type === selectedBehavior.type && b.id === selectedBehavior.id
-    );
-
-    if (!behavior) return null;
-
-    // Get interventions for this specific behavior
-    const behaviorInterventions = getStudentInterventions().filter(intervention => 
-      intervention.behaviorId?._id === behavior.id
-    );
-
-    if (selectedBehavior.type === 'frequency') {
-      return (
-        <div>
-          <h3>{behavior.data.behaviorTitle}</h3>
-          <FrequencyCharts 
-            frequencies={[behavior.data]}
-            interventions={behaviorInterventions}
-          />
-        </div>
+    // Handle both single and multiple behaviors
+    const behaviors = Array.isArray(selectedBehavior) ? selectedBehavior : [selectedBehavior];
+    
+    return behaviors.map(behavior => {
+      const behaviorData = getBehaviors().find(b => 
+        b.type === behavior.type && b.id === behavior.id
       );
-    } else {
-      return (
-        <div>
-          <h3>{behavior.data.behaviorTitle}</h3>
-          <DurationCharts 
-            durations={[behavior.data]}
-            interventions={behaviorInterventions}
-          />
-        </div>
+
+      if (!behaviorData) return null;
+
+      // Get interventions for this specific behavior
+      const behaviorInterventions = getStudentInterventions().filter(intervention => 
+        intervention.behaviorId?._id === behavior.id
       );
-    }
+
+      if (behavior.type === 'frequency') {
+        return (
+          <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
+            <FrequencyCharts 
+              frequencies={[behaviorData.data]}
+              interventions={behaviorInterventions}
+            />
+          </div>
+        );
+      } else {
+        return (
+          <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
+            <DurationCharts 
+              durations={[behaviorData.data]}
+              interventions={behaviorInterventions}
+            />
+          </div>
+        );
+      }
+    });
   };
 
   // Get available behaviors for the selected student
   const getAvailableBehaviors = () => {
     if (!selectedStudent) return [];
     
-    const frequencies = (selectedStudent.behaviorFrequencies || [])
+    // Use detailed student data if available (more up-to-date)
+    const studentData = selectedStudentData?.user || selectedStudent;
+    
+    const frequencies = (studentData.behaviorFrequencies || [])
       .filter(f => f.isActive)
       .map(f => ({
         value: f._id,
         label: `${f.behaviorTitle} (Frequency)`
       }));
     
-    const durations = (selectedStudent.behaviorDurations || [])
+    const durations = (studentData.behaviorDurations || [])
       .filter(d => d.isActive)
       .map(d => ({
         value: d._id,
@@ -343,27 +379,26 @@ const Dashboard = () => {
   const getAvailableDataMeasures = () => {
     if (!selectedStudent) return [];
     
+    // Get currently active behaviors from the student
     const studentFrequencies = (selectedStudent.behaviorFrequencies || [])
-      .filter(f => f.isActive)
-      .map(f => f.behaviorTitle);
+      .map(f => f.templateId || f._id); // Use templateId if available, fallback to _id
     
     const studentDurations = (selectedStudent.behaviorDurations || [])
-      .filter(d => d.isActive)
-      .map(d => d.behaviorTitle);
+      .map(d => d.templateId || d._id); // Use templateId if available, fallback to _id
     
-    const assignedTitles = new Set([...studentFrequencies, ...studentDurations]);
+    const assignedIds = new Set([...studentFrequencies, ...studentDurations]);
     
     // Filter based on selected type
     if (selectedDataMeasureType === 'frequency') {
       return frequencyTemplates
-        .filter(freq => !assignedTitles.has(freq.behaviorTitle))
+        .filter(freq => !assignedIds.has(freq._id))
         .map(freq => ({
           value: freq._id,
           label: freq.behaviorTitle
         }));
     } else if (selectedDataMeasureType === 'duration') {
       return durationTemplates
-        .filter(dur => !assignedTitles.has(dur.behaviorTitle))
+        .filter(dur => !assignedIds.has(dur._id))
         .map(dur => ({
           value: dur._id,
           label: dur.behaviorTitle
@@ -459,6 +494,14 @@ const Dashboard = () => {
       await refetchMe();
       await refetchSelectedStudent();
 
+      // Additional refetch with delay to ensure mutation completes
+      setTimeout(async () => {
+        await refetchMe();
+        await refetchSelectedStudent();
+        // Trigger refetch in tracking components
+        setRefetchTrigger(prev => prev + 1);
+      }, 100);
+
       // Reset form and close modal
       setSelectedDataMeasure(null);
       setSelectedDataMeasureType(null);
@@ -547,7 +590,15 @@ const Dashboard = () => {
                 type={activeSection === 'analyze' ? 'primary' : 'default'}
                 size="large"
                 style={{ flex: 1, height: '60px', fontSize: '16px' }}
-                onClick={() => setActiveSection('analyze')}
+                onClick={() => {
+                  setActiveSection('analyze');
+                  // Refresh student data when switching to analyze section
+                  if (selectedStudent?.username) {
+                    setTimeout(() => {
+                      refetchSelectedStudent();
+                    }, 100);
+                  }
+                }}
               >
                 Analyze Data
               </Button>
@@ -567,7 +618,7 @@ const Dashboard = () => {
                 <h3>Data Analysis & Management</h3>
                 <p>View charts, analyze student behavior data, and manage accommodations, interventions, and data measures</p>
                 
-                <Tabs defaultActiveKey="accommodations" size="large">
+                <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
                   <TabPane tab="Accommodations" key="accommodations">
                     <div className="accommodations-content">
                       <div className="accommodations-header">
@@ -760,7 +811,13 @@ const Dashboard = () => {
                           // Switch to charts section and select the behavior
                           const behaviorType = record.type;
                           const behaviorId = record._id;
-                          setSelectedBehavior({ type: behaviorType, id: behaviorId });
+                          setSelectedBehavior([{ type: behaviorType, id: behaviorId }]);
+                          
+                          // Refetch student data to ensure we have the latest duration/frequency data
+                          if (selectedStudent?.username) {
+                            refetchSelectedStudent();
+                          }
+                          
                           // Scroll to charts section
                           document.getElementById('charts-section')?.scrollIntoView({ behavior: 'smooth' });
                         }}
@@ -771,6 +828,15 @@ const Dashboard = () => {
                           if (selectedStudent?.username) {
                             refetchSelectedStudent();
                           }
+                          // Force a small delay to ensure the mutation completes
+                          setTimeout(() => {
+                            refetchMe();
+                            if (selectedStudent?.username) {
+                              refetchSelectedStudent();
+                            }
+                            // Trigger refetch in tracking components
+                            setRefetchTrigger(prev => prev + 1);
+                          }, 100);
                         }}
                       />
                     </div>
@@ -784,10 +850,11 @@ const Dashboard = () => {
                       <h3>Data Charts</h3>
                       <div className="behavior-selector">
                         <Select 
-                          placeholder="Select Behavior to View Chart" 
+                          mode="multiple"
+                          placeholder="Select behaviors to view charts" 
                           style={{ width: 300 }}
                           onChange={handleBehaviorChange}
-                          value={selectedBehavior ? `${selectedBehavior.type}-${selectedBehavior.id}` : undefined}
+                          value={selectedBehavior ? selectedBehavior.map(b => `${b.type}-${b.id}`) : undefined}
                           allowClear
                         >
                           {getBehaviors().map(behavior => (
@@ -802,13 +869,13 @@ const Dashboard = () => {
                       </div>
                     </div>
                     
-                    {selectedBehavior && (
+                    {selectedBehavior && selectedBehavior.length > 0 && (
                       <div className="charts-display" style={{ marginTop: 16 }}>
                         {renderBehaviorChart()}
                       </div>
                     )}
                     
-                    {!selectedBehavior && (
+                    {(!selectedBehavior || selectedBehavior.length === 0) && (
                       <div className="charts-placeholder" style={{ 
                         textAlign: 'center', 
                         padding: 40, 
@@ -816,7 +883,7 @@ const Dashboard = () => {
                         backgroundColor: '#f5f5f5',
                         borderRadius: 8
                       }}>
-                        <p>Select a behavior from the dropdown above to view its chart</p>
+                        <p>Select behaviors from the dropdown above to view their charts</p>
                       </div>
                     )}
                   </div>
@@ -834,11 +901,19 @@ const Dashboard = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   <div>
                     <h4>Frequency Tracking</h4>
-                    <Frequency studentId={selectedStudent._id} />
+                    <Frequency 
+                      studentId={selectedStudent._id} 
+                      key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
+                      refetchTrigger={refetchTrigger}
+                    />
                   </div>
                   <div>
                     <h4>Duration Tracking</h4>
-                    <DurationTimers studentId={selectedStudent._id} />
+                    <DurationTimers 
+                      studentId={selectedStudent._id}
+                      key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}
+                      refetchTrigger={refetchTrigger}
+                    />
                   </div>
                 </div>
               </div>
@@ -891,7 +966,15 @@ const Dashboard = () => {
               </p>
               <Button 
                 type="primary" 
-                onClick={() => setActiveSection('analyze')}
+                onClick={() => {
+                  setShowAddIntervention(false); // Close the intervention modal
+                  setActiveSection('analyze'); // Switch to analyze section (which contains the tabs)
+                  setActiveTab('dataMeasures'); // Switch to Data Measures tab
+                  // Use setTimeout to ensure the tab switch happens before opening the modal
+                  setTimeout(() => {
+                    setShowAddDataMeasure(true); // Open the data measure modal
+                  }, 100);
+                }}
                 style={{ marginRight: 8 }}
               >
                 Go to Data Measures

@@ -44,18 +44,6 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
 
   return (
     <div className='centerBody'>
-      <div className='titleSection'>
-        <h1 className="title">Viewing Duration Charts for {userParam}</h1>
-      </div>
-
-      <h3>Select behaviors to view</h3>
-      <Select
-        mode="multiple"
-        value={selectedIds}
-        onChange={setSelectedIds}
-        style={{ width: 300, marginBottom: 16 }}
-        options={safeDurations.map(d => ({ value: d._id, label: d.behaviorTitle }))}
-      />
       
       {filtered.map(duration => {
         // Process timer data
@@ -83,34 +71,34 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
               return;
             }
             
-            // Calculate duration in minutes
+            // Calculate duration in seconds (more precise for short durations)
             const durationMs = endTime.getTime() - startTime.getTime();
-            const durationMinutes = Math.round(durationMs / (1000 * 60));
+            const durationSeconds = Math.round(durationMs / 1000);
             
             // Skip unrealistic durations (e.g., overnight timers, more than 8 hours)
-            const maxReasonableDuration = 8 * 60; // 8 hours in minutes
-            if (durationMinutes > maxReasonableDuration) {
-              console.log(`Skipping unrealistic timer duration: ${durationMinutes} minutes (${durationMinutes/60} hours) for timer ${timer.timerId}`);
+            const maxReasonableDuration = 8 * 60 * 60; // 8 hours in seconds
+            if (durationSeconds > maxReasonableDuration) {
+              console.log(`Skipping unrealistic timer duration: ${durationSeconds} seconds (${durationSeconds/3600} hours) for timer ${timer.timerId}`);
               return;
             }
             
             // Skip negative durations (shouldn't happen but just in case)
-            if (durationMinutes < 0) {
-              console.log('Negative duration found:', durationMinutes);
+            if (durationSeconds < 0) {
+              console.log('Negative duration found:', durationSeconds);
               return;
             }
             
-            // Daily duration
+            // Daily duration (store in seconds)
             const dateStr = startTime.toISOString().slice(0, 10);
             if (!dailyDurationMap[dateStr]) {
               dailyDurationMap[dateStr] = 0;
             }
-            dailyDurationMap[dateStr] += durationMinutes;
+            dailyDurationMap[dateStr] += durationSeconds;
             
-            // Today's duration
+            // Today's duration (store in seconds)
             const today = new Date().toISOString().slice(0, 10);
             if (dateStr === today) {
-              todayDurationMinutes += durationMinutes;
+              todayDurationMinutes += durationSeconds / 60; // Keep this in minutes for display
             }
             
             // Track last start time
@@ -126,7 +114,7 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
             const endHour = endTime.getHours();
             endTimeCounts[endHour] = (endTimeCounts[endHour] || 0) + 1;
             
-            totalDurationMinutes += durationMinutes;
+            totalDurationMinutes += durationSeconds / 60; // Keep this in minutes for display
             completedSessions++;
           }
         });
@@ -154,8 +142,14 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
         console.log('dailyDurationMap:', dailyDurationMap);
         console.log('startDateStr:', startDateStr, 'endDateStr:', endDateStr);
 
+        // Convert seconds to minutes for chart display, but keep small values visible
+        const chartDataInMinutes = filledChartData.map(dataPoint => ({
+          ...dataPoint,
+          minutes: dataPoint.minutes > 0 ? dataPoint.minutes / 60 : 0 // Convert seconds to minutes
+        }));
+
         // 4. Add intervention data to the filled chart data
-        const chartDataWithInterventions = filledChartData.map(dataPoint => ({
+        const chartDataWithInterventions = chartDataInMinutes.map(dataPoint => ({
           ...dataPoint,
           intervention: userInterventions.find(i => {
             if (!i.behaviorId || !i.createdAt) return false;
@@ -395,12 +389,30 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
                 <BarChart width={800} height={300} data={chartDataWithAimline} key={`duration-chart-${duration._id}`}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis domain={[0, dataMax => Math.max(dataMax, 60)]} />
+                  <YAxis 
+                    domain={[0, dataMax => {
+                      const maxValue = Math.max(dataMax, 1); // Ensure at least 1 minute is shown
+                      return Math.max(maxValue, 60); // But don't go below 60 minutes for the scale
+                    }]}
+                    tickFormatter={(value) => {
+                      if (value < 1) {
+                        return `${Math.round(value * 60)}s`; // Show seconds for small values
+                      }
+                      return `${value}m`; // Show minutes for larger values
+                    }}
+                  />
                   <Tooltip 
-                    formatter={(value, name) => [
-                      `${value} minutes (${(value / 60).toFixed(2)} hours)`, 
-                      name === 'minutes' ? 'Duration' : name
-                    ]}
+                    formatter={(value, name) => {
+                      if (name === 'Duration') {
+                        const seconds = Math.round(value * 60); // Convert back to seconds for precision
+                        if (value < 1) {
+                          return [`${seconds} seconds`, name];
+                        } else {
+                          return [`${value.toFixed(2)} minutes (${seconds} seconds)`, name];
+                        }
+                      }
+                      return [value, name];
+                    }}
                   />
                   <Bar dataKey="minutes" name="Duration" key={`bar-${duration._id}`}>
                     {chartDataWithAimline.map((entry, index) => (

@@ -10,7 +10,7 @@ import Auth from '../../utils/auth';
 
 const { confirm } = Modal;
 
-const Frequency = ({ studentId: propStudentId }) => {
+const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   const { username: usernameFromUrl } = useParams();
   
   // Use propStudentId if provided, otherwise get from URL
@@ -224,18 +224,26 @@ const Frequency = ({ studentId: propStudentId }) => {
     await refetch();
   };
 
+  // Refetch when refetchTrigger changes (when data measures are added/removed from dashboard)
+  useEffect(() => {
+    if (refetchTrigger) {
+      refetch();
+      refetchTemplates();
+    }
+  }, [refetchTrigger, refetch, refetchTemplates]);
+
   if (loading || frequencyLoading  || !user) {
     return <div>Loading...</div>;
   }
 
-  // Get the titles of behaviors already assigned to the student
-  const assignedTitles = user.behaviorFrequencies
+  // Get the IDs of behaviors already assigned to the student
+  const assignedIds = user.behaviorFrequencies
     .filter(b => !b.isTemplate)
-    .map(b => b.behaviorTitle);
+    .map(b => b.templateId || b._id); // Use templateId if available, fallback to _id
 
   // Filter templates to only those not already assigned
   const availableTemplates = templatesData?.frequency?.filter(
-    template => template.isTemplate && !assignedTitles.includes(template.behaviorTitle)
+    template => template.isTemplate && !assignedIds.includes(template._id)
   );
 
   const activeFrequencies = (frequencyData?.frequency || []).filter(b => b.isActive && !b.isTemplate);

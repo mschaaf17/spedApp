@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react'
+ import React, {useState, useEffect} from 'react'
 // import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar';
-import { Link, useParams } from 'react-router-dom'
+ import { Link, useParams } from 'react-router-dom'
 // import Duration from '../../../components/DataTrackingMeasures/duration'
 // import ABC from '../../../components/DataTrackingMeasures/ABC'
 // import Frequency from '../../../components/DataTrackingMeasures/frequency'
@@ -65,18 +65,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
 
   return (
     <div className='centerBody'>
-      <div className='titleSection'>
-        <h1 className="title"> Viewing Charts for {userParam}</h1>
-      </div>
-
-      <h3>Select a behavior to view</h3>
-      <Select
-        mode="multiple"
-        value={selectedIds}
-        onChange={setSelectedIds}
-        style={{ width: 300, marginBottom: 16 }}
-        options={safeFrequencies.map(f => ({ value: f._id, label: f.behaviorTitle }))}
-      />
+    
       {filtered.map(freq => {
         // 1. Group and sum counts by date
         const dateCountMap = {};
@@ -96,9 +85,10 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             }
             console.log('dc.date:', dc.date, 'typeof:', typeof dc.date, 'parsed:', d, 'isNaN:', d && isNaN(d.getTime()));
             if (d && !isNaN(d.getTime())) {
-              dateString = d.getUTCFullYear() + '-' +
-              String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
-              String(d.getUTCDate()).padStart(2, '0');
+              // Use local time instead of UTC to match frequency tracking component
+              dateString = d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0');
             }
           }
           if (!dateString) {
@@ -141,7 +131,23 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
           intervention: safeInterventions.find(i =>
             i.frequencyId === freq._id &&
             i.startDate &&
-            new Date(i.startDate).toISOString().slice(0, 10) === dataPoint.date
+            (() => {
+              let d;
+              if (typeof i.startDate === "number") {
+                d = new Date(i.startDate);
+              } else if (typeof i.startDate === "string") {
+                if (/^\d+$/.test(i.startDate)) {
+                  d = new Date(Number(i.startDate));
+                } else {
+                  d = new Date(i.startDate);
+                }
+              }
+              // Use local time instead of UTC for consistency
+              const interventionDate = d && !isNaN(d.getTime()) ? 
+                d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : 
+                null;
+              return interventionDate === dataPoint.date;
+            })()
           )
         }));
 
@@ -163,7 +169,10 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
               }
             }
             if (d && !isNaN(d.getTime())) {
-              interventionStartDate = d.toISOString().slice(0, 10);
+              // Use local time instead of UTC for consistency
+              interventionStartDate = d.getFullYear() + '-' + 
+                String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(d.getDate()).padStart(2, '0');
             }
           }
         }
@@ -201,7 +210,10 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
               }
             }
             if (d && !isNaN(d.getTime())) {
-              mostRecentInterventionDate = d.toISOString().slice(0, 10);
+              // Use local time instead of UTC for consistency
+              mostRecentInterventionDate = d.getFullYear() + '-' + 
+                String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(d.getDate()).padStart(2, '0');
             }
           }
           
@@ -257,7 +269,10 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
         if (endDateStr) {
           const end = new Date(endDateStr);
           end.setDate(end.getDate() + 5);
-          extendedEndDateStr = end.toISOString().slice(0, 10);
+          // Use local time instead of UTC for consistency
+          extendedEndDateStr = end.getFullYear() + '-' + 
+            String(end.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(end.getDate()).padStart(2, '0');
         }
 
         // Use the filled chart data for the final chart
@@ -283,7 +298,10 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
               d = new Date(intervention.createdAt);
             }
           }
-          return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : null;
+          // Use local time instead of UTC for consistency
+          return d && !isNaN(d.getTime()) ? 
+            d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : 
+            null;
         }).filter(Boolean);
 
         const interventionDateMap = {};
@@ -318,7 +336,7 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
             {mostFrequentHour && (
               <div>
                 <b>Most frequent time:</b> {formatHour(mostFrequentHour[0])} ({mostFrequentHour[1]} times)
-              </div>
+      </div>
             )}
             {notification && (
               <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon />
@@ -352,8 +370,8 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
               />
               {/* If you want to highlight intervention days, keep this: */}
               <Scatter data={finalChartData.filter(d => d.intervention)} fill={interventionDates.length > 0 ? getInterventionColor(assignedInterventionsForThisBehavior[0]) : '#8884d8'} />
-            </LineChart>
-            <div>
+  </LineChart>
+  <div>
               <h4>Assigned Interventions</h4>
               {assignedInterventionsForThisBehavior.length > 0 ? (
                 <ul>
@@ -369,11 +387,11 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 <p>No interventions assigned to this behavior.</p>
               )}
             </div>
-          </div>
+  </div>
         );
       })}
-      
-    </div>
+
+      </div>
   );
 };
 

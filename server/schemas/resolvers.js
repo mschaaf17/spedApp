@@ -21,10 +21,10 @@ const addFrequencyToTrackForStudent = async (_, { behaviorTitle, operationalDefi
     throw new AuthenticationError("You must be logged in as an administrator!");
   }
 
-  // Prevent duplicate behaviorTitle for the same student
+  // Prevent duplicate templateId for the same student
   const existing = await Frequency.findOne({
     studentId,
-    behaviorTitle,
+    templateId,
     isTemplate: false,
   });
   if (existing) {
@@ -132,6 +132,7 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
     
     if (existingInactive) {
       existingInactive.isActive = true;
+      // Don't reset data - preserve existing timers and history
       await existingInactive.save();
       
       // Add to student's behaviorDurations if not present
@@ -140,12 +141,20 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
         { $addToSet: { behaviorDurations: existingInactive._id } }
       );
       
-      // Return updated user
-      const user = await User.findById(studentId).populate('behaviorDurations');
+      // Return updated user with populated data
+      const user = await User.findById(studentId)
+        .populate('behaviorFrequencies')
+        .populate('behaviorDurations');
       return user;
     }
 
     // Create new duration if none exists
+    console.log('Creating new duration with template data:', {
+      behaviorTitle: template.behaviorTitle,
+      operationalDefinition: template.operationalDefinition,
+      templateId: template._id
+    });
+    
     const newDuration = await Duration.create({
       behaviorTitle: template.behaviorTitle,
       operationalDefinition: template.operationalDefinition,
@@ -154,18 +163,27 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
       isTemplate: false,
       templateId: template._id,
       isActive: true,
-      // ...other fields as needed
+      timers: [],
+      createdAt: new Date()
     });
 
-    // Find the user document (student)
-    const user = await User.findById(studentId);
+    console.log('Created new duration:', {
+      _id: newDuration._id,
+      behaviorTitle: newDuration.behaviorTitle,
+      operationalDefinition: newDuration.operationalDefinition
+    });
+
+    // Add to student's behaviorDurations
+    const user = await User.findByIdAndUpdate(
+      studentId,
+      { $addToSet: { behaviorDurations: newDuration._id } },
+      { new: true }
+    ).populate('behaviorFrequencies')
+     .populate('behaviorDurations');
+
     if (!user) {
       throw new UserInputError("Student not found");
     }
-
-    // Add to student's behaviorDurations
-    user.behaviorDurations.push(newDuration._id);
-    await user.save();
 
     return user;
   } catch (error) {
@@ -241,26 +259,14 @@ const resolvers = {
       try {
         let user;
         if (isUsername) {
-          user = await User.findOne({ username: identifier }).populate('behaviorFrequencies');
+          user = await User.findOne({ username: identifier });
         } else {
-          user = await User.findById(identifier).populate('behaviorFrequencies');
+          user = await User.findById(identifier);
         }
         
-        console.log('Populated user:', user); // Log the populated user object
+        console.log('User found:', user); // Log the user object
     
-        // Calculate the count for each behavior frequency
-        const populatedBehaviorFrequencies = user.behaviorFrequencies.map((behaviorFrequency) => {
-          const count = behaviorFrequency.log.length > 0 ? behaviorFrequency.log.length : 0; // Check if log array is not empty
-          return {
-            ...behaviorFrequency.toObject(),
-            count: count,
-          };
-        });
-    
-        return {
-          ...user.toObject(),
-          behaviorFrequencies: populatedBehaviorFrequencies,
-        };
+        return user;
       } catch (error) {
         throw new Error('Error fetching user data');
       }
@@ -782,26 +788,30 @@ const resolvers = {
         if (frequency) {
           console.log('Adding frequency to track for student:', frequency);
           
-          // 1. Check for active frequency
+          // 1. Check for active frequency with same templateId
           const activeFrequency = await Frequency.findOne({
             studentId,
-            behaviorTitle: frequency.behaviorTitle,
+            templateId: frequency._id,
             isTemplate: false,
             isActive: true
           });
+          console.log('Active frequency check result:', activeFrequency);
           if (activeFrequency) {
             throw new UserInputError(`Student is already tracking the behavior '${frequency.behaviorTitle}'`);
           }
 
-          // 2. Check for inactive frequency and restore it
+          // 2. Check for inactive frequency with same templateId and restore it
           const inactiveFrequency = await Frequency.findOne({
             studentId,
-            behaviorTitle: frequency.behaviorTitle,
+            templateId: frequency._id,
             isTemplate: false,
             isActive: false
           });
+          console.log('Inactive frequency check result:', inactiveFrequency);
           if (inactiveFrequency) {
+            console.log('Restoring inactive frequency');
             inactiveFrequency.isActive = true;
+            // Don't reset data - preserve existing counts and history
             await inactiveFrequency.save();
             // Add to student's behaviorFrequencies if not present
             await User.findByIdAndUpdate(
@@ -809,12 +819,20 @@ const resolvers = {
               { $addToSet: { behaviorFrequencies: inactiveFrequency._id } }
             );
             // Return updated user (populate as needed)
-            const user = await User.findById(studentId).populate('behaviorFrequencies');
+            const user = await User.findById(studentId)
+              .populate('behaviorFrequencies')
+              .populate('behaviorDurations');
             return user;
           }
 
           // 3. Otherwise, create new as usual
           // Create new frequency for student based on template
+          console.log('Creating new frequency with template data:', {
+            behaviorTitle: frequency.behaviorTitle,
+            operationalDefinition: frequency.operationalDefinition,
+            templateId: frequency._id
+          });
+          
           const newFrequency = await Frequency.create({
             studentId,
             behaviorTitle: frequency.behaviorTitle,
@@ -827,6 +845,14 @@ const resolvers = {
             log: [],
             isTemplate: false,
             templateId: frequency._id,
+          });
+
+          console.log('Created new frequency:', {
+            _id: newFrequency._id,
+            behaviorTitle: newFrequency.behaviorTitle,
+            operationalDefinition: newFrequency.operationalDefinition,
+            createdAt: newFrequency.createdAt,
+            isTemplate: newFrequency.isTemplate
           });
 
           // Add to student's behaviorFrequencies
@@ -848,10 +874,23 @@ const resolvers = {
             }
           });
 
+          console.log('Updated user with new frequency:', {
+            userId: user._id,
+            behaviorFrequenciesCount: user.behaviorFrequencies.length,
+            behaviorDurationsCount: user.behaviorDurations.length
+          });
+
           return user;
         } else if (duration) {
           console.log('Adding duration to track for student:', duration);
-          return await addDurationToTrackForStudent(_, { durationId: dataMeasureId, studentId }, context);
+          const result = await addDurationToTrackForStudent(_, { durationId: dataMeasureId, studentId }, context);
+          
+          // Ensure we return the populated user data
+          const populatedUser = await User.findById(studentId)
+            .populate('behaviorFrequencies')
+            .populate('behaviorDurations');
+          
+          return populatedUser;
         }
       } catch (error) {
         console.error('Error in addDataMeasureToStudent resolver:', error);
@@ -883,6 +922,9 @@ const resolvers = {
 
     frequency.updatedAt = dateToUse;
     frequency.dailyCounts.push({ date: dateToUse, count: 1 });
+    
+    // Also add to log array for consistency
+    frequency.log.push({ time: dateToUse });
 
     await frequency.save();
 
@@ -1234,14 +1276,108 @@ const resolvers = {
     behaviorFrequencies: async (parent, args, context) => {
       const behaviorFrequencies = await Frequency.find({
         _id: { $in: parent.behaviorFrequencies },
+        isActive: true // Only return active frequencies
       });
-      return behaviorFrequencies ? behaviorFrequencies : [];
+      
+      console.log('behaviorFrequencies field resolver - raw data:', behaviorFrequencies);
+      
+      // Calculate count from dailyCounts for today and populate missing operational definitions
+      const frequenciesWithCount = await Promise.all(behaviorFrequencies.map(async (frequency) => {
+        const today = new Date();
+        const todayString = today.toLocaleDateString();
+        
+        const todayCount = (frequency.dailyCounts || [])
+          .filter(dc => {
+            if (!dc.date) return false;
+            let d;
+            if (typeof dc.date === 'number') {
+              d = new Date(dc.date);
+            } else if (typeof dc.date === 'string') {
+              if (/^\d+$/.test(dc.date)) {
+                d = new Date(Number(dc.date));
+              } else {
+                d = new Date(dc.date);
+              }
+            }
+            if (!d || isNaN(d.getTime())) return false;
+            const dString = d.toLocaleDateString();
+            return dString === todayString;
+          })
+          .reduce((sum, dc) => sum + dc.count, 0);
+        
+        let operationalDefinition = frequency.operationalDefinition;
+        
+        // If operational definition is missing and we have a templateId, get it from the template
+        if (!operationalDefinition && frequency.templateId) {
+          const template = await Frequency.findById(frequency.templateId);
+          if (template && template.operationalDefinition) {
+            operationalDefinition = template.operationalDefinition;
+            // Update the frequency record with the operational definition
+            await Frequency.findByIdAndUpdate(frequency._id, {
+              operationalDefinition: template.operationalDefinition
+            });
+            console.log(`Updated frequency "${frequency.behaviorTitle}" with operational definition from template`);
+          }
+        }
+        
+        const result = {
+          ...frequency.toObject(),
+          count: todayCount, // Use today's count from dailyCounts
+          operationalDefinition: operationalDefinition
+        };
+        
+        console.log('Frequency with count:', {
+          _id: result._id,
+          behaviorTitle: result.behaviorTitle,
+          operationalDefinition: result.operationalDefinition,
+          count: result.count
+        });
+        
+        return result;
+      }));
+      
+      return frequenciesWithCount ? frequenciesWithCount : [];
     },
     behaviorDurations: async (parent, args, context) => {
       const userBehaviorDurations = await Duration.find({
         _id: { $in: parent.behaviorDurations },
+        isActive: true // Only return active durations
       });
-      return userBehaviorDurations ? userBehaviorDurations : [];
+      
+      console.log('behaviorDurations field resolver - raw data:', userBehaviorDurations);
+      
+      // Populate missing operational definitions from templates
+      const durationsWithOperationalDefinition = await Promise.all(userBehaviorDurations.map(async (duration) => {
+        let operationalDefinition = duration.operationalDefinition;
+        
+        // If operational definition is missing and we have a templateId, get it from the template
+        if (!operationalDefinition && duration.templateId) {
+          const template = await Duration.findById(duration.templateId);
+          if (template && template.operationalDefinition) {
+            operationalDefinition = template.operationalDefinition;
+            // Update the duration record with the operational definition
+            await Duration.findByIdAndUpdate(duration._id, {
+              operationalDefinition: template.operationalDefinition
+            });
+            console.log(`Updated duration "${duration.behaviorTitle}" with operational definition from template`);
+          }
+        }
+        
+        const result = {
+          ...duration.toObject(),
+          operationalDefinition: operationalDefinition
+        };
+        
+        console.log('Duration results:', {
+          _id: result._id,
+          behaviorTitle: result.behaviorTitle,
+          operationalDefinition: result.operationalDefinition
+        });
+        
+        return result;
+      }));
+      
+      return durationsWithOperationalDefinition ? durationsWithOperationalDefinition : [];
     },
     interventions: async (parent, args, context) => {
       const userInterventions = await InterventionList.find({

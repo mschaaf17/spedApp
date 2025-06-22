@@ -66,10 +66,10 @@ const AdminSettings = () => {
   const frequencyList = frequencyData?.frequency || [];
   const durationList = durationData?.duration || [];
 
-  // Merge frequency and duration data for data measures
+  // Merge frequency and duration data for data measures (only templates)
   const mergedDataMeasures = [
-    ...frequencyList.map(freq => ({ ...freq, __typename: 'Frequency', dataMeasureType: 'Frequency' })),
-    ...durationList.map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' }))
+    ...frequencyList.filter(freq => freq.isTemplate).map(freq => ({ ...freq, __typename: 'Frequency', dataMeasureType: 'Frequency' })),
+    ...durationList.filter(dur => dur.isTemplate).map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' }))
   ];
 
   const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading;

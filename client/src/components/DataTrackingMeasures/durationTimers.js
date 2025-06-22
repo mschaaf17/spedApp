@@ -171,7 +171,7 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
   );
 };
 
-export default function DurationTimers({ studentId }) {
+export default function DurationTimers({ studentId, refetchTrigger }) {
   const [showSelect, setShowSelect] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [selectedBehaviorIds, setSelectedBehaviorIds] = useState([]);
@@ -189,6 +189,14 @@ export default function DurationTimers({ studentId }) {
   // Query all duration templates
   const { data: templateData, loading: templateLoading, refetch: refetchTemplates } = useQuery(QUERY_DURATION_TEMPLATES);
   const durationTemplates = templateData?.duration?.filter(t => t.isTemplate) || [];
+
+  // Refetch when refetchTrigger changes (when data measures are added/removed from dashboard)
+  useEffect(() => {
+    if (refetchTrigger) {
+      durationRefetch();
+      refetchTemplates();
+    }
+  }, [refetchTrigger, durationRefetch, refetchTemplates]);
 
   // Add duration to student
   const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT, {
@@ -225,9 +233,9 @@ export default function DurationTimers({ studentId }) {
   };
 
   // Get templates not already assigned
-  const assignedTitles = durations.map(d => d.behaviorTitle);
+  const assignedIds = durations.map(d => d.templateId || d._id); // Use templateId if available, fallback to _id
   const availableTemplates = durationTemplates.filter(
-    t => !assignedTitles.includes(t.behaviorTitle)
+    t => !assignedIds.includes(t._id)
   );
 
   if (durationLoading || templateLoading) return <div>Loading...</div>;

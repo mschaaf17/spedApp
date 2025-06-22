@@ -56,14 +56,14 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
             return !((student.behaviorFrequencies || [])
               .filter(freq => freq.isActive)
               .some(freq =>
-                freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+                (freq.templateId || freq._id) === selectedTemplate._id
               ));
           } else if (selectedTemplate.__typename === 'Duration') {
             // Exclude students who already have this duration assigned
             return !((student.behaviorDurations || [])
               .filter(dur => dur.isActive)
               .some(dur =>
-                dur.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+                (dur.templateId || dur._id) === selectedTemplate._id
               ));
           }
           return true;
@@ -80,7 +80,7 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
         const hasActive = (student.behaviorFrequencies || [])
           .filter(freq => freq.isActive)
           .some(freq =>
-            freq.behaviorTitle.trim().toLowerCase() === selectedTemplate.behaviorTitle.trim().toLowerCase()
+            (freq.templateId || freq._id) === selectedTemplate._id
           );
         console.log(`${student.firstName} ${student.lastName}: hasActive=${hasActive}`);
       });
@@ -143,11 +143,11 @@ const displaySelect = (rowId) => {
         if (record.__typename === 'Frequency') {
           return !(student.behaviorFrequencies || [])
             .filter(freq => freq.isActive)
-            .some(freq => freq.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+            .some(freq => (freq.templateId || freq._id) === record._id);
         } else if (record.__typename === 'Duration') {
           return !(student.behaviorDurations || [])
             .filter(dur => dur.isActive)
-            .some(dur => dur.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+            .some(dur => (dur.templateId || dur._id) === record._id);
         }
         return true;
       })
@@ -165,11 +165,11 @@ const displaySelect = (rowId) => {
       if (record.__typename === 'Frequency') {
         return (student.behaviorFrequencies || [])
           .filter(freq => freq.isActive)
-          .some(freq => freq.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+          .some(freq => (freq.templateId || freq._id) === record._id);
       } else if (record.__typename === 'Duration') {
         return (student.behaviorDurations || [])
           .filter(dur => dur.isActive)
-          .some(dur => dur.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+          .some(dur => (dur.templateId || dur._id) === record._id);
       }
       return false;
     });
