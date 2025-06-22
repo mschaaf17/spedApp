@@ -1,0 +1,271 @@
+.admin-settings-layout {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.admin-settings-header {
+  background: white;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.admin-settings-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.admin-settings-header p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.admin-settings-content {
+  padding: 0 24px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.tab-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tab-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tab-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.tab-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Ant Design overrides */
+.ant-tabs-nav {
+  margin-bottom: 24px !important;
+}
+
+.ant-tabs-tab {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+}
+
+.ant-tabs-tab-active {
+  font-weight: 600 !important;
+}
+
+.ant-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+}
+
+.ant-table {
+  border-radius: 8px;
+}
+
+.ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-table-tbody > tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.ant-table-tbody > tr:hover {
+  background-color: #f0f0f0 !important;
+}
+
+.ant-modal-content {
+  border-radius: 8px;
+}
+
+.ant-modal-header {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+/* Button styling */
+.ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+  font-weight: 500;
+}
+
+.ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .admin-settings-content {
+    padding: 0 16px 16px;
+  }
+  
+  .tab-content {
+    padding: 16px;
+  }
+  
+  .tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .tab-header h2 {
+    font-size: 18px;
+  }
+}
+
+/* Search section styling */
+.search {
+  margin-bottom: 24px;
+}
+
+.searchInputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.searchInputs label {
+  font-weight: 500;
+  color: #262626;
+  white-space: nowrap;
+}
+
+.searchInputs input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.searchInputs input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.searchResults {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.searchResultItem {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.searchResultItem:last-child {
+  border-bottom: none;
+}
+
+.searchResultItem:hover {
+  background: #f5f5f5;
+}
+
+/* Table action buttons */
+.ant-table-tbody .ant-btn {
+  margin-right: 8px;
+}
+
+.ant-table-tbody .ant-btn:last-child {
+  margin-right: 0;
+}
+
+/* Icon styling */
+.icons {
+  color: #1890ff;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.icons:hover {
+  color: #40a9ff;
+}
+
+.deleteIcon {
+  color: #ff4d4f;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.deleteIcon:hover {
+  color: #ff7875;
+}
+
+/* Tooltip styling */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltipText {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.tooltip:hover .tooltipText {
+  visibility: visible;
+  opacity: 1;
+} 

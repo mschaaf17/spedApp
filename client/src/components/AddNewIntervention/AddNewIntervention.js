@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { Input, Form, Select, Button, message } from 'antd';
-import { ADD_INTERVENTION_TEMPLATE } from '../../utils/mutations'; // You need to define this
-import { QUERY_INTERVENTION_TEMPLATES } from '../../utils/queries'; // You need to define this
+import { ADD_INTERVENTION_TEMPLATE } from '../../utils/mutations';
+import { QUERY_INTERVENTION_TEMPLATES } from '../../utils/queries';
 
 const { TextArea } = Input;
 
@@ -36,11 +36,22 @@ const AddNewIntervention = ({ onClose, updateInterventionData, interventionData 
           isTemplate: true,
           isActive: true,
         },
+        refetchQueries: [{ query: QUERY_INTERVENTION_TEMPLATES, variables: { isTemplate: true, isActive: true } }]
       });
-      refetch && refetch();
+      
+      // Only call these if they exist (for backward compatibility)
+      if (refetch) {
+        refetch();
+      }
+      
       showMessage(title);
-      setTableData([...tableData, { title, summary, function: interventionFunction }]);
-      updateInterventionData([...interventionData, { title, summary, function: interventionFunction }]);
+      
+      // Only update local state if the functions exist
+      if (updateInterventionData && interventionData) {
+        setTableData([...tableData, { title, summary, function: interventionFunction }]);
+        updateInterventionData([...interventionData, { title, summary, function: interventionFunction }]);
+      }
+      
       form.resetFields();
     } catch (error) {
       console.error('Error saving intervention template: ', error);

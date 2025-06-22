@@ -32,7 +32,7 @@ const Header = () => {
       <header className="nav">
         <ul class="nav-links">
           <li class='left-item'>
-            Inclusion App Logo
+            IncluED
           </li>
           <li class={`center ${activeLink=== "/signup" ? 'active' : ''}`} >
             <a href="/signup" onClick={(event) => handleLinkClick('/signup')}>Sign up</a>
@@ -54,7 +54,7 @@ const Header = () => {
 
       {Auth.loggedIn() && admin !== true ? (
         <ul class="nav-links">
-          <li><a href="#" >Inclusion App</a></li>
+          <li><a href="#" >IncludEd</a></li>
           <li class="center"><a href="/studentAccommodations">Accommodations</a></li>
           <li class="upward"><a href="#">Data</a></li>
           <li class="forward logout"><a href="/" onClick={logout}>Logout</a></li>
@@ -62,12 +62,12 @@ const Header = () => {
       ) : Auth.loggedIn() && admin === true ? (
         <ul class="nav-links">
           <li class='left-item'>
-            Inclusion App Logo
+            IncludEd
           </li>
           <li class={`center ${activeLink === '/dashboard' ? 'active' : ''}`}>
             <a href="/dashboard" onClick={(event) => handleLinkClick('/dashboard')}>Dashboard</a>
           </li>
-          <li class={`center ${activeLink=== "/studentList/" + data?.me.username ? 'active' : ''}`} >
+          {/* <li class={`center ${activeLink=== "/studentList/" + data?.me.username ? 'active' : ''}`} >
             <a href={`/studentList/${data?.me.username}`} onClick={(event) => handleLinkClick(`/studentList/${data?.me.username}`)}>Students</a>
           </li>
           <li class={`center ${activeLink === '/dataMeasures' ? 'active' : ''}`}>
@@ -78,6 +78,9 @@ const Header = () => {
           </li>
           <li class={`center ${activeLink === '/accommodations' ? 'active' : ''}`}>
             <a href="/accommodations" onClick={(event) => handleLinkClick('/accommodations')}>Accommodations</a>
+          </li> */}
+          <li class={`center ${activeLink === '/admin-settings' ? 'active' : ''}`}>
+            <a href="/admin-settings" onClick={(event) => handleLinkClick('/admin-settings')}>Admin Settings</a>
           </li>
           <li className="center">
             <a href="/" onClick={logout} style={{ color: 'rgb(125, 128, 130)', textDecoration: 'none' }}>Logout</a>

@@ -151,7 +151,7 @@ useEffect(()=> {
       render: (text, record) => (
         <>
           <Space>
-          <div className='tooltip'>
+          {/* <div className='tooltip'>
             <Link to={`/studentProfile/${record.username}/SideMenuLandingPage`}>
               <CreateNewFolderOutlinedIcon className='icons'/>
               <span className='tooltipText'>Log Data</span>
@@ -165,18 +165,21 @@ useEffect(()=> {
             </Link>
             </div>
 
-            {/* <Link to={`/studentProfile/${record.username}/addInterventions`}>
-              <PeopleAltOutlinedIcon/>
-            </Link> */}
             <div className='tooltip'>
             <Link to={`/studentProfile/${record.username}/SideMenuLandingPage`}>
               <GroupAddOutlinedIcon className='icons' />
               <span className='tooltipText'>Add Accommodations</span>
             </Link>
-            </div>
+            </div> */}
 
           <div className='tooltip'>
-            <DeleteForeverIcon onClick={() => removeStudent(record._id)} className="deleteIcon"/>
+            <DeleteForeverIcon 
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click event
+                removeStudent(record._id);
+              }} 
+              className="deleteIcon"
+            />
             <span className='tooltipText'>Remove Student</span>
           </div>
           </Space>
@@ -253,9 +256,6 @@ useEffect(()=> {
         dataSource={getMyStudentList || []}
         loading = {loading} 
         onChange={handleChange}
-        onRow={(record) => ({
-          onClick: () => { handleRowClick(record._id) }, // Trigger addStudent function when a row is clicked
-        })}
         rowClassName={getRowClassName}
         rowKey="_id"
         />

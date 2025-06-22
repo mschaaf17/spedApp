@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ACCOMMODATION_TEMPLATES, QUERY_ME } from '../../../utils/queries';
-import { AccommodationListTable } from '../../../components/Tables/GeneralTables/accommodationListTable';
+import AccommodationListTable from '../../../components/Tables/GeneralTables/accommodationListTable';
 import AddNewAccommodation from '../../../components/AddNewAccommodation/AddNewAccommodation';
 import { ADD_ACCOMMODATION_FOR_STUDENT } from '../../../utils/mutations';
 import { Button } from 'antd';

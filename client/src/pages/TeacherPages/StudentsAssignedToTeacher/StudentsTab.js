@@ -5,7 +5,7 @@ import { Modal, Button } from 'react-bootstrap';
 import { REMOVE_STUDENT_FROM_LIST } from '../../../utils/mutations.js';
 import StudentTable from '../../../components/Tables/studentTable.js';
 import { ADD_STUDENT_TO_LIST } from '../../../utils/mutations.js';
-import { AccommodationListTable } from '../../../components/Tables/GeneralTables/accommodationListTable.js';
+import AccommodationListTable from '../../../components/Tables/GeneralTables/accommodationListTable.js';
 
 export default function StudentTab() {
   const [selectedStudent, setSelectedStudent] = useState(null);

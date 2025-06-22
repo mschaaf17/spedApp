@@ -16,6 +16,10 @@ import DurationCharts from '../DataTrackingMeasures/durationCharts';
 import FrequencyCharts from '../DataTrackingMeasures/frequencyCharts';
 import StudentDataMeasuresTable from '../Tables/StudentSpecificTables/studentDataMeasuresTable';
 
+// Import data tracking components
+import Frequency from '../DataTrackingMeasures/frequency';
+import DurationTimers from '../DataTrackingMeasures/durationTimers';
+
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
 
@@ -359,15 +363,6 @@ const Dashboard = () => {
 
   return (
     <Layout className="dashboard-layout">
-      <div className="dashboard-header">
-        <h1>Dashboard</h1>
-        <div className="header-actions">
-          <span>Select Student</span>
-          <span>Add Student</span>
-          <span>Logout</span>
-        </div>
-      </div>
-
       <div className="dashboard-content">
         {/* Student Selection Section */}
         <div className="student-selector-section">
@@ -431,214 +426,238 @@ const Dashboard = () => {
               <p>ID: {selectedStudent.studentSchoolId}</p>
             </div>
 
-            <Tabs defaultActiveKey="accommodations">
-              <TabPane tab="Accommodations" key="accommodations">
-                <div className="accommodations-content">
-                  <div className="accommodations-header">
-                    <h3>Current Accommodations</h3>
-                    <Button type="primary" onClick={() => setShowAddAccommodation(true)}>
-                      Add Accommodation
-                    </Button>
+            <Tabs defaultActiveKey="analyze" size="large">
+              <TabPane tab="Analyze Data" key="analyze">
+                <Tabs defaultActiveKey="accommodations">
+                  <TabPane tab="Accommodations" key="accommodations">
+                    <div className="accommodations-content">
+                      <div className="accommodations-header">
+                        <h3>Current Accommodations</h3>
+                        <Button type="primary" onClick={() => setShowAddAccommodation(true)}>
+                          Add Accommodation
+                        </Button>
+                      </div>
+                      
+                      <Table
+                        columns={[
+                          {
+                            title: 'Title',
+                            dataIndex: 'title',
+                            key: 'title',
+                            render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span>
+                          },
+                          {
+                            title: 'Description',
+                            dataIndex: 'description',
+                            key: 'description',
+                            ellipsis: {
+                              showTitle: false,
+                            },
+                            render: (text) => (
+                              <span>{text || '—'}</span>
+                            )
+                          },
+                          {
+                            title: 'Assigned Date',
+                            dataIndex: 'createdAt',
+                            key: 'createdAt',
+                            render: (createdAt) => {
+                              if (!createdAt) return '—';
+                              let dateObj;
+                              if (typeof createdAt === "number") {
+                                dateObj = new Date(createdAt);
+                              } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
+                                dateObj = new Date(Number(createdAt));
+                              } else {
+                                dateObj = new Date(createdAt);
+                              }
+                              return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
+                            },
+                          },
+                          {
+                            title: 'Actions',
+                            key: 'actions',
+                            render: (_, record) => (
+                              <Popconfirm
+                                title="Remove this accommodation from student?"
+                                onConfirm={() => handleRemoveAccommodation(record._id)}
+                              >
+                                <Button danger size="small">
+                                  Remove
+                                </Button>
+                              </Popconfirm>
+                            ),
+                          },
+                        ]}
+                        dataSource={getStudentAccommodations()}
+                        rowKey="_id"
+                        loading={loading}
+                        locale={{
+                          emptyText: 'No accommodations found for this student'
+                        }}
+                      />
+                    </div>
+                  </TabPane>
+
+                  <TabPane tab="Interventions" key="interventions">
+                    <div className="interventions-content">
+                      <div className="interventions-header">
+                        <h3>Current Interventions</h3>
+                        <Button type="primary" onClick={() => setShowAddIntervention(true)}>
+                          Add Intervention
+                        </Button>
+                      </div>
+                      
+                      <Table
+                        columns={[
+                          {
+                            title: 'Title',
+                            dataIndex: 'title',
+                            key: 'title',
+                            render: text => <span style={{ fontWeight: 500 }}>{text}</span>
+                          },
+                          {
+                            title: 'Behavior',
+                            dataIndex: 'behaviorId',
+                            key: 'behavior',
+                            render: (behaviorId) => behaviorId?.behaviorTitle || '—',
+                          },
+                          {
+                            title: 'Assigned Date',
+                            dataIndex: 'createdAt',
+                            key: 'createdAt',
+                            render: (createdAt) => {
+                              if (!createdAt) return '—';
+                              let dateObj;
+                              if (typeof createdAt === "number") {
+                                dateObj = new Date(createdAt);
+                              } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
+                                dateObj = new Date(Number(createdAt));
+                              } else {
+                                dateObj = new Date(createdAt);
+                              }
+                              return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
+                            },
+                          },
+                          {
+                            title: 'Function',
+                            dataIndex: 'function',
+                            key: 'function',
+                          },
+                          {
+                            title: 'Summary',
+                            dataIndex: 'summary',
+                            key: 'summary',
+                          },
+                          {
+                            title: 'Actions',
+                            key: 'actions',
+                            render: (_, record) => (
+                              <Popconfirm
+                                title="Are you sure you want to remove this intervention?"
+                                onConfirm={() => handleRemoveIntervention(record._id)}
+                                okText="Yes"
+                                cancelText="No"
+                              >
+                                <Button type="link" danger size="small">
+                                  Remove
+                                </Button>
+                              </Popconfirm>
+                            ),
+                          },
+                        ]}
+                        dataSource={getStudentInterventions()}
+                        rowKey="_id"
+                      />
+                    </div>
+                  </TabPane>
+
+                  <TabPane tab="Data Measures" key="dataMeasures">
+                    <div className="data-measures-content">
+                      <StudentDataMeasuresTable
+                        student={selectedStudent}
+                        onViewChart={(record) => {
+                          // Switch to charts tab and select the behavior
+                          const behaviorType = record.type;
+                          const behaviorId = record._id;
+                          setSelectedBehavior({ type: behaviorType, id: behaviorId });
+                          // You might want to add a way to switch tabs here
+                        }}
+                        onRemoveDataMeasure={(record) => {
+                          // Handle data measure removal
+                          console.log('Data measure removed:', record);
+                        }}
+                      />
+                    </div>
+                  </TabPane>
+                </Tabs>
+
+                {/* Charts Section - Only show if student has data measures */}
+                {getBehaviors().length > 0 && (
+                  <div className="charts-section" style={{ marginTop: 24 }}>
+                    <div className="charts-header">
+                      <h3>Data Charts</h3>
+                      <div className="behavior-selector">
+                        <Select 
+                          placeholder="Select Behavior to View Chart" 
+                          style={{ width: 300 }}
+                          onChange={handleBehaviorChange}
+                          value={selectedBehavior ? `${selectedBehavior.type}-${selectedBehavior.id}` : undefined}
+                          allowClear
+                        >
+                          {getBehaviors().map(behavior => (
+                            <Select.Option 
+                              key={`${behavior.type}-${behavior.id}`} 
+                              value={`${behavior.type}-${behavior.id}`}
+                            >
+                              {behavior.title} ({behavior.type})
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {selectedBehavior && (
+                      <div className="charts-display" style={{ marginTop: 16 }}>
+                        {renderBehaviorChart()}
+                      </div>
+                    )}
+                    
+                    {!selectedBehavior && (
+                      <div className="charts-placeholder" style={{ 
+                        textAlign: 'center', 
+                        padding: 40, 
+                        color: '#666',
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 8
+                      }}>
+                        <p>Select a behavior from the dropdown above to view its chart</p>
+                      </div>
+                    )}
                   </div>
-                  
-                  <Table
-                    columns={[
-                      {
-                        title: 'Title',
-                        dataIndex: 'title',
-                        key: 'title',
-                        render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span>
-                      },
-                      {
-                        title: 'Description',
-                        dataIndex: 'description',
-                        key: 'description',
-                        ellipsis: {
-                          showTitle: false,
-                        },
-                        render: (text) => (
-                          <span>{text || '—'}</span>
-                        )
-                      },
-                      {
-                        title: 'Assigned Date',
-                        dataIndex: 'createdAt',
-                        key: 'createdAt',
-                        render: (createdAt) => {
-                          if (!createdAt) return '—';
-                          let dateObj;
-                          if (typeof createdAt === "number") {
-                            dateObj = new Date(createdAt);
-                          } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
-                            dateObj = new Date(Number(createdAt));
-                          } else {
-                            dateObj = new Date(createdAt);
-                          }
-                          return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
-                        },
-                      },
-                      {
-                        title: 'Actions',
-                        key: 'actions',
-                        render: (_, record) => (
-                          <Popconfirm
-                            title="Remove this accommodation from student?"
-                            onConfirm={() => handleRemoveAccommodation(record._id)}
-                          >
-                            <Button danger size="small">
-                              Remove
-                            </Button>
-                          </Popconfirm>
-                        ),
-                      },
-                    ]}
-                    dataSource={getStudentAccommodations()}
-                    rowKey="_id"
-                    loading={loading}
-                    locale={{
-                      emptyText: 'No accommodations found for this student'
-                    }}
-                  />
-                </div>
+                )}
               </TabPane>
 
-              <TabPane tab="Interventions" key="interventions">
-                <div className="interventions-content">
-                  <div className="interventions-header">
-                    <h3>Current Interventions</h3>
-                    <Button type="primary" onClick={() => setShowAddIntervention(true)}>
-                      Add Intervention
-                    </Button>
+              <TabPane tab="Track Data" key="track">
+                <div className="track-data-content">
+                  <div className="track-data-header">
+                    <h3>Data Tracking</h3>
+                    <p>Track frequency and duration data for {selectedStudent.firstName}</p>
                   </div>
-                  
-                  <Table
-                    columns={[
-                      {
-                        title: 'Title',
-                        dataIndex: 'title',
-                        key: 'title',
-                        render: text => <span style={{ fontWeight: 500 }}>{text}</span>
-                      },
-                      {
-                        title: 'Behavior',
-                        dataIndex: 'behaviorId',
-                        key: 'behavior',
-                        render: (behaviorId) => behaviorId?.behaviorTitle || '—',
-                      },
-                      {
-                        title: 'Assigned Date',
-                        dataIndex: 'createdAt',
-                        key: 'createdAt',
-                        render: (createdAt) => {
-                          if (!createdAt) return '—';
-                          let dateObj;
-                          if (typeof createdAt === "number") {
-                            dateObj = new Date(createdAt);
-                          } else if (typeof createdAt === "string" && /^\d+$/.test(createdAt)) {
-                            dateObj = new Date(Number(createdAt));
-                          } else {
-                            dateObj = new Date(createdAt);
-                          }
-                          return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString();
-                        },
-                      },
-                      {
-                        title: 'Function',
-                        dataIndex: 'function',
-                        key: 'function',
-                      },
-                      {
-                        title: 'Summary',
-                        dataIndex: 'summary',
-                        key: 'summary',
-                      },
-                      {
-                        title: 'Actions',
-                        key: 'actions',
-                        render: (_, record) => (
-                          <Popconfirm
-                            title="Are you sure you want to remove this intervention?"
-                            onConfirm={() => handleRemoveIntervention(record._id)}
-                            okText="Yes"
-                            cancelText="No"
-                          >
-                            <Button type="link" danger size="small">
-                              Remove
-                            </Button>
-                          </Popconfirm>
-                        ),
-                      },
-                    ]}
-                    dataSource={getStudentInterventions()}
-                    rowKey="_id"
-                  />
-                </div>
-              </TabPane>
 
-              <TabPane tab="Data Measures" key="dataMeasures">
-                <div className="data-measures-content">
-                  <StudentDataMeasuresTable
-                    student={selectedStudent}
-                    onViewChart={(record) => {
-                      // Switch to charts tab and select the behavior
-                      const behaviorType = record.type;
-                      const behaviorId = record._id;
-                      setSelectedBehavior({ type: behaviorType, id: behaviorId });
-                      // You might want to add a way to switch tabs here
-                    }}
-                    onRemoveDataMeasure={(record) => {
-                      // Handle data measure removal
-                      console.log('Data measure removed:', record);
-                    }}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div>
+                      <h4>Frequency Tracking</h4>
+                      <Frequency studentId={selectedStudent._id} />
+                    </div>
+                    <div>
+                      <h4>Duration Tracking</h4>
+                      <DurationTimers studentId={selectedStudent._id} />
+                    </div>
+                  </div>
                 </div>
               </TabPane>
             </Tabs>
-
-            {/* Charts Section - Only show if student has data measures */}
-            {getBehaviors().length > 0 && (
-              <div className="charts-section" style={{ marginTop: 24 }}>
-                <div className="charts-header">
-                  <h3>Data Charts</h3>
-                  <div className="behavior-selector">
-                    <Select 
-                      placeholder="Select Behavior to View Chart" 
-                      style={{ width: 300 }}
-                      onChange={handleBehaviorChange}
-                      value={selectedBehavior ? `${selectedBehavior.type}-${selectedBehavior.id}` : undefined}
-                      allowClear
-                    >
-                      {getBehaviors().map(behavior => (
-                        <Select.Option 
-                          key={`${behavior.type}-${behavior.id}`} 
-                          value={`${behavior.type}-${behavior.id}`}
-                        >
-                          {behavior.title} ({behavior.type})
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </div>
-                </div>
-                
-                {selectedBehavior && (
-                  <div className="charts-display" style={{ marginTop: 16 }}>
-                    {renderBehaviorChart()}
-                  </div>
-                )}
-                
-                {!selectedBehavior && (
-                  <div className="charts-placeholder" style={{ 
-                    textAlign: 'center', 
-                    padding: 40, 
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: 8
-                  }}>
-                    <p>Select a behavior from the dropdown above to view its chart</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>

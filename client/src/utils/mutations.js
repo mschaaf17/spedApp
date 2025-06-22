@@ -176,28 +176,42 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) 
 export const ADD_ACCOMMODATION_TEMPLATE = gql`
 mutation AddAccommodationTemplate(
   $title: String!
-  $description: String!
   $image: String!
+  $description: String!
   $isTemplate: Boolean
   $isActive: Boolean
 ) {
   addAccommodationTemplate(
     title: $title
-    description: $description
     image: $image
+    description: $description
     isTemplate: $isTemplate
     isActive: $isActive
   ) {
     _id
     title
-    description
     image
-    isTemplate
-    isActive
+    description
     createdBy {
       _id
       username
+      firstName
+      lastName
     }
+    isTemplate
+    isActive
+  }
+}
+`;
+
+export const REMOVE_ACCOMMODATION = gql`
+mutation RemoveAccommodation($id: ID!) {
+  removeAccommodation(_id: $id) {
+    _id
+    title
+    description
+    isTemplate
+    isActive
   }
 }
 `;
@@ -370,6 +384,19 @@ mutation RemoveInterventionForStudent($interventionId: ID!, $studentId: ID!) {
       _id
       title
     }
+  }
+}
+`;
+
+export const REMOVED_INTERVENTION_FROM_LIST = gql`
+mutation RemovedInterventionFromList($interventionId: ID!) {
+  removedInterventionFromList(interventionId: $interventionId) {
+    _id
+    title
+    summary
+    function
+    isTemplate
+    isActive
   }
 }
 `;

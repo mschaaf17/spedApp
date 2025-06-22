@@ -21,8 +21,6 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
   const [sortedInfo, setSortedInfo] = useState({});
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectOptions, setSelectOptions] = useState([]);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deleteRecord, setDeleteRecord] = useState(null);
 
   const capitalizeInitials = (name) => {
     return name
@@ -159,22 +157,35 @@ const displaySelect = (rowId) => {
       }));
   };
 
-  const confirmDelete = (record) => {
-    setDeleteRecord(record);
-    setDeleteModalVisible(true);
+  // Check if any students have this data measure assigned
+  const getStudentsWithDataMeasure = (record) => {
+    if (!meData || !meData.students) return [];
+    
+    return meData.students.filter(student => {
+      if (record.__typename === 'Frequency') {
+        return (student.behaviorFrequencies || [])
+          .filter(freq => freq.isActive)
+          .some(freq => freq.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+      } else if (record.__typename === 'Duration') {
+        return (student.behaviorDurations || [])
+          .filter(dur => dur.isActive)
+          .some(dur => dur.behaviorTitle.trim().toLowerCase() === record.behaviorTitle.trim().toLowerCase());
+      }
+      return false;
+    });
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteRecord) {
-      handleDelete(deleteRecord);
-    }
-    setDeleteModalVisible(false);
-    setDeleteRecord(null);
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteModalVisible(false);
-    setDeleteRecord(null);
+  const handleRemoveDataMeasure = (record) => {
+    Modal.confirm({
+      title: 'Confirm Deletion',
+      content: `Are you sure you want to delete "${record.behaviorTitle}"? This action cannot be undone and will permanently remove this data measure template.`,
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk() {
+        handleDelete(record);
+      },
+    });
   };
 
   const columns = [
@@ -201,8 +212,8 @@ const displaySelect = (rowId) => {
       filterSearch: true,
       filters: generateFilters('dataMeasureType'),
       filteredValue: filteredInfo.dataMeasureType || null,
-      onFilter: (value, record) => record.dataMeasureTypetrim().toLowerCase().includes(value.trim().toLowerCase()),
-      sorter: (a, b) => a.dataMeasureType - b.ldataMeasureType,
+      onFilter: (value, record) => record.dataMeasureType.trim().toLowerCase().includes(value.trim().toLowerCase()),
+      sorter: (a, b) => a.dataMeasureType - b.dataMeasureType,
       sortOrder: sortedInfo.columnKey === 'dataMeasureType' ? sortedInfo.order : null,
       ellipsis: true,
       render: (_, record) => {
@@ -212,7 +223,7 @@ const displaySelect = (rowId) => {
     {
       title: 'Operational Definition',
       dataIndex: 'operationalDefinition',
-      key: 'uoperationalDefinition',
+      key: 'operationalDefinition',
       filterSearch: true,
       filters: generateFilters('operationalDefinition'),
       filteredValue: filteredInfo.operationalDefinition || null,
@@ -227,6 +238,8 @@ const displaySelect = (rowId) => {
         key: 'actions',
         render: (text, record) => {
           const optionsForRow = getSelectOptionsForRow(record);
+          const studentsWithDataMeasure = getStudentsWithDataMeasure(record);
+          
           return (
             <Space>
               {optionsForRow.length > 0 && visibleSelectRowId !== record._id && (
@@ -267,10 +280,19 @@ const displaySelect = (rowId) => {
               </div>
                 </>
               )}
-              <div className='tooltip'>
-                <DeleteForeverIcon danger className="deleteIcon" onClick={() => confirmDelete(record)}/>
-                <span className='tooltipText'>Remove data measure from list</span>
-              </div>
+              
+              {/* Remove button - only show if no students have this data measure */}
+              {studentsWithDataMeasure.length === 0 && (
+                <div className='tooltip'>
+                  <DeleteForeverIcon 
+                    danger 
+                    className="deleteIcon" 
+                    onClick={() => handleRemoveDataMeasure(record)}
+                    title="Remove data measure (only available if no students have it assigned)"
+                  />
+                  <span className='tooltipText'>Remove data measure from list</span>
+                </div>
+              )}
             </Space>
           );
         }
@@ -306,19 +328,9 @@ const displaySelect = (rowId) => {
         // })}
         rowClassName={getRowClassName}
         />
-      <Modal
-        title={`Are you sure you want to delete "${deleteRecord?.behaviorTitle}"?`}
-        visible={deleteModalVisible}
-        onOk={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        okText="Yes"
-        cancelText="Cancel"
-      >
-        <p>This action cannot be undone.</p>
-      </Modal>
     </>
   );
 };
 
 
-export { DataMeasureTable };
+export default DataMeasureTable;

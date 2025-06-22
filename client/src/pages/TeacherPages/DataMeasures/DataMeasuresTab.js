@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_FREQUENCY_LIST, QUERY_DURATION_LIST, QUERY_ME, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES } from '../../../utils/queries';
 import { Button, message } from 'antd';
-import { DataMeasureTable } from '../../../components/Tables/GeneralTables/dataMeasuresListTable';
+import DataMeasureTable from '../../../components/Tables/GeneralTables/dataMeasuresListTable';
 import Auth from '../../../utils/auth';
 import { REMOVE_FREQUENCY_TITLE, REMOVE_DURATION_TITLE, ADD_DATA_MEASURE_TO_STUDENT } from '../../../utils/mutations';
 import AddNewDataMeasure from '../../../components/AddNewDataMeasure/AddNewDataMeasure';

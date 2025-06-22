@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'; 
-import { Space, Table, Select, Button } from 'antd';
+import { Space, Table, Select, Button, Modal } from 'antd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import SaveIcon from '@mui/icons-material/Save';
@@ -12,7 +12,8 @@ const AccommodationListTable = ({
   meData,
   accommodationLoading,
   onAccommodationClick,
-  submitAccommodationForStudent
+  submitAccommodationForStudent,
+  onRemoveAccommodation
 }) => {
   const [selectedAccommodationId, setSelectedAccommodationId] = useState(null);
   const [filteredInfo, setFilteredInfo] = useState({});
@@ -91,6 +92,19 @@ const AccommodationListTable = ({
       .join(' ');
   };
 
+  const handleRemoveAccommodation = (accommodationId, accommodationTitle) => {
+    Modal.confirm({
+      title: 'Confirm Deletion',
+      content: `Are you sure you want to delete "${accommodationTitle}"? This action cannot be undone and will permanently remove this accommodation template.`,
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk() {
+        onRemoveAccommodation(accommodationId);
+      },
+    });
+  };
+
   const columns = [
     {
       title: 'Title',
@@ -126,6 +140,15 @@ const AccommodationListTable = ({
       title: 'Actions',
       key: 'actions',
       render: (_, record) => {
+        // Check if any students have this accommodation assigned
+        const studentsWithAccommodation = students.filter(student =>
+          Array.isArray(student.accommodations) &&
+          student.accommodations.some(acc =>
+            (acc.templateId && acc.templateId._id === record._id) ||
+            acc._id === record._id // fallback for legacy data
+          )
+        );
+
         // Only show students who do not already have this accommodation
         const options = students
           .filter(student =>
@@ -179,6 +202,18 @@ const AccommodationListTable = ({
             ) : (
               <span style={{ color: '#aaa' }}>All students have this</span>
             )}
+            
+            {/* Remove button - only show if no students have this accommodation */}
+            {studentsWithAccommodation.length === 0 && onRemoveAccommodation && (
+              <Button
+                danger
+                icon={<DeleteForeverIcon />}
+                onClick={() => handleRemoveAccommodation(record._id, record.title)}
+                title="Remove accommodation (only available if no students have it assigned)"
+              >
+                Remove
+              </Button>
+            )}
           </Space>
         );
       }
@@ -205,4 +240,4 @@ const AccommodationListTable = ({
   );
 };
 
-export {AccommodationListTable};
+export default AccommodationListTable;

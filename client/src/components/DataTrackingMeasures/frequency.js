@@ -10,13 +10,19 @@ import Auth from '../../utils/auth';
 
 const { confirm } = Modal;
 
-const Frequency = () => {
+const Frequency = ({ studentId: propStudentId }) => {
   const { username: usernameFromUrl } = useParams();
+  
+  // Use propStudentId if provided, otherwise get from URL
   const { loading, data } = useQuery(QUERY_USER, {
-    variables: { identifier: usernameFromUrl, isUsername: true },
+    variables: { 
+      identifier: propStudentId || usernameFromUrl, 
+      isUsername: !propStudentId 
+    },
+    skip: !propStudentId && !usernameFromUrl
   });
 
-  const studentId = data?.user?._id;
+  const studentId = propStudentId || data?.user?._id;
 
   const { loading: meLoading, data: meData } = useQuery(QUERY_ME);
   
