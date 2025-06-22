@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Tag, Tooltip } from 'antd';
+import { Table, Button, Space, Modal, Tag, Tooltip, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ME } from '../../../utils/queries';
 import { REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT } from '../../../utils/mutations';
@@ -15,12 +15,17 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteRecord, setDeleteRecord] = useState(null);
 
-  // Get user data for mutations
-  const { data: userData } = useQuery(QUERY_ME);
-
   // Mutations for removing data measures
-  const [removeFrequency] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
-  const [removeDuration] = useMutation(REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT);
+  const [removeFrequency] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, {
+    refetchQueries: [
+      { query: QUERY_ME }
+    ]
+  });
+  const [removeDuration] = useMutation(REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT, {
+    refetchQueries: [
+      { query: QUERY_ME }
+    ]
+  });
 
   // Combine frequencies and durations into one data source
   const getDataMeasures = () => {
@@ -98,8 +103,12 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
         onRemoveDataMeasure(deleteRecord);
       }
 
-      setDeleteModalVisible(false);
-      setDeleteRecord(null);
+      // Small delay to ensure the mutation completes before the callback
+      setTimeout(() => {
+        setDeleteModalVisible(false);
+        setDeleteRecord(null);
+        message.success('Data measure removed successfully');
+      }, 100);
     } catch (error) {
       console.error('Error removing data measure:', error);
     }
@@ -194,16 +203,6 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
       width: 200,
       render: (_, record) => (
         <Space>
-          <Tooltip title="View Chart">
-            <Button
-              type="primary"
-              icon={<AssessmentOutlinedIcon />}
-              onClick={() => handleViewChart(record)}
-              size="small"
-            >
-              Chart
-            </Button>
-          </Tooltip>
           <Tooltip title="Remove Data Measure">
             <Button
               type="text"
@@ -235,7 +234,19 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
           showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} data measures`,
         }}
         locale={{
-          emptyText: 'No data measures found for this student'
+          emptyText: (
+            <div style={{ textAlign: 'center', padding: '24px' }}>
+              <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                {student?.firstName} doesn't have any data measures assigned.
+              </p>
+              <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
+                Please add a data measure using the "Add Data Measure" button above, or navigate to Admin Settings to add new data measure templates.
+              </p>
+              <p style={{ fontSize: '12px', color: '#999' }}>
+                You can also navigate to the "Track Data" section to add new data measures.
+              </p>
+            </div>
+          )
         }}
       />
 

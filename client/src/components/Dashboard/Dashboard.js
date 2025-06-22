@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm } from 'antd';
+import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER } from '../../utils/queries';
-import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT } from '../../utils/mutations';
+import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES } from '../../utils/queries';
+import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT } from '../../utils/mutations';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -50,7 +50,11 @@ const Dashboard = () => {
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [showAddAccommodation, setShowAddAccommodation] = useState(false);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
+  const [showAddDataMeasure, setShowAddDataMeasure] = useState(false);
+  const [selectedDataMeasure, setSelectedDataMeasure] = useState(null);
+  const [selectedDataMeasureType, setSelectedDataMeasureType] = useState(null);
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('analyze');
 
   // Query logged-in user and their student list
   const { loading: meLoading, data: meData, refetch: refetchMe } = useQuery(QUERY_ME);
@@ -69,10 +73,14 @@ const Dashboard = () => {
   });
 
   // Get detailed student data with interventions that have behaviorId
-  const { loading: selectedStudentLoading, data: selectedStudentData } = useQuery(QUERY_USER, {
+  const { loading: selectedStudentLoading, data: selectedStudentData, refetch: refetchSelectedStudent } = useQuery(QUERY_USER, {
     variables: { identifier: selectedStudent?.username || '', isUsername: true },
     skip: !selectedStudent?.username
   });
+
+  // Queries for data measure templates
+  const { loading: frequencyLoading, data: frequencyData } = useQuery(QUERY_FREQUENCY_TEMPLATES);
+  const { loading: durationLoading, data: durationData } = useQuery(QUERY_DURATION_TEMPLATES);
 
   // Mutations for adding/removing students, interventions, and accommodations
   const [addStudentToList] = useMutation(ADD_STUDENT_TO_LIST);
@@ -81,6 +89,7 @@ const Dashboard = () => {
   const [removeInterventionForStudent] = useMutation(REMOVE_INTERVENTION_FROM_STUDENT);
   const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT);
   const [removeAccommodationFromStudent] = useMutation(REMOVE_ACCOMMODATION_FROM_STUDENT);
+  const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
 
   const myStudents = meData?.me?.students || [];
   const getAllStudents = allStudentsData?.students || [];
@@ -88,7 +97,11 @@ const Dashboard = () => {
   const interventionTemplates = templateData?.interventionList || [];
   const allAccommodations = accommodationData?.accommodationList || [];
   const accommodationTemplates = accommodationTemplateData?.accommodationList || [];
-  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading || selectedStudentLoading;
+  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading || selectedStudentLoading || frequencyLoading || durationLoading;
+
+  // Data measure templates
+  const frequencyTemplates = frequencyData?.frequency?.filter(t => t.isTemplate) || [];
+  const durationTemplates = durationData?.duration?.filter(t => t.isTemplate) || [];
 
   // Get interventions for the selected student with complete data
   const getStudentInterventions = () => {
@@ -326,6 +339,40 @@ const Dashboard = () => {
       }));
   };
 
+  // Get available data measures (filter out already assigned ones)
+  const getAvailableDataMeasures = () => {
+    if (!selectedStudent) return [];
+    
+    const studentFrequencies = (selectedStudent.behaviorFrequencies || [])
+      .filter(f => f.isActive)
+      .map(f => f.behaviorTitle);
+    
+    const studentDurations = (selectedStudent.behaviorDurations || [])
+      .filter(d => d.isActive)
+      .map(d => d.behaviorTitle);
+    
+    const assignedTitles = new Set([...studentFrequencies, ...studentDurations]);
+    
+    // Filter based on selected type
+    if (selectedDataMeasureType === 'frequency') {
+      return frequencyTemplates
+        .filter(freq => !assignedTitles.has(freq.behaviorTitle))
+        .map(freq => ({
+          value: freq._id,
+          label: freq.behaviorTitle
+        }));
+    } else if (selectedDataMeasureType === 'duration') {
+      return durationTemplates
+        .filter(dur => !assignedTitles.has(dur.behaviorTitle))
+        .map(dur => ({
+          value: dur._id,
+          label: dur.behaviorTitle
+        }));
+    }
+    
+    return [];
+  };
+
   // Handle removing an intervention from the student
   const handleRemoveIntervention = async (interventionId) => {
     try {
@@ -386,6 +433,41 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Error removing accommodation:', error);
+    }
+  };
+
+  // Handle adding a data measure to the student
+  const handleAddDataMeasure = async () => {
+    if (!selectedDataMeasure || !selectedDataMeasureType) {
+      return;
+    }
+
+    try {
+      await addDataMeasureToStudent({
+        variables: {
+          dataMeasureId: selectedDataMeasure,
+          studentId: selectedStudent._id,
+          dataMeasureType: selectedDataMeasureType
+        },
+        refetchQueries: [
+          { query: QUERY_ME },
+          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+        ]
+      });
+
+      // Manual refetch to ensure immediate update
+      await refetchMe();
+      await refetchSelectedStudent();
+
+      // Reset form and close modal
+      setSelectedDataMeasure(null);
+      setSelectedDataMeasureType(null);
+      setShowAddDataMeasure(false);
+      
+      message.success('Data measure added successfully');
+      
+    } catch (error) {
+      console.error('Error adding data measure:', error);
     }
   };
 
@@ -454,13 +536,42 @@ const Dashboard = () => {
               <p>ID: {selectedStudent.studentSchoolId}</p>
             </div>
 
-            <Tabs defaultActiveKey="analyze" size="large">
-              <TabPane tab="Analyze Data" key="analyze">
-                <Tabs defaultActiveKey="accommodations">
+            {/* Main Action Buttons */}
+            <div className="main-action-buttons" style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              marginBottom: '24px',
+              width: '100%'
+            }}>
+              <Button 
+                type={activeSection === 'analyze' ? 'primary' : 'default'}
+                size="large"
+                style={{ flex: 1, height: '60px', fontSize: '16px' }}
+                onClick={() => setActiveSection('analyze')}
+              >
+                Analyze Data
+              </Button>
+              <Button 
+                type={activeSection === 'track' ? 'primary' : 'default'}
+                size="large"
+                style={{ flex: 1, height: '60px', fontSize: '16px' }}
+                onClick={() => setActiveSection('track')}
+              >
+                Track Data
+              </Button>
+            </div>
+
+            {/* Content Sections */}
+            {activeSection === 'analyze' && (
+              <div className="analyze-section">
+                <h3>Data Analysis & Management</h3>
+                <p>View charts, analyze student behavior data, and manage accommodations, interventions, and data measures</p>
+                
+                <Tabs defaultActiveKey="accommodations" size="large">
                   <TabPane tab="Accommodations" key="accommodations">
                     <div className="accommodations-content">
                       <div className="accommodations-header">
-                        <h3>Current Accommodations</h3>
+                        <h4>Current Accommodations</h4>
                         <Button type="primary" onClick={() => setShowAddAccommodation(true)}>
                           Add Accommodation
                         </Button>
@@ -521,7 +632,23 @@ const Dashboard = () => {
                         rowKey="_id"
                         loading={loading}
                         locale={{
-                          emptyText: 'No accommodations found for this student'
+                          emptyText: (
+                            <div style={{ textAlign: 'center', padding: '24px' }}>
+                              <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                                {selectedStudent.firstName} doesn't have any accommodations assigned.
+                              </p>
+                              <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
+                                Please add an accommodation using the button above, or navigate to Admin Settings to add new accommodation templates.
+                              </p>
+                              <Button 
+                                type="primary" 
+                                onClick={() => navigate('/admin-settings')}
+                                style={{ marginRight: '8px' }}
+                              >
+                                Go to Admin Settings
+                              </Button>
+                            </div>
+                          )
                         }}
                       />
                     </div>
@@ -530,7 +657,7 @@ const Dashboard = () => {
                   <TabPane tab="Interventions" key="interventions">
                     <div className="interventions-content">
                       <div className="interventions-header">
-                        <h3>Current Interventions</h3>
+                        <h4>Current Interventions</h4>
                         <Button type="primary" onClick={() => setShowAddIntervention(true)}>
                           Add Intervention
                         </Button>
@@ -596,24 +723,54 @@ const Dashboard = () => {
                         ]}
                         dataSource={getStudentInterventions()}
                         rowKey="_id"
+                        locale={{
+                          emptyText: (
+                            <div style={{ textAlign: 'center', padding: '24px' }}>
+                              <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                                {selectedStudent.firstName} doesn't have any interventions assigned.
+                              </p>
+                              <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
+                                Please add an intervention using the button above, or navigate to Admin Settings to add new intervention templates.
+                              </p>
+                              <Button 
+                                type="primary" 
+                                onClick={() => navigate('/admin-settings')}
+                                style={{ marginRight: '8px' }}
+                              >
+                                Go to Admin Settings
+                              </Button>
+                            </div>
+                          )
+                        }}
                       />
                     </div>
                   </TabPane>
 
                   <TabPane tab="Data Measures" key="dataMeasures">
                     <div className="data-measures-content">
+                      <div className="data-measures-header">
+                        <h4>Current Data Measures</h4>
+                        <Button type="primary" onClick={() => setShowAddDataMeasure(true)}>
+                          Add Data Measure
+                        </Button>
+                      </div>
                       <StudentDataMeasuresTable
-                        student={selectedStudent}
+                        student={selectedStudentData?.user || selectedStudent}
                         onViewChart={(record) => {
-                          // Switch to charts tab and select the behavior
+                          // Switch to charts section and select the behavior
                           const behaviorType = record.type;
                           const behaviorId = record._id;
                           setSelectedBehavior({ type: behaviorType, id: behaviorId });
-                          // You might want to add a way to switch tabs here
+                          // Scroll to charts section
+                          document.getElementById('charts-section')?.scrollIntoView({ behavior: 'smooth' });
                         }}
                         onRemoveDataMeasure={(record) => {
-                          // Handle data measure removal
-                          console.log('Data measure removed:', record);
+                          // Handle data measure removal - trigger refetch
+                          refetchMe();
+                          // Also refetch the selected student data if available
+                          if (selectedStudent?.username) {
+                            refetchSelectedStudent();
+                          }
                         }}
                       />
                     </div>
@@ -622,7 +779,7 @@ const Dashboard = () => {
 
                 {/* Charts Section - Only show if student has data measures */}
                 {getBehaviors().length > 0 && (
-                  <div className="charts-section" style={{ marginTop: 24 }}>
+                  <div id="charts-section" className="charts-section" style={{ marginTop: 24 }}>
                     <div className="charts-header">
                       <h3>Data Charts</h3>
                       <div className="behavior-selector">
@@ -664,28 +821,28 @@ const Dashboard = () => {
                     )}
                   </div>
                 )}
-              </TabPane>
+              </div>
+            )}
 
-              <TabPane tab="Track Data" key="track">
-                <div className="track-data-content">
-                  <div className="track-data-header">
-                    <h3>Data Tracking</h3>
-                    <p>Track frequency and duration data for {selectedStudent.firstName}</p>
+            {activeSection === 'track' && (
+              <div className="track-data-section">
+                <div className="track-data-header">
+                  <h3>Data Tracking</h3>
+                  <p>Track frequency and duration data for {selectedStudent.firstName}</p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div>
+                    <h4>Frequency Tracking</h4>
+                    <Frequency studentId={selectedStudent._id} />
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div>
-                      <h4>Frequency Tracking</h4>
-                      <Frequency studentId={selectedStudent._id} />
-                    </div>
-                    <div>
-                      <h4>Duration Tracking</h4>
-                      <DurationTimers studentId={selectedStudent._id} />
-                    </div>
+                  <div>
+                    <h4>Duration Tracking</h4>
+                    <DurationTimers studentId={selectedStudent._id} />
                   </div>
                 </div>
-              </TabPane>
-            </Tabs>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -703,34 +860,81 @@ const Dashboard = () => {
         okText="Add Intervention"
         cancelText="Cancel"
         okButtonProps={{ 
-          disabled: !selectedBehaviorForIntervention || !selectedIntervention 
+          disabled: !selectedBehaviorForIntervention || !selectedIntervention || getAvailableBehaviors().length === 0 || getAvailableInterventions().length === 0
         }}
       >
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
             Select Behavior:
           </label>
-          <Select
-            placeholder="Select a behavior"
-            style={{ width: '100%' }}
-            value={selectedBehaviorForIntervention}
-            onChange={setSelectedBehaviorForIntervention}
-            options={getAvailableBehaviors()}
-          />
+          {getAvailableBehaviors().length > 0 ? (
+            <Select
+              placeholder="Select a behavior"
+              style={{ width: '100%' }}
+              value={selectedBehaviorForIntervention}
+              onChange={setSelectedBehaviorForIntervention}
+              options={getAvailableBehaviors()}
+            />
+          ) : (
+            <div style={{ 
+              padding: 16, 
+              backgroundColor: '#f5f5f5', 
+              borderRadius: 6,
+              textAlign: 'center',
+              border: '1px dashed #d9d9d9'
+            }}>
+              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                No behaviors available for this student.
+              </p>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
+                Please add data measures first, then you can assign interventions.
+              </p>
+              <Button 
+                type="primary" 
+                onClick={() => setActiveSection('analyze')}
+                style={{ marginRight: 8 }}
+              >
+                Go to Data Measures
+              </Button>
+            </div>
+          )}
         </div>
         
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
             Select Intervention:
           </label>
-          <Select
-            placeholder="Select an intervention"
-            style={{ width: '100%' }}
-            value={selectedIntervention}
-            onChange={setSelectedIntervention}
-            disabled={!selectedBehaviorForIntervention}
-            options={getAvailableInterventions()}
-          />
+          {getAvailableInterventions().length > 0 ? (
+            <Select
+              placeholder="Select an intervention"
+              style={{ width: '100%' }}
+              value={selectedIntervention}
+              onChange={setSelectedIntervention}
+              disabled={!selectedBehaviorForIntervention}
+              options={getAvailableInterventions()}
+            />
+          ) : (
+            <div style={{ 
+              padding: 16, 
+              backgroundColor: '#f5f5f5', 
+              borderRadius: 6,
+              textAlign: 'center',
+              border: '1px dashed #d9d9d9'
+            }}>
+              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                No more intervention templates available for this student.
+              </p>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
+                All intervention templates have been assigned to this student.
+              </p>
+              <Button 
+                type="primary" 
+                onClick={() => navigate('/admin-settings')}
+              >
+                Go to Admin Settings
+              </Button>
+            </div>
+          )}
         </div>
         
         {selectedIntervention && (
@@ -766,20 +970,43 @@ const Dashboard = () => {
         okText="Add Accommodation"
         cancelText="Cancel"
         okButtonProps={{ 
-          disabled: !selectedAccommodation 
+          disabled: !selectedAccommodation || getAvailableAccommodations().length === 0
         }}
       >
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
             Select Accommodation:
           </label>
-          <Select
-            placeholder="Select an accommodation"
-            style={{ width: '100%' }}
-            value={selectedAccommodation}
-            onChange={setSelectedAccommodation}
-            options={getAvailableAccommodations()}
-          />
+          {getAvailableAccommodations().length > 0 ? (
+            <Select
+              placeholder="Select an accommodation"
+              style={{ width: '100%' }}
+              value={selectedAccommodation}
+              onChange={setSelectedAccommodation}
+              options={getAvailableAccommodations()}
+            />
+          ) : (
+            <div style={{ 
+              padding: 16, 
+              backgroundColor: '#f5f5f5', 
+              borderRadius: 6,
+              textAlign: 'center',
+              border: '1px dashed #d9d9d9'
+            }}>
+              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                No more accommodation templates available for this student.
+              </p>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
+                All accommodation templates have been assigned to this student.
+              </p>
+              <Button 
+                type="primary" 
+                onClick={() => navigate('/admin-settings')}
+              >
+                Go to Admin Settings
+              </Button>
+            </div>
+          )}
         </div>
         
         {selectedAccommodation && (
@@ -795,6 +1022,108 @@ const Dashboard = () => {
               return accommodation ? (
                 <div>
                   <p><strong>Description:</strong> {accommodation.description}</p>
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
+      </Modal>
+
+      {/* Add Data Measure Modal */}
+      <Modal
+        title="Add Data Measure"
+        open={showAddDataMeasure}
+        onOk={handleAddDataMeasure}
+        onCancel={() => {
+          setShowAddDataMeasure(false);
+          setSelectedDataMeasure(null);
+          setSelectedDataMeasureType(null);
+        }}
+        okText="Add Data Measure"
+        cancelText="Cancel"
+        okButtonProps={{ 
+          disabled: !selectedDataMeasure || !selectedDataMeasureType || getAvailableDataMeasures().length === 0
+        }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+            Select Data Measure Type:
+          </label>
+          <Select
+            placeholder="Select data measure type"
+            style={{ width: '100%' }}
+            value={selectedDataMeasureType}
+            onChange={(value) => {
+              setSelectedDataMeasureType(value);
+              setSelectedDataMeasure(null); // Reset selection when type changes
+            }}
+            options={[
+              { value: 'frequency', label: 'Frequency' },
+              { value: 'duration', label: 'Duration' }
+            ]}
+          />
+        </div>
+        
+        {selectedDataMeasureType && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              Select {selectedDataMeasureType === 'frequency' ? 'Frequency' : 'Duration'} Behavior:
+            </label>
+            {getAvailableDataMeasures().length > 0 ? (
+              <Select
+                placeholder={`Select a ${selectedDataMeasureType} behavior`}
+                style={{ width: '100%' }}
+                value={selectedDataMeasure}
+                onChange={setSelectedDataMeasure}
+                options={getAvailableDataMeasures()}
+              />
+            ) : (
+              <div style={{ 
+                padding: 16, 
+                backgroundColor: '#f5f5f5', 
+                borderRadius: 6,
+                textAlign: 'center',
+                border: '1px dashed #d9d9d9'
+              }}>
+                <p style={{ margin: '0 0 12px 0', color: '#666' }}>
+                  No more {selectedDataMeasureType} templates available for this student.
+                </p>
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
+                  All {selectedDataMeasureType} templates have been assigned to this student.
+                </p>
+                <Button 
+                  type="primary" 
+                  onClick={() => navigate('/admin-settings')}
+                >
+                  Go to Admin Settings
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {selectedDataMeasure && (
+          <div style={{ 
+            padding: 12, 
+            backgroundColor: '#f5f5f5', 
+            borderRadius: 6,
+            marginTop: 16 
+          }}>
+            <h4 style={{ margin: '0 0 8px 0' }}>Data Measure Details:</h4>
+            {(() => {
+              let dataMeasure;
+              
+              if (selectedDataMeasureType === 'frequency') {
+                dataMeasure = frequencyTemplates.find(f => f._id === selectedDataMeasure);
+              } else if (selectedDataMeasureType === 'duration') {
+                dataMeasure = durationTemplates.find(d => d._id === selectedDataMeasure);
+              }
+              
+              return dataMeasure ? (
+                <div>
+                  <p><strong>Behavior Title:</strong> {dataMeasure.behaviorTitle}</p>
+                  <p><strong>Operational Definition:</strong> {dataMeasure.operationalDefinition}</p>
+                  <p><strong>Type:</strong> {selectedDataMeasureType === 'frequency' ? 'Frequency' : 'Duration'}</p>
                 </div>
               ) : null;
             })()}

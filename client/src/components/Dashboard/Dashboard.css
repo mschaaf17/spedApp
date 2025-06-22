@@ -263,6 +263,27 @@
   color: #262626;
 }
 
+/* Data Measures section styling */
+.data-measures-content {
+  padding: 0;
+}
+
+.data-measures-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.data-measures-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
 /* Modal styling for add intervention */
 .ant-modal-content {
   border-radius: 8px;
