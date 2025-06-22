@@ -173,16 +173,54 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
 
         // Check for 3 consecutive points above aimline (behavior getting worse)
         let aboveCount = 0, notification = false;
-        for (let i = 0; i < chartDataWithInterventions.length; i++) {
-          const aimlineValueForDay = aimlinePoints[i]?.value ?? 0;
-          if (chartDataWithInterventions[i].count > aimlineValueForDay) {
-            aboveCount++;
-            if (aboveCount === 3) {
-              notification = true;
-              break;
+        const assignedInterventionsForThisBehavior = userInterventions.filter(i => i.behaviorId?._id === freq._id);
+        const hasIntervention = assignedInterventionsForThisBehavior.length > 0;
+        
+        if (hasIntervention) {
+          // Get the most recent intervention date
+          const mostRecentIntervention = assignedInterventionsForThisBehavior.sort((a, b) => {
+            const aDate = typeof a.createdAt === "number" ? a.createdAt : 
+                         typeof a.createdAt === "string" && /^\d+$/.test(a.createdAt) ? Number(a.createdAt) : 
+                         new Date(a.createdAt).getTime();
+            const bDate = typeof b.createdAt === "number" ? b.createdAt : 
+                         typeof b.createdAt === "string" && /^\d+$/.test(b.createdAt) ? Number(b.createdAt) : 
+                         new Date(b.createdAt).getTime();
+            return bDate - aDate; // Sort descending to get most recent first
+          })[0];
+          
+          let mostRecentInterventionDate = null;
+          if (mostRecentIntervention && mostRecentIntervention.createdAt) {
+            let d;
+            if (typeof mostRecentIntervention.createdAt === "number") {
+              d = new Date(mostRecentIntervention.createdAt);
+            } else if (typeof mostRecentIntervention.createdAt === "string") {
+              if (/^\d+$/.test(mostRecentIntervention.createdAt)) {
+                d = new Date(Number(mostRecentIntervention.createdAt));
+              } else {
+                d = new Date(mostRecentIntervention.createdAt);
+              }
             }
-          } else {
-            aboveCount = 0;
+            if (d && !isNaN(d.getTime())) {
+              mostRecentInterventionDate = d.toISOString().slice(0, 10);
+            }
+          }
+          
+          // Only check for consecutive days above aimline AFTER the most recent intervention
+          if (mostRecentInterventionDate) {
+            const dataAfterIntervention = chartDataWithInterventions.filter(d => d.date >= mostRecentInterventionDate);
+            
+            for (let i = 0; i < dataAfterIntervention.length; i++) {
+              const aimlineValueForDay = aimlinePoints.find(ap => ap.date === dataAfterIntervention[i].date)?.value ?? 0;
+              if (dataAfterIntervention[i].count > aimlineValueForDay) {
+                aboveCount++;
+                if (aboveCount === 3) {
+                  notification = true;
+                  break;
+                }
+              } else {
+                aboveCount = 0;
+              }
+            }
           }
         }
 
@@ -234,9 +272,6 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
 
         console.log('Result from fillMissingDates:', finalChartData);
 
-        const assignedInterventionsForThisBehavior = userInterventions.filter(
-          i => i.behaviorId?._id === freq._id
-        );
         const interventionDates = assignedInterventionsForThisBehavior.map(intervention => {
           let d;
           if (typeof intervention.createdAt === "number") {

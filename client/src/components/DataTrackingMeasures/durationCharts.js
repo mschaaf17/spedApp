@@ -246,19 +246,53 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
         // 6. Check for 3 consecutive points above aimline (duration getting worse)
         // Only check if there's an intervention assigned for this behavior
         let aboveCount = 0, notification = false;
-        const hasIntervention = userInterventions.filter(i => i.behaviorId?._id === duration._id).length > 0;
+        const assignedInterventionsForThisBehavior = userInterventions.filter(i => i.behaviorId?._id === duration._id);
+        const hasIntervention = assignedInterventionsForThisBehavior.length > 0;
         
         if (hasIntervention) {
-          for (let i = 0; i < chartDataWithAimline.length; i++) {
-            const aimlineValueForDay = chartDataWithAimline[i].aimline;
-            if (chartDataWithAimline[i].minutes > aimlineValueForDay) {
-              aboveCount++;
-              if (aboveCount === 3) {
-                notification = true;
-                break;
+          // Get the most recent intervention date
+          const mostRecentIntervention = assignedInterventionsForThisBehavior.sort((a, b) => {
+            const aDate = typeof a.createdAt === "number" ? a.createdAt : 
+                         typeof a.createdAt === "string" && /^\d+$/.test(a.createdAt) ? Number(a.createdAt) : 
+                         new Date(a.createdAt).getTime();
+            const bDate = typeof b.createdAt === "number" ? b.createdAt : 
+                         typeof b.createdAt === "string" && /^\d+$/.test(b.createdAt) ? Number(b.createdAt) : 
+                         new Date(b.createdAt).getTime();
+            return bDate - aDate; // Sort descending to get most recent first
+          })[0];
+          
+          let mostRecentInterventionDate = null;
+          if (mostRecentIntervention && mostRecentIntervention.createdAt) {
+            let d;
+            if (typeof mostRecentIntervention.createdAt === "number") {
+              d = new Date(mostRecentIntervention.createdAt);
+            } else if (typeof mostRecentIntervention.createdAt === "string") {
+              if (/^\d+$/.test(mostRecentIntervention.createdAt)) {
+                d = new Date(Number(mostRecentIntervention.createdAt));
+              } else {
+                d = new Date(mostRecentIntervention.createdAt);
               }
-            } else {
-              aboveCount = 0;
+            }
+            if (d && !isNaN(d.getTime())) {
+              mostRecentInterventionDate = d.toISOString().slice(0, 10);
+            }
+          }
+          
+          // Only check for consecutive days above aimline AFTER the most recent intervention
+          if (mostRecentInterventionDate) {
+            const dataAfterIntervention = chartDataWithAimline.filter(d => d.date >= mostRecentInterventionDate);
+            
+            for (let i = 0; i < dataAfterIntervention.length; i++) {
+              const aimlineValueForDay = dataAfterIntervention[i].aimline;
+              if (dataAfterIntervention[i].minutes > aimlineValueForDay) {
+                aboveCount++;
+                if (aboveCount === 3) {
+                  notification = true;
+                  break;
+                }
+              } else {
+                aboveCount = 0;
+              }
             }
           }
         }
@@ -300,11 +334,6 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
             minute: '2-digit'
           });
         };
-
-        // Get assigned interventions for this behavior
-        const assignedInterventionsForThisBehavior = userInterventions.filter(
-          i => i.behaviorId?._id === duration._id
-        );
 
         // Debug logging for interventions
         console.log('All user interventions:', userInterventions);
