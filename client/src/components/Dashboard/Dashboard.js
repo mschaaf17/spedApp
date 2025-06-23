@@ -62,6 +62,7 @@ const Dashboard = () => {
   // Student View Configuration State
   const [showAccommodations, setShowAccommodations] = useState(false);
   const [selectedCharts, setSelectedCharts] = useState([]);
+  const [showBreaks, setShowBreaks] = useState(false);
   
   // Break Settings State
   const [breakSettings, setBreakSettings] = useState({
@@ -160,10 +161,12 @@ const Dashboard = () => {
     if (student?.breakSettings) {
       setBreakSettings(student.breakSettings);
       setIsUnlimitedBreaks(student.breakSettings.dailyLimit === 0);
+      setShowBreaks(student.breakSettings.isEnabled || false);
     } else {
       // Reset to defaults
       setBreakSettings({ isEnabled: false, duration: 5, hasDelay: false, delayDuration: 15, dailyLimit: 0 });
       setIsUnlimitedBreaks(true);
+      setShowBreaks(false);
     }
   };
 
@@ -555,6 +558,7 @@ const Dashboard = () => {
     if (!selectedStudent) return;
 
     try {
+      // Save student view configuration
       await updateStudentViewConfig({
         variables: {
           studentId: selectedStudent._id,
@@ -566,6 +570,72 @@ const Dashboard = () => {
           { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
         ]
       });
+      
+      // If breaks are enabled in student view, also save break settings
+      if (showBreaks) {
+        const settingsToSend = {
+          isEnabled: true,
+          duration: breakSettings.duration,
+          hasDelay: breakSettings.hasDelay,
+          delayDuration: breakSettings.delayDuration,
+          dailyLimit: isUnlimitedBreaks ? 0 : breakSettings.dailyLimit,
+        };
+        
+        await updateBreakSettings({
+          variables: {
+            studentId: selectedStudent._id,
+            settings: settingsToSend,
+          },
+          update: (cache, { data }) => {
+            // Update the cache for the admin's view (QUERY_ME)
+            try {
+              const existingData = cache.readQuery({ query: QUERY_ME });
+              if (existingData?.me?.students) {
+                const updatedStudents = existingData.me.students.map(student => 
+                  student._id === selectedStudent._id 
+                    ? { ...student, breakSettings: data.updateBreakSettings.breakSettings }
+                    : student
+                );
+                cache.writeQuery({
+                  query: QUERY_ME,
+                  data: {
+                    ...existingData,
+                    me: {
+                      ...existingData.me,
+                      students: updatedStudents
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.log('Could not update QUERY_ME cache:', error);
+            }
+
+            // Update the cache for the student's view (QUERY_USER)
+            try {
+              const existingUserData = cache.readQuery({ 
+                query: QUERY_USER, 
+                variables: { identifier: selectedStudent.username, isUsername: true } 
+              });
+              if (existingUserData?.user) {
+                cache.writeQuery({
+                  query: QUERY_USER,
+                  variables: { identifier: selectedStudent.username, isUsername: true },
+                  data: {
+                    ...existingUserData,
+                    user: {
+                      ...existingUserData.user,
+                      breakSettings: data.updateBreakSettings.breakSettings
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.log('Could not update QUERY_USER cache:', error);
+            }
+          }
+        });
+      }
       
       message.success('Student view configuration saved successfully');
     } catch (error) {
@@ -1002,12 +1072,6 @@ const Dashboard = () => {
                         <h4>Configure Break Settings</h4>
                         <p>Set the rules for when and how {selectedStudent?.firstName} can take breaks.</p>
                         <Form layout="vertical" style={{ marginTop: 24 }}>
-                          <Form.Item label="Enable Breaks for Student">
-                            <Switch
-                              checked={breakSettings.isEnabled}
-                              onChange={(checked) => setBreakSettings(prev => ({ ...prev, isEnabled: checked }))}
-                            />
-                          </Form.Item>
                           <Form.Item label="Break Duration (minutes)">
                             <InputNumber
                               min={1}
@@ -1186,6 +1250,34 @@ const Dashboard = () => {
                       </div>
                     </div>
 
+                    {/* Breaks Section - Only show if student has breaks feature */}
+                    {studentHasBreaksFeature && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '12px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px',
+                          border: '1px solid #d9d9d9'
+                        }}>
+                          <div>
+                            <h5 style={{ margin: 0 }}>Breaks</h5>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#666' }}>
+                              Enable break functionality for student
+                            </p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={showBreaks}
+                            onChange={(e) => setShowBreaks(e.target.checked)}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Charts Section */}
                     <div>
                       <h5>Individual Charts</h5>
@@ -1262,6 +1354,13 @@ const Dashboard = () => {
                           showAccommodations,
                           selectedCharts
                         }}
+                        breakSettings={showBreaks ? {
+                          isEnabled: true,
+                          duration: breakSettings.duration,
+                          hasDelay: breakSettings.hasDelay,
+                          delayDuration: breakSettings.delayDuration,
+                          dailyLimit: isUnlimitedBreaks ? 0 : breakSettings.dailyLimit,
+                        } : { isEnabled: false }}
                         previewMode={true}
                       />
                     </div>

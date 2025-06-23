@@ -31,7 +31,7 @@ const StudentAccommodations = ({
   const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig && !propBreakSettings;
   const query = userParam ? QUERY_USER : QUERY_ME;
   const variables = userParam ? { identifier: userParam, isUsername: true } : {};
-  const { loading, data, error } = useQuery(query, { variables, skip: !shouldFetch });
+  const { loading, data, error, refetch } = useQuery(query, { variables, skip: !shouldFetch });
 
   const [takeBreak, { error: takeBreakError }] = useMutation(TAKE_BREAK);
 
@@ -52,6 +52,47 @@ const StudentAccommodations = ({
   const behaviorDurations = propDurations ?? user.behaviorDurations ?? [];
   const studentViewConfig = propConfig ?? user.studentViewConfig ?? {};
   const breakSettings = propBreakSettings ?? user.breakSettings ?? {};
+
+  // Calculate break count and remaining breaks
+  const calculateBreakInfo = () => {
+    const breakHistory = user.breakHistory || [];
+    const today = new Date().toDateString();
+    
+    // Convert timestamp strings to Date objects and filter for today
+    const todayBreaks = breakHistory.filter(breakRecord => {
+      // Handle both string timestamps and Date objects
+      let breakDate;
+      if (typeof breakRecord === 'string') {
+        // If it's a timestamp string, convert to Date
+        breakDate = new Date(parseInt(breakRecord));
+      } else if (breakRecord.startTime) {
+        // If it's an object with startTime
+        breakDate = new Date(breakRecord.startTime);
+      } else {
+        // If it's already a Date object
+        breakDate = new Date(breakRecord);
+      }
+      return breakDate.toDateString() === today;
+    });
+    
+    const todayCount = todayBreaks.length;
+    const isUnlimited = breakSettings.dailyLimit === 0;
+    const remaining = isUnlimited ? null : Math.max(0, breakSettings.dailyLimit - todayCount);
+    
+    console.log('Break count debug:', {
+      breakHistory: breakHistory.length,
+      todayBreaks: todayBreaks.length,
+      todayCount,
+      isUnlimited,
+      remaining,
+      breakHistoryData: breakHistory,
+      today: today
+    });
+    
+    return { todayCount, remaining, isUnlimited };
+  };
+
+  const { todayCount, remaining, isUnlimited } = calculateBreakInfo();
 
   // Set the default selected chart if charts are available
   useEffect(() => {
@@ -129,6 +170,10 @@ const StudentAccommodations = ({
       });
       setBreakDuration(breakSettings.duration * 60); // convert minutes to seconds
       setIsBreakTime(true);
+      // Refetch data to ensure break count is updated
+      if (shouldFetch) {
+        refetch();
+      }
       message.success("Enjoy your break!");
     } catch (err) {
       // Error message is handled by the useEffect hook
@@ -177,11 +222,20 @@ const StudentAccommodations = ({
         <>
             <h2 className="dashboard-title">Welcome, {user.firstName || user.username || ''}</h2>
 
-            {breakSettings?.isEnabled && !previewMode && (
+            {breakSettings?.isEnabled && (
                 <div className="take-break-section">
-                <Button type="primary" size="large" onClick={handleTakeBreak}>
-                    Take a Break
-                </Button>
+                    <div className="break-info">
+                        <Button type="primary" size="large" onClick={handleTakeBreak}>
+                            Take a Break
+                        </Button>
+                        <div className="break-counter">
+                            {isUnlimited ? (
+                                <span>Today's breaks: {todayCount}</span>
+                            ) : (
+                                <span>Breaks remaining: {remaining}</span>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
