@@ -557,13 +557,27 @@ const Dashboard = () => {
   const handleSaveStudentViewConfig = async () => {
     if (!selectedStudent) return;
 
+    // Create a clean selectedCharts array without GraphQL-specific properties
+    const cleanSelectedCharts = selectedCharts.map(chart => ({
+      type: chart.type,
+      id: chart.id,
+      title: chart.title
+    }));
+
+    console.log('Saving student view configuration:', {
+      studentId: selectedStudent._id,
+      showAccommodations,
+      selectedCharts: cleanSelectedCharts,
+      showBreaks
+    });
+
     try {
       // Save student view configuration
       await updateStudentViewConfig({
         variables: {
           studentId: selectedStudent._id,
           showAccommodations,
-          selectedCharts
+          selectedCharts: cleanSelectedCharts
         },
         refetchQueries: [
           { query: QUERY_ME },
@@ -580,6 +594,8 @@ const Dashboard = () => {
           delayDuration: breakSettings.delayDuration,
           dailyLimit: isUnlimitedBreaks ? 0 : breakSettings.dailyLimit,
         };
+        
+        console.log('Saving break settings:', settingsToSend);
         
         await updateBreakSettings({
           variables: {
@@ -640,6 +656,7 @@ const Dashboard = () => {
       message.success('Student view configuration saved successfully');
     } catch (error) {
       console.error('Error saving student view configuration:', error);
+      console.error('Error details:', error.graphQLErrors, error.networkError);
       message.error('Failed to save student view configuration');
     }
   };
