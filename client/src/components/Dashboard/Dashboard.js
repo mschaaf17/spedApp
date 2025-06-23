@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES } from '../../utils/queries';
-import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT } from '../../utils/mutations';
+import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, UPDATE_STUDENT_VIEW_CONFIG } from '../../utils/mutations';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle, BarChart, Bar } from 'recharts';
 import './Dashboard.css';
+import StudentAccommodations from '../../pages/StudentPages/StudentAccommodations/StudentAccommodations';
 
 // Import your existing components
 import InterventionsTable from '../Tables/StudentSpecificTables/interventionsTable';
@@ -98,6 +99,7 @@ const Dashboard = () => {
   const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT);
   const [removeAccommodationFromStudent] = useMutation(REMOVE_ACCOMMODATION_FROM_STUDENT);
   const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
+  const [updateStudentViewConfig] = useMutation(UPDATE_STUDENT_VIEW_CONFIG);
 
   const myStudents = meData?.me?.students || [];
   const getAllStudents = allStudentsData?.students || [];
@@ -133,6 +135,16 @@ const Dashboard = () => {
     const student = myStudents.find(s => s._id === value);
     setSelectedStudent(student);
     setSelectedBehavior(null); // Reset behavior selection when student changes
+    
+    // Load student view configuration if available
+    if (student?.studentViewConfig) {
+      setShowAccommodations(student.studentViewConfig.showAccommodations || false);
+      setSelectedCharts(student.studentViewConfig.selectedCharts || []);
+    } else {
+      // Reset to defaults if no configuration exists
+      setShowAccommodations(false);
+      setSelectedCharts([]);
+    }
   };
 
   // Handle behavior selection for charts
@@ -515,6 +527,30 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Error adding data measure:', error);
+    }
+  };
+
+  // Handle saving student view configuration
+  const handleSaveStudentViewConfig = async () => {
+    if (!selectedStudent) return;
+
+    try {
+      await updateStudentViewConfig({
+        variables: {
+          studentId: selectedStudent._id,
+          showAccommodations,
+          selectedCharts
+        },
+        refetchQueries: [
+          { query: QUERY_ME },
+          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+        ]
+      });
+      
+      message.success('Student view configuration saved successfully');
+    } catch (error) {
+      console.error('Error saving student view configuration:', error);
+      message.error('Failed to save student view configuration');
     }
   };
 
@@ -934,8 +970,19 @@ const Dashboard = () => {
             {activeSection === 'studentView' && (
               <div className="student-view-section">
                 <div className="student-view-header">
-                  <h3>Student View Configuration</h3>
-                  <p>Configure what {selectedStudent.firstName} will see on their student view</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3>Student View Configuration</h3>
+                      <p>Configure what {selectedStudent.firstName} will see on their student view</p>
+                    </div>
+                    <Button 
+                      type="primary" 
+                      onClick={handleSaveStudentViewConfig}
+                      disabled={!selectedStudent}
+                    >
+                      Save Configuration
+                    </Button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '24px', marginTop: '24px' }}>
@@ -1027,7 +1074,7 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Preview Panel */}
+                  {/* Student View Preview */}
                   <div style={{ flex: 1, backgroundColor: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
                     <h4>Student View Preview</h4>
                     <div style={{ 
@@ -1037,126 +1084,16 @@ const Dashboard = () => {
                       borderRadius: '6px',
                       border: '1px solid #d9d9d9'
                     }}>
-                      {!showAccommodations && selectedCharts.length === 0 ? (
-                        <div style={{ 
-                          textAlign: 'center', 
-                          padding: '40px',
-                          color: '#666'
-                        }}>
-                          <p>No items selected for student view</p>
-                          <p style={{ fontSize: '14px' }}>Select options from the left panel to see preview</p>
-                        </div>
-                      ) : (
-                        <div>
-                          {/* Accommodations Preview */}
-                          {showAccommodations && (
-                            <div style={{ marginBottom: '24px' }}>
-                              <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'space-between',
-                                marginBottom: '12px'
-                              }}>
-                                <h5 style={{ margin: 0 }}>Accommodations</h5>
-                                <button
-                                  onClick={() => setShowAccommodations(false)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '18px',
-                                    cursor: 'pointer',
-                                    color: '#ff4d4f',
-                                    padding: '4px'
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                                gap: '12px'
-                              }}>
-                                {getStudentAccommodations().map(accommodation => (
-                                  <div key={accommodation._id} style={{
-                                    border: '1px solid #d9d9d9',
-                                    borderRadius: '6px',
-                                    padding: '12px',
-                                    textAlign: 'center'
-                                  }}>
-                                    <div style={{
-                                      width: '100%',
-                                      height: '120px',
-                                      backgroundColor: '#f0f0f0',
-                                      borderRadius: '4px',
-                                      marginBottom: '8px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '12px',
-                                      color: '#666'
-                                    }}>
-                                      {accommodation.image ? 'Image' : 'No Image'}
-                                    </div>
-                                    <h6 style={{ margin: '0 0 4px 0' }}>{accommodation.title}</h6>
-                                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                                      {accommodation.description}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Charts Preview */}
-                          {selectedCharts.length > 0 && (
-                            <div>
-                              <h5 style={{ marginBottom: '12px' }}>Charts</h5>
-                              {selectedCharts.map((chart, index) => (
-                                <div key={`${chart.type}-${chart.id}`} style={{
-                                  border: '1px solid #d9d9d9',
-                                  borderRadius: '6px',
-                                  padding: '12px',
-                                  marginBottom: '12px',
-                                  position: 'relative'
-                                }}>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedCharts(selectedCharts.filter((_, i) => i !== index));
-                                    }}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '8px',
-                                      right: '8px',
-                                      background: 'none',
-                                      border: 'none',
-                                      fontSize: '16px',
-                                      cursor: 'pointer',
-                                      color: '#ff4d4f',
-                                      padding: '4px'
-                                    }}
-                                  >
-                                    ✕
-                                  </button>
-                                  <h6 style={{ margin: '0 0 8px 0' }}>{chart.title} ({chart.type})</h6>
-                                  <div style={{
-                                    height: '200px',
-                                    backgroundColor: '#f9f9f9',
-                                    borderRadius: '4px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '14px',
-                                    color: '#666'
-                                  }}>
-                                    Chart Preview
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <StudentAccommodations
+                        accommodations={selectedStudentData?.user?.accommodations}
+                        behaviorFrequencies={selectedStudentData?.user?.behaviorFrequencies}
+                        behaviorDurations={selectedStudentData?.user?.behaviorDurations}
+                        studentViewConfig={{
+                          showAccommodations,
+                          selectedCharts
+                        }}
+                        previewMode={true}
+                      />
                     </div>
                   </div>
                 </div>

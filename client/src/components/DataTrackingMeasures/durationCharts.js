@@ -43,7 +43,7 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
     String(today.getDate()).padStart(2, '0');
 
   return (
-    <div className='centerBody'>
+    <div className='duration-chart-wrapper'>
       
       {filtered.map(duration => {
         // Process timer data

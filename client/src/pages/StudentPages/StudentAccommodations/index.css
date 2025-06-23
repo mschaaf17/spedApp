@@ -1,0 +1,254 @@
+.student-dashboard-container {
+  padding: 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+/* Preview mode styles - more compact for admin panel */
+.student-dashboard-container.preview-mode {
+  padding: 10px;
+  background-color: transparent;
+  min-height: auto;
+}
+
+.preview-mode .dashboard-title {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.preview-mode .main-content-grid {
+  gap: 10px;
+}
+
+.preview-mode .accommodations-section,
+.preview-mode .charts-section {
+  padding: 10px;
+}
+
+.preview-mode .section-title {
+  font-size: 1em;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+}
+
+.preview-mode .accommodations-grid {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.preview-mode .accommodation-card {
+  font-size: 0.8em;
+}
+
+.preview-mode .accommodation-card img {
+  height: 80px;
+}
+
+.preview-mode .fallback-image {
+  height: 80px;
+  font-size: 10px;
+}
+
+.preview-mode .accommodation-info {
+  padding: 8px;
+}
+
+.preview-mode .accommodation-info h4 {
+  font-size: 0.9em;
+  margin-bottom: 4px;
+}
+
+.preview-mode .accommodation-info p {
+  font-size: 0.7em;
+  line-height: 1.2;
+}
+
+.preview-mode .chart-display-area {
+  min-height: 200px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Constrain chart components in preview mode */
+.preview-mode .chart-display-area > div {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Make charts more compact in preview */
+.preview-mode .recharts-wrapper {
+  max-width: 100% !important;
+  overflow-x: auto;
+}
+
+.preview-mode .recharts-surface {
+  max-width: 100% !important;
+}
+
+/* Specific styling for duration charts in preview */
+.preview-mode .duration-chart-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.preview-mode .duration-chart-container > div {
+  max-width: 100%;
+  min-width: 300px; /* Minimum width to keep charts readable */
+}
+
+/* Make frequency charts more compact too */
+.preview-mode .frequency-chart-container {
+  max-width: 100%;
+}
+
+.preview-mode .frequency-chart-container > div {
+  max-width: 100%;
+}
+
+.preview-mode .empty-dashboard-message {
+  padding: 20px;
+  font-size: 0.9em;
+}
+
+.preview-mode .empty-dashboard-message p:first-child {
+  font-size: 1em;
+}
+
+.preview-mode .empty-dashboard-message p:last-child {
+  font-size: 0.8em;
+}
+
+.preview-mode .duration-chart-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 5px; /* Add a little padding for the scrollbar */
+}
+
+.preview-mode .duration-chart-wrapper .recharts-wrapper {
+  width: auto !important; /* Allow it to shrink */
+  min-width: 300px; /* But not get too small */
+}
+
+.dashboard-title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 2em;
+}
+
+.main-content-grid {
+  display: grid;
+  gap: 20px;
+}
+
+/* Layout for when charts are visible */
+.main-content-grid.charts-visible {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Layout for when only accommodations are visible */
+.main-content-grid.no-charts .accommodations-section {
+  grid-column: 1 / -1; /* Take up full width */
+}
+
+.accommodations-section,
+.charts-section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  margin-top: 0;
+  color: #555;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.accommodations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.accommodation-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.accommodation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.accommodation-card.highlighted {
+  border: 2px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.accommodation-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.fallback-image {
+  width: 100%;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #888;
+  font-size: 14px;
+}
+
+.accommodation-info {
+  padding: 15px;
+}
+
+.accommodation-info h4 {
+  margin-top: 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.accommodation-info p {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 0;
+}
+
+.chart-display-area {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-dashboard-message {
+  text-align: center;
+  padding: 50px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #666;
+  margin: 20px auto;
+  max-width: 600px;
+}
+
+.empty-dashboard-message p:first-child {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.empty-dashboard-message p:last-child {
+  font-size: 1em;
+}

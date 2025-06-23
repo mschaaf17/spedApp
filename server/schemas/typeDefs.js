@@ -3,17 +3,17 @@ const { gql } = require("apollo-server-express");
 const typeDefs = gql`
   type User {
     _id: ID!
-    isAdmin: Boolean!
-    username: String!
-    firstName: String!
-    lastName: String!
-    password: String!
-    studentSchoolId: String!
+    isAdmin: Boolean
+    username: String
+    firstName: String
+    lastName: String
+    studentSchoolId: String
     students: [User!]!
     accommodations: [AccommodationList!]!
     behaviorFrequencies: [Frequency!]!
     behaviorDurations: [Duration!]!
     interventions: [InterventionList!]!
+    studentViewConfig: StudentViewConfig
   }
 
   type AccommodationList {
@@ -105,6 +105,17 @@ const typeDefs = gql`
     status: String!
     createdBy: User!
     isActive: Boolean!
+  }
+
+  type SelectedChart {
+    type: String!
+    id: ID!
+    title: String!
+  }
+
+  type StudentViewConfig {
+    showAccommodations: Boolean!
+    selectedCharts: [SelectedChart!]!
   }
 
   type Query {
@@ -206,6 +217,18 @@ const typeDefs = gql`
       behaviorId: ID
     ): InterventionList
     removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
+    
+    updateStudentViewConfig(
+      studentId: ID!
+      showAccommodations: Boolean!
+      selectedCharts: [SelectedChartInput!]!
+    ): User
+  }
+
+  input SelectedChartInput {
+    type: String!
+    id: ID!
+    title: String!
   }
 `;
 

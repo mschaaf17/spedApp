@@ -465,3 +465,22 @@ mutation SaveDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
   }
 }
 `;
+
+export const UPDATE_STUDENT_VIEW_CONFIG = gql`
+mutation UpdateStudentViewConfig($studentId: ID!, $showAccommodations: Boolean!, $selectedCharts: [SelectedChartInput!]!) {
+  updateStudentViewConfig(studentId: $studentId, showAccommodations: $showAccommodations, selectedCharts: $selectedCharts) {
+    _id
+    username
+    firstName
+    lastName
+    studentViewConfig {
+      showAccommodations
+      selectedCharts {
+        type
+        id
+        title
+      }
+    }
+  }
+}
+`;

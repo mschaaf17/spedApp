@@ -108,6 +108,14 @@ query Me {
           lastName
         }
       }
+      studentViewConfig {
+        showAccommodations
+        selectedCharts {
+          type
+          id
+          title
+        }
+      }
     }
     accommodations {
   _id
@@ -184,6 +192,14 @@ query Me {
         username
         firstName
         lastName
+      }
+    }
+    studentViewConfig {
+      showAccommodations
+      selectedCharts {
+        type
+        id
+        title
       }
     }
   }
@@ -308,6 +324,14 @@ query User($identifier: String!, $isUsername: Boolean!) {
           lastName
         }
       }
+      studentViewConfig {
+        showAccommodations
+        selectedCharts {
+          type
+          id
+          title
+        }
+      }
     }
     accommodations {
   _id
@@ -390,6 +414,14 @@ query User($identifier: String!, $isUsername: Boolean!) {
         username
         firstName
         lastName
+      }
+    }
+    studentViewConfig {
+      showAccommodations
+      selectedCharts {
+        type
+        id
+        title
       }
     }
   }

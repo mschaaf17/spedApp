@@ -235,19 +235,29 @@ const resolvers = {
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
-        const userData = await User.findOne({ _id: context.user._id })
-          .select("-__v -password")
-          .populate("isAdmin")
-          .populate('firstName')
-          .populate('lastName')
-          .populate("studentSchoolId")
-          .populate("students")
-          .populate("accommodations")
-          .populate("behaviorFrequencies")
-          .populate("behaviorDurations")
-          .populate("interventions");
+        console.log('Context user found:', context.user);
+        try {
+          const userData = await User.findOne({ _id: context.user._id })
+            .select("-__v -password")
+            .populate("students")
+            .populate("accommodations")
+            .populate("behaviorFrequencies")
+            .populate("behaviorDurations")
+            .populate("interventions");
 
-        return userData;
+          if (!userData) {
+            console.error('No user found in DB for _id from context:', context.user._id);
+            // This can happen if the user was deleted but the token is still valid.
+            throw new AuthenticationError("User associated with this token no longer exists.");
+          }
+          
+          console.log('User data from DB:', userData);
+          return userData;
+
+        } catch (err) {
+          console.error('Error fetching user data in ME resolver:', err);
+          throw new ApolloError("Error fetching user data.");
+        }
       }
       throw new AuthenticationError("Not logged in");
     },
@@ -1247,6 +1257,40 @@ const resolvers = {
       await duration.save();
 
       return timer;
+    },
+
+    updateStudentViewConfig: async (parent, { studentId, showAccommodations, selectedCharts }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const updatedUser = await User.findByIdAndUpdate(
+          studentId,
+          {
+            studentViewConfig: {
+              showAccommodations,
+              selectedCharts
+            }
+          },
+          { new: true }
+        ).populate('behaviorFrequencies')
+         .populate('behaviorDurations')
+         .populate('accommodations')
+         .populate('interventions');
+
+        if (!updatedUser) {
+          throw new UserInputError("Student not found");
+        }
+
+        return updatedUser;
+      } catch (error) {
+        throw new ApolloError(
+          "Failed to update student view configuration",
+          "UPDATE_STUDENT_VIEW_CONFIG_ERROR",
+          { originalError: error },
+        );
+      }
     },
   },
 

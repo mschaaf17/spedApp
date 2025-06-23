@@ -1,157 +1,171 @@
-import React, { useState } from 'react';
-import { Navigate, useParams, Link } from 'react-router-dom';
-import './index.css';
-import AccommodationList from '../../../components/AccommodationList/studentAccommodationView';
-import Auth from '../../../utils/auth';
+import React, { useState, useEffect } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
+import { Select } from 'antd';
 import { QUERY_ME, QUERY_USER } from '../../../utils/queries';
+import Auth from '../../../utils/auth';
+import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts';
+import DurationCharts from '../../../components/DataTrackingMeasures/durationCharts';
+import './index.css';
 
-const StudentAccommodations = (props) => {
+const { Option } = Select;
+
+const StudentAccommodations = ({
+  accommodations: propAccommodations,
+  behaviorFrequencies: propFrequencies,
+  behaviorDurations: propDurations,
+  studentViewConfig: propConfig,
+  previewMode = false
+}) => {
   const { username: userParam } = useParams();
   const [clickedImageId, setClickedImageId] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
+  const [selectedChart, setSelectedChart] = useState(null);
 
-  const { loading, data } = useQuery(userParam ? QUERY_USER : QUERY_ME, {
-    variables: { username: userParam }
-  });
+  // Only fetch if not in preview mode and no props provided
+  const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig;
+  const query = userParam ? QUERY_USER : QUERY_ME;
+  const variables = userParam ? { identifier: userParam, isUsername: true } : {};
+  const { loading, data, error } = useQuery(query, { variables, skip: !shouldFetch });
 
-  const user = data?.me || data?.user || {};
+  // Log any errors to the console
+  useEffect(() => {
+    if (error) {
+      console.error('GraphQL Query Error:', error);
+    }
+  }, [error]);
 
-  // Debug logging
-  console.log('User data:', user);
-  console.log('Accommodations:', user.accommodations);
+  // Use props if provided, otherwise use fetched data
+  const user = shouldFetch ? (data?.me || data?.user || {}) : {};
+  const accommodations = propAccommodations ?? user.accommodations ?? [];
+  const behaviorFrequencies = propFrequencies ?? user.behaviorFrequencies ?? [];
+  const behaviorDurations = propDurations ?? user.behaviorDurations ?? [];
+  const studentViewConfig = propConfig ?? user.studentViewConfig ?? {};
 
-  if (Auth.loggedIn() && Auth.getProfile().data.username === userParam) {
+  // Set the default selected chart if charts are available
+  useEffect(() => {
+    if (studentViewConfig?.selectedCharts?.length > 0) {
+      const firstChart = studentViewConfig.selectedCharts[0];
+      setSelectedChart(`${firstChart.type}-${firstChart.id}`);
+    } else {
+      setSelectedChart(null); // Reset if no charts are available
+    }
+  }, [studentViewConfig]);
+
+  if (!previewMode && Auth.loggedIn() && Auth.getProfile().data.username === userParam) {
     return <Navigate to="/studentAccommodations" />;
   }
 
-  if (loading) {
+  if (!previewMode && loading) {
     return <div>Loading...</div>;
   }
 
-  const handleImageError = (accommodationId, imagePath) => {
-    console.log('Image failed to load:', imagePath);
+  const handleImageError = (accommodationId) => {
     setImageErrors(prev => ({
       ...prev,
       [accommodationId]: true
     }));
   };
 
+  const renderSelectedChart = () => {
+    if (!selectedChart) return null;
+    const [type, id] = selectedChart.split('-');
+    if (type === 'frequency') {
+      const frequency = behaviorFrequencies?.find(f => f._id === id || f.id === id);
+      if (frequency) {
+        return (
+          <div className="frequency-chart-container">
+            <FrequencyCharts frequencies={[frequency]} interventions={[]} />
+          </div>
+        );
+      }
+    } else if (type === 'duration') {
+      const duration = behaviorDurations?.find(d => d._id === id || d.id === id);
+      if (duration) {
+        return (
+          <div className="duration-chart-container">
+            <DurationCharts durations={[duration]} interventions={[]} />
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
+  const hasVisibleCharts = studentViewConfig?.selectedCharts?.length > 0;
+  
   return (
-    <div className="accommodations-container">
-      <h2>Accommodations for {user.username}</h2>
-      
-      <div className="accommodations-grid">
-        {user.accommodations?.map(accommodation => {
-          console.log('Accommodation:', accommodation);
-          const imagePath = accommodation.image.startsWith('http')
-            ? accommodation.image
-            : (accommodation.image.startsWith('/') ? accommodation.image : `/${accommodation.image}`);
-          console.log('Image path:', imagePath);
-          
-          return (
-            <div 
-              key={accommodation._id}
-              className={`accommodation-card ${clickedImageId === accommodation._id ? 'highlighted' : ''}`}
-              onClick={() => {
-                setClickedImageId(accommodation._id);
-                setTimeout(() => setClickedImageId(null), 1000);
-              }}
-            >
-              {imageErrors[accommodation._id] ? (
-                <div className="fallback-image">
-                  <span>No Image Available</span>
-                </div>
-              ) : (
-                <img 
-                  src={imagePath}
-                  alt={accommodation.title}
-                  onError={() => handleImageError(accommodation._id, imagePath)}
-                />
-              )}
-              <div className="accommodation-info">
-                <h3>{accommodation.title}</h3>
-                <p>{accommodation.description}</p>
-              </div>
+    <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
+      <h2 className="dashboard-title">Welcome, {user.firstName || user.username || ''}</h2>
+      <div className={`main-content-grid ${hasVisibleCharts ? 'charts-visible' : 'no-charts'}`}>
+        {/* Accommodations Section */}
+        {studentViewConfig?.showAccommodations && (
+          <div className="accommodations-section">
+            <h3 className="section-title">Your Accommodations</h3>
+            <div className="accommodations-grid">
+              {accommodations?.map(accommodation => {
+                const imagePath = accommodation.image?.startsWith('http')
+                  ? accommodation.image
+                  : (accommodation.image?.startsWith('/') ? accommodation.image : `/${accommodation.image}`);
+                return (
+                  <div 
+                    key={accommodation._id || accommodation.id}
+                    className={`accommodation-card ${clickedImageId === (accommodation._id || accommodation.id) ? 'highlighted' : ''}`}
+                    onClick={() => {
+                      setClickedImageId(accommodation._id || accommodation.id);
+                      setTimeout(() => setClickedImageId(null), 1000);
+                    }}
+                  >
+                    {!imagePath || imageErrors[accommodation._id || accommodation.id] ? (
+                      <div className="fallback-image">
+                        <span>No Image</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={imagePath}
+                        alt={accommodation.title}
+                        onError={() => handleImageError(accommodation._id || accommodation.id)}
+                      />
+                    )}
+                    <div className="accommodation-info">
+                      <h4>{accommodation.title}</h4>
+                      <p>{accommodation.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        )}
+        {/* Charts Section */}
+        {hasVisibleCharts && (
+          <div className="charts-section">
+            <h3 className="section-title">Your Progress</h3>
+            <Select
+              value={selectedChart}
+              style={{ width: '100%', marginBottom: '20px' }}
+              onChange={value => setSelectedChart(value)}
+              placeholder="Select a chart to view"
+            >
+              {studentViewConfig.selectedCharts.map(chart => (
+                <Option key={`${chart.type}-${chart.id}`} value={`${chart.type}-${chart.id}`}>
+                  {chart.title} ({chart.type})
+                </Option>
+              ))}
+            </Select>
+            <div className="chart-display-area">
+              {renderSelectedChart()}
+            </div>
+          </div>
+        )}
       </div>
-
-      <style jsx>{`
-        .accommodations-container {
-          padding: 20px;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .accommodations-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 20px;
-          padding: 20px 0;
-        }
-
-        .accommodation-card {
-          background: white;
-          border-radius: 8px;
-          padding: 15px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .accommodation-card img {
-          width: 100%;
-          height: 200px;
-          object-fit: cover;
-          border-radius: 4px;
-          margin-bottom: 10px;
-        }
-
-        .fallback-image {
-          width: 100%;
-          height: 200px;
-          background-color: #f0f0f0;
-          border-radius: 4px;
-          margin-bottom: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #666;
-          font-size: 0.9em;
-        }
-
-        .accommodation-info {
-          text-align: center;
-        }
-
-        .accommodation-info h3 {
-          margin: 10px 0;
-          color: #333;
-        }
-
-        .accommodation-info p {
-          color: #666;
-          font-size: 0.9em;
-        }
-
-        .accommodation-card.highlighted {
-          animation: highlight 1s ease-out;
-        }
-
-        @keyframes highlight {
-          0% {
-            box-shadow: 0 0 0 0 rgba(138, 43, 226, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(138, 43, 226, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(138, 43, 226, 0);
-          }
-        }
-      `}</style>
+      {/* Message when nothing is configured to be shown */}
+      {!studentViewConfig?.showAccommodations && !hasVisibleCharts && (
+        <div className="empty-dashboard-message">
+          <p>Your dashboard is not yet configured.</p>
+          <p>Please contact your teacher for access to your accommodations and charts.</p>
+        </div>
+      )}
     </div>
   );
 };

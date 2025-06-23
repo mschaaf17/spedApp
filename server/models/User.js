@@ -8,16 +8,20 @@ const UserSchema = new Schema({
   isAdmin: {
     type: Boolean,
     required: true,
+    default: false,
   },
   username: {
     type: String,
     required: true,
+    unique: true,
   },
   firstName: {
     type: String,
+    default: '',
   },
   lastName: {
     type: String,
+    default: '',
   },
   password: {
     type: String,
@@ -25,6 +29,7 @@ const UserSchema = new Schema({
   },
   studentSchoolId: {
     type: String,
+    default: '',
   },
   students: [
     {
@@ -56,6 +61,26 @@ const UserSchema = new Schema({
       ref: "InterventionList",
     },
   ],
+  studentViewConfig: {
+    showAccommodations: {
+      type: Boolean,
+      default: false,
+    },
+    selectedCharts: [
+      {
+        type: {
+          type: String,
+          enum: ['frequency', 'duration'],
+        },
+        id: {
+          type: Schema.Types.ObjectId,
+        },
+        title: {
+          type: String,
+        },
+      },
+    ],
+  },
 });
 
 // set up pre-save middleware to create password
