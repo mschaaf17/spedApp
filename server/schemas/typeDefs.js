@@ -15,7 +15,7 @@ const typeDefs = gql`
     interventions: [InterventionList!]!
     studentViewConfig: StudentViewConfig
     breakSettings: BreakSettings
-    breakHistory: [String]
+    breakHistory: [BreakRecord]
   }
 
   type AccommodationList {
@@ -249,12 +249,19 @@ const typeDefs = gql`
     ): User
     updateBreakSettings(studentId: ID!, settings: BreakSettingsInput!): User
     takeBreak(studentId: ID!): User
+    endBreak(studentId: ID!): User
   }
 
   input SelectedChartInput {
     type: String!
     id: ID!
     title: String!
+  }
+
+  type BreakRecord {
+    startTime: String
+    endTime: String
+    duration: Float
   }
 `;
 

@@ -3,7 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { Select, Button, message } from 'antd';
 import { QUERY_ME, QUERY_USER } from '../../../utils/queries';
-import { TAKE_BREAK } from '../../../utils/mutations';
+import { TAKE_BREAK, END_BREAK } from '../../../utils/mutations';
 import Auth from '../../../utils/auth';
 import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts';
 import DurationCharts from '../../../components/DataTrackingMeasures/durationCharts';
@@ -34,6 +34,7 @@ const StudentAccommodations = ({
   const { loading, data, error, refetch } = useQuery(query, { variables, skip: !shouldFetch });
 
   const [takeBreak, { error: takeBreakError }] = useMutation(TAKE_BREAK);
+  const [endBreak, { error: endBreakError }] = useMutation(END_BREAK);
 
   // Log any errors to the console
   useEffect(() => {
@@ -43,7 +44,10 @@ const StudentAccommodations = ({
     if (takeBreakError) {
         message.error(takeBreakError.message);
     }
-  }, [error, takeBreakError]);
+    if (endBreakError) {
+        message.error(endBreakError.message);
+    }
+  }, [error, takeBreakError, endBreakError]);
 
   // Use props if provided, otherwise use fetched data
   const user = shouldFetch ? (data?.me || data?.user || {}) : {};
@@ -58,18 +62,17 @@ const StudentAccommodations = ({
     const breakHistory = user.breakHistory || [];
     const today = new Date().toDateString();
     
-    // Convert timestamp strings to Date objects and filter for today
+    // Filter for today's breaks using the new structure
     const todayBreaks = breakHistory.filter(breakRecord => {
-      // Handle both string timestamps and Date objects
       let breakDate;
       if (typeof breakRecord === 'string') {
-        // If it's a timestamp string, convert to Date
+        // Legacy format - timestamp string
         breakDate = new Date(parseInt(breakRecord));
       } else if (breakRecord.startTime) {
-        // If it's an object with startTime
+        // New format - object with startTime
         breakDate = new Date(breakRecord.startTime);
       } else {
-        // If it's already a Date object
+        // Fallback - assume it's a Date object
         breakDate = new Date(breakRecord);
       }
       return breakDate.toDateString() === today;
@@ -78,16 +81,6 @@ const StudentAccommodations = ({
     const todayCount = todayBreaks.length;
     const isUnlimited = breakSettings.dailyLimit === 0;
     const remaining = isUnlimited ? null : Math.max(0, breakSettings.dailyLimit - todayCount);
-    
-    console.log('Break count debug:', {
-      breakHistory: breakHistory.length,
-      todayBreaks: todayBreaks.length,
-      todayCount,
-      isUnlimited,
-      remaining,
-      breakHistoryData: breakHistory,
-      today: today
-    });
     
     return { todayCount, remaining, isUnlimited };
   };
@@ -180,6 +173,75 @@ const StudentAccommodations = ({
     }
   };
 
+  const handleEndBreak = async () => {
+    try {
+      const studentId = user._id;
+      if (!studentId) {
+        message.error("Student ID not found.");
+        return;
+      }
+      
+      await endBreak({ 
+        variables: { studentId },
+        update: (cache, { data }) => {
+          // Update the cache for the student's view
+          try {
+            const existingData = cache.readQuery({ 
+              query: QUERY_ME,
+              variables: {}
+            });
+            if (existingData?.me) {
+              cache.writeQuery({
+                query: QUERY_ME,
+                data: {
+                  ...existingData,
+                  me: {
+                    ...existingData.me,
+                    breakHistory: data.endBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_ME cache for end break:', error);
+          }
+
+          // Also update QUERY_USER cache if using that query
+          try {
+            const existingUserData = cache.readQuery({ 
+              query: QUERY_USER, 
+              variables: { identifier: user.username, isUsername: true } 
+            });
+            if (existingUserData?.user) {
+              cache.writeQuery({
+                query: QUERY_USER,
+                variables: { identifier: user.username, isUsername: true },
+                data: {
+                  ...existingUserData,
+                  user: {
+                    ...existingUserData.user,
+                    breakHistory: data.endBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_USER cache for end break:', error);
+          }
+        }
+      });
+      
+      setIsBreakTime(false);
+      // Refetch data to ensure break count is updated
+      if (shouldFetch) {
+        refetch();
+      }
+      message.success("Break ended!");
+    } catch (err) {
+      // Error message is handled by the useEffect hook
+    }
+  };
+
   const handleImageError = (accommodationId) => {
     setImageErrors(prev => ({
       ...prev,
@@ -217,7 +279,7 @@ const StudentAccommodations = ({
   return (
     <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
       {isBreakTime ? (
-        <BreakTimer duration={breakDuration} onFinish={() => setIsBreakTime(false)} />
+        <BreakTimer duration={breakDuration} onFinish={handleEndBreak} />
       ) : (
         <>
             <h2 className="dashboard-title">Welcome, {user.firstName || user.username || ''}</h2>

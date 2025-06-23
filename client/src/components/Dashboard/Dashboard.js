@@ -21,6 +21,10 @@ import StudentDataMeasuresTable from '../Tables/StudentSpecificTables/studentDat
 import Frequency from '../DataTrackingMeasures/frequency';
 import DurationTimers from '../DataTrackingMeasures/durationTimers';
 
+// Import break chart components
+import BreakFrequencyCharts from '../DataTrackingMeasures/breakFrequencyCharts';
+import BreakDurationCharts from '../DataTrackingMeasures/breakDurationCharts';
+
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
 
@@ -175,8 +179,16 @@ const Dashboard = () => {
     if (Array.isArray(value)) {
       // Multiple selections
       const behaviors = value.map(v => {
-        const [type, id] = v.split('-');
-        return { type, id };
+        // Handle break charts which don't follow the type-id format
+        if (v === 'break-frequency') {
+          return { type: 'break-frequency', id: 'break-frequency' };
+        } else if (v === 'break-duration') {
+          return { type: 'break-duration', id: 'break-duration' };
+        } else {
+          // Regular behavior format: type-id
+          const [type, id] = v.split('-');
+          return { type, id };
+        }
       });
       setSelectedBehavior(behaviors);
       
@@ -186,8 +198,15 @@ const Dashboard = () => {
       }
     } else if (value) {
       // Single selection (for backward compatibility)
-      const [type, id] = value.split('-');
-      setSelectedBehavior([{ type, id }]);
+      if (value === 'break-frequency') {
+        setSelectedBehavior([{ type: 'break-frequency', id: 'break-frequency' }]);
+      } else if (value === 'break-duration') {
+        setSelectedBehavior([{ type: 'break-duration', id: 'break-duration' }]);
+      } else {
+        // Regular behavior format: type-id
+        const [type, id] = value.split('-');
+        setSelectedBehavior([{ type, id }]);
+      }
       
       // Refetch student data to ensure we have the latest duration/frequency data
       if (selectedStudent?.username) {
@@ -304,7 +323,33 @@ const Dashboard = () => {
       data: f
     }));
     
-    return [...durations, ...frequencies];
+    // Add break charts if student has break settings enabled
+    const breakCharts = [];
+    if (studentData.breakSettings?.isEnabled) {
+      // Add break frequency chart
+      breakCharts.push({
+        id: 'break-frequency',
+        title: 'Break Frequency',
+        type: 'break-frequency',
+        data: {
+          breakHistory: studentData.breakHistory || [],
+          breakSettings: studentData.breakSettings
+        }
+      });
+      
+      // Add break duration chart
+      breakCharts.push({
+        id: 'break-duration',
+        title: 'Break Duration',
+        type: 'break-duration',
+        data: {
+          breakHistory: studentData.breakHistory || [],
+          breakSettings: studentData.breakSettings
+        }
+      });
+    }
+    
+    return [...durations, ...frequencies, ...breakCharts];
   };
 
   // Render the appropriate chart based on selected behavior
@@ -335,7 +380,7 @@ const Dashboard = () => {
             />
           </div>
         );
-      } else {
+      } else if (behavior.type === 'duration') {
         return (
           <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
             <DurationCharts 
@@ -344,7 +389,27 @@ const Dashboard = () => {
             />
           </div>
         );
+      } else if (behavior.type === 'break-frequency') {
+        return (
+          <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
+            <BreakFrequencyCharts 
+              breakHistory={behaviorData.data.breakHistory}
+              breakSettings={behaviorData.data.breakSettings}
+            />
+          </div>
+        );
+      } else if (behavior.type === 'break-duration') {
+        return (
+          <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
+            <BreakDurationCharts 
+              breakHistory={behaviorData.data.breakHistory}
+              breakSettings={behaviorData.data.breakSettings}
+            />
+          </div>
+        );
       }
+      
+      return null;
     });
   };
 
@@ -369,7 +434,20 @@ const Dashboard = () => {
         label: `${d.behaviorTitle} (Duration)`
       }));
     
-    return [...frequencies, ...durations];
+    // Add break charts if student has break settings enabled
+    const breakCharts = [];
+    if (studentData.breakSettings?.isEnabled) {
+      breakCharts.push({
+        value: 'break-frequency',
+        label: 'Break Frequency'
+      });
+      breakCharts.push({
+        value: 'break-duration',
+        label: 'Break Duration'
+      });
+    }
+    
+    return [...frequencies, ...durations, ...breakCharts];
   };
 
   // Get available interventions (filter out already assigned ones)
@@ -1153,13 +1231,24 @@ const Dashboard = () => {
                           placeholder="Select behaviors to view charts" 
                           style={{ width: 300 }}
                           onChange={handleBehaviorChange}
-                          value={selectedBehavior ? selectedBehavior.map(b => `${b.type}-${b.id}`) : undefined}
+                          value={selectedBehavior ? selectedBehavior.map(b => {
+                            // Handle break charts which don't follow the type-id format
+                            if (b.type === 'break-frequency') {
+                              return 'break-frequency';
+                            } else if (b.type === 'break-duration') {
+                              return 'break-duration';
+                            } else {
+                              return `${b.type}-${b.id}`;
+                            }
+                          }) : undefined}
                           allowClear
                         >
                           {getBehaviors().map(behavior => (
                             <Select.Option 
                               key={`${behavior.type}-${behavior.id}`} 
-                              value={`${behavior.type}-${behavior.id}`}
+                              value={behavior.type === 'break-frequency' || behavior.type === 'break-duration' 
+                                ? behavior.type 
+                                : `${behavior.type}-${behavior.id}`}
                             >
                               {behavior.title} ({behavior.type})
                             </Select.Option>

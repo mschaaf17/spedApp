@@ -123,7 +123,11 @@ query Me {
         delayDuration
         dailyLimit
       }
-      breakHistory
+      breakHistory {
+        startTime
+        endTime
+        duration
+      }
     }
     accommodations {
   _id
@@ -217,7 +221,11 @@ query Me {
       delayDuration
       dailyLimit
     }
-    breakHistory
+    breakHistory {
+      startTime
+      endTime
+      duration
+    }
   }
 }
 `;
@@ -355,7 +363,11 @@ query User($identifier: String!, $isUsername: Boolean!) {
         delayDuration
         dailyLimit
       }
-      breakHistory
+      breakHistory {
+        startTime
+        endTime
+        duration
+      }
     }
     accommodations {
   _id
@@ -455,7 +467,11 @@ query User($identifier: String!, $isUsername: Boolean!) {
       delayDuration
       dailyLimit
     }
-    breakHistory
+    breakHistory {
+      startTime
+      endTime
+      duration
+    }
   }
 }
 

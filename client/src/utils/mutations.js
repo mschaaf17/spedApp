@@ -504,7 +504,24 @@ export const TAKE_BREAK = gql`
   mutation takeBreak($studentId: ID!) {
     takeBreak(studentId: $studentId) {
       _id
-      breakHistory
+      breakHistory {
+        startTime
+        endTime
+        duration
+      }
+    }
+  }
+`;
+
+export const END_BREAK = gql`
+  mutation endBreak($studentId: ID!) {
+    endBreak(studentId: $studentId) {
+      _id
+      breakHistory {
+        startTime
+        endTime
+        duration
+      }
     }
   }
 `;

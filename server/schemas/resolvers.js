@@ -1362,7 +1362,10 @@ const resolvers = {
 
         // 2. Check daily limit
         if (dailyLimit > 0) {
-          const breaksToday = user.breakHistory.filter(bh => new Date(bh) >= startOfToday);
+          const breaksToday = user.breakHistory.filter(bh => {
+            const breakDate = new Date(bh.startTime);
+            return breakDate >= startOfToday;
+          });
           if (breaksToday.length >= dailyLimit) {
             throw new ApolloError("You have reached your daily break limit.", "LIMIT_REACHED");
           }
@@ -1370,7 +1373,7 @@ const resolvers = {
 
         // 3. Check delay between breaks
         if (hasDelay && user.breakHistory.length > 0) {
-          const lastBreak = new Date(user.breakHistory[user.breakHistory.length - 1]);
+          const lastBreak = new Date(user.breakHistory[user.breakHistory.length - 1].startTime);
           const minutesSinceLastBreak = (now.getTime() - lastBreak.getTime()) / (1000 * 60);
           if (minutesSinceLastBreak < delayDuration) {
             const waitTime = Math.ceil(delayDuration - minutesSinceLastBreak);
@@ -1378,22 +1381,81 @@ const resolvers = {
           }
         }
 
-        // All checks passed, add the break
-        user.breakHistory.push(now);
+        // All checks passed, add the break with startTime
+        user.breakHistory.push({
+          startTime: now,
+          endTime: null,
+          duration: null
+        });
         await user.save();
 
         return user;
 
       } catch (error) {
-        // Re-throw Apollo-specific errors, wrap others
-        if (error instanceof ApolloError || error instanceof AuthenticationError || error instanceof UserInputError) {
-          throw error;
+        console.error('Error in takeBreak:', error);
+        throw error;
+      }
+    },
+
+    endBreak: async (_, { studentId }, context) => {
+      // A student can only end their own break
+      if (!context.user || context.user._id.toString() !== studentId) {
+        throw new AuthenticationError("You are not authorized to perform this action.");
+      }
+
+      try {
+        const user = await User.findById(studentId);
+        if (!user) {
+          throw new UserInputError("Student not found");
         }
-        throw new ApolloError(
-          "Failed to take a break.",
-          "TAKE_BREAK_ERROR",
-          { originalError: error },
-        );
+
+        // Find the most recent break that hasn't ended yet and has a valid startTime
+        const currentBreak = user.breakHistory
+          .filter(bh => {
+            // Must have endTime as null (not ended)
+            if (bh.endTime) return false;
+            
+            // Must have a valid startTime
+            if (!bh.startTime) return false;
+            
+            const startTime = new Date(bh.startTime);
+            return !isNaN(startTime.getTime());
+          })
+          .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))[0];
+
+        if (!currentBreak) {
+          throw new ApolloError("No active break found to end.", "NO_ACTIVE_BREAK");
+        }
+
+        const now = new Date();
+        const startTime = new Date(currentBreak.startTime);
+        
+        // Validate that startTime is a valid date
+        if (isNaN(startTime.getTime())) {
+          throw new ApolloError("Invalid break start time.", "INVALID_START_TIME");
+        }
+
+        const durationInMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
+        
+        // Validate that duration calculation is valid
+        if (isNaN(durationInMinutes) || durationInMinutes < 0) {
+          console.warn('Invalid duration calculation:', { startTime, now, durationInMinutes });
+          // Set a default duration if calculation fails
+          currentBreak.duration = 0;
+        } else {
+          currentBreak.duration = Math.round(durationInMinutes * 100) / 100; // Round to 2 decimal places
+        }
+
+        // Update the break record
+        currentBreak.endTime = now;
+
+        await user.save();
+
+        return user;
+
+      } catch (error) {
+        console.error('Error in endBreak:', error);
+        throw error;
       }
     },
   },
@@ -1420,6 +1482,66 @@ const resolvers = {
         _id: { $in: parent.accommodations },
       });
       return accommodations ? accommodations : [];
+    },
+    breakHistory: async (parent, args, context) => {
+      // Filter out invalid break records and ensure all have valid startTime
+      if (!parent.breakHistory || !Array.isArray(parent.breakHistory)) {
+        return [];
+      }
+      
+      return parent.breakHistory
+        .filter(breakRecord => {
+          // Skip null/undefined records
+          if (!breakRecord) return false;
+          
+          // Handle different formats
+          if (typeof breakRecord === 'string') {
+            // Legacy format - timestamp string
+            const timestamp = parseInt(breakRecord);
+            return !isNaN(timestamp) && !isNaN(new Date(timestamp).getTime());
+          } else if (breakRecord instanceof Date) {
+            // Legacy format - Date object
+            return !isNaN(breakRecord.getTime());
+          } else if (typeof breakRecord === 'object' && breakRecord.startTime) {
+            // New format - object with startTime
+            const startTime = new Date(breakRecord.startTime);
+            return !isNaN(startTime.getTime());
+          }
+          
+          // Unknown format - skip it
+          return false;
+        })
+        .map(breakRecord => {
+          // Convert to consistent format
+          if (typeof breakRecord === 'string') {
+            // Legacy format - timestamp string
+            const startTime = new Date(parseInt(breakRecord));
+            return {
+              startTime: startTime.toISOString(),
+              endTime: null,
+              duration: null
+            };
+          } else if (breakRecord instanceof Date) {
+            // Legacy format - Date object
+            return {
+              startTime: breakRecord.toISOString(),
+              endTime: null,
+              duration: null
+            };
+          } else if (typeof breakRecord === 'object' && breakRecord.startTime) {
+            // New format - object with startTime
+            const startTime = new Date(breakRecord.startTime);
+            return {
+              startTime: startTime.toISOString(),
+              endTime: breakRecord.endTime ? new Date(breakRecord.endTime).toISOString() : null,
+              duration: breakRecord.duration || null
+            };
+          }
+          
+          // This shouldn't happen due to the filter above, but just in case
+          return null;
+        })
+        .filter(record => record !== null); // Remove any null records
     },
     behaviorFrequencies: async (parent, args, context) => {
       const behaviorFrequencies = await Frequency.find({

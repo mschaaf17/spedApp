@@ -89,7 +89,18 @@ const UserSchema = new Schema({
     dailyLimit: { type: Number, default: 0 }, // 0 for unlimited
   },
   breakHistory: [{
-    type: Date,
+    startTime: { type: Date, required: false },
+    endTime: { type: Date },
+    duration: { 
+      type: Number, 
+      min: 0,
+      validate: {
+        validator: function(v) {
+          return v === null || v === undefined || (!isNaN(v) && v >= 0);
+        },
+        message: 'Duration must be a non-negative number or null'
+      }
+    }, // duration in minutes
   }],
 });
 
