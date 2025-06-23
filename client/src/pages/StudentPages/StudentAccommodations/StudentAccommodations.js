@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import { useQuery } from '@apollo/client';
-import { Select } from 'antd';
+import { useQuery, useMutation } from '@apollo/client';
+import { Select, Button, message } from 'antd';
 import { QUERY_ME, QUERY_USER } from '../../../utils/queries';
+import { TAKE_BREAK } from '../../../utils/mutations';
 import Auth from '../../../utils/auth';
 import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts';
 import DurationCharts from '../../../components/DataTrackingMeasures/durationCharts';
+import BreakTimer from '../BreakTimer/BreakTimer';
 import './index.css';
 
 const { Option } = Select;
@@ -15,25 +17,33 @@ const StudentAccommodations = ({
   behaviorFrequencies: propFrequencies,
   behaviorDurations: propDurations,
   studentViewConfig: propConfig,
+  breakSettings: propBreakSettings,
   previewMode = false
 }) => {
   const { username: userParam } = useParams();
   const [clickedImageId, setClickedImageId] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
   const [selectedChart, setSelectedChart] = useState(null);
+  const [isBreakTime, setIsBreakTime] = useState(false);
+  const [breakDuration, setBreakDuration] = useState(0);
 
   // Only fetch if not in preview mode and no props provided
-  const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig;
+  const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig && !propBreakSettings;
   const query = userParam ? QUERY_USER : QUERY_ME;
   const variables = userParam ? { identifier: userParam, isUsername: true } : {};
   const { loading, data, error } = useQuery(query, { variables, skip: !shouldFetch });
+
+  const [takeBreak, { error: takeBreakError }] = useMutation(TAKE_BREAK);
 
   // Log any errors to the console
   useEffect(() => {
     if (error) {
       console.error('GraphQL Query Error:', error);
     }
-  }, [error]);
+    if (takeBreakError) {
+        message.error(takeBreakError.message);
+    }
+  }, [error, takeBreakError]);
 
   // Use props if provided, otherwise use fetched data
   const user = shouldFetch ? (data?.me || data?.user || {}) : {};
@@ -41,6 +51,7 @@ const StudentAccommodations = ({
   const behaviorFrequencies = propFrequencies ?? user.behaviorFrequencies ?? [];
   const behaviorDurations = propDurations ?? user.behaviorDurations ?? [];
   const studentViewConfig = propConfig ?? user.studentViewConfig ?? {};
+  const breakSettings = propBreakSettings ?? user.breakSettings ?? {};
 
   // Set the default selected chart if charts are available
   useEffect(() => {
@@ -59,6 +70,70 @@ const StudentAccommodations = ({
   if (!previewMode && loading) {
     return <div>Loading...</div>;
   }
+
+  const handleTakeBreak = async () => {
+    try {
+        const studentId = user._id;
+        if (!studentId) {
+            message.error("Student ID not found.");
+            return;
+        }
+      await takeBreak({ 
+        variables: { studentId },
+        update: (cache, { data }) => {
+          // Update the cache for the student's view
+          try {
+            const existingData = cache.readQuery({ 
+              query: QUERY_ME,
+              variables: {}
+            });
+            if (existingData?.me) {
+              cache.writeQuery({
+                query: QUERY_ME,
+                data: {
+                  ...existingData,
+                  me: {
+                    ...existingData.me,
+                    breakHistory: data.takeBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_ME cache for break:', error);
+          }
+
+          // Also update QUERY_USER cache if using that query
+          try {
+            const existingUserData = cache.readQuery({ 
+              query: QUERY_USER, 
+              variables: { identifier: user.username, isUsername: true } 
+            });
+            if (existingUserData?.user) {
+              cache.writeQuery({
+                query: QUERY_USER,
+                variables: { identifier: user.username, isUsername: true },
+                data: {
+                  ...existingUserData,
+                  user: {
+                    ...existingUserData.user,
+                    breakHistory: data.takeBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_USER cache for break:', error);
+          }
+        }
+      });
+      setBreakDuration(breakSettings.duration * 60); // convert minutes to seconds
+      setIsBreakTime(true);
+      message.success("Enjoy your break!");
+    } catch (err) {
+      // Error message is handled by the useEffect hook
+    }
+  };
 
   const handleImageError = (accommodationId) => {
     setImageErrors(prev => ({
@@ -96,75 +171,90 @@ const StudentAccommodations = ({
   
   return (
     <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
-      <h2 className="dashboard-title">Welcome, {user.firstName || user.username || ''}</h2>
-      <div className={`main-content-grid ${hasVisibleCharts ? 'charts-visible' : 'no-charts'}`}>
-        {/* Accommodations Section */}
-        {studentViewConfig?.showAccommodations && (
-          <div className="accommodations-section">
-            <h3 className="section-title">Your Accommodations</h3>
-            <div className="accommodations-grid">
-              {accommodations?.map(accommodation => {
-                const imagePath = accommodation.image?.startsWith('http')
-                  ? accommodation.image
-                  : (accommodation.image?.startsWith('/') ? accommodation.image : `/${accommodation.image}`);
-                return (
-                  <div 
-                    key={accommodation._id || accommodation.id}
-                    className={`accommodation-card ${clickedImageId === (accommodation._id || accommodation.id) ? 'highlighted' : ''}`}
-                    onClick={() => {
-                      setClickedImageId(accommodation._id || accommodation.id);
-                      setTimeout(() => setClickedImageId(null), 1000);
-                    }}
-                  >
-                    {!imagePath || imageErrors[accommodation._id || accommodation.id] ? (
-                      <div className="fallback-image">
-                        <span>No Image</span>
-                      </div>
-                    ) : (
-                      <img 
-                        src={imagePath}
-                        alt={accommodation.title}
-                        onError={() => handleImageError(accommodation._id || accommodation.id)}
-                      />
-                    )}
-                    <div className="accommodation-info">
-                      <h4>{accommodation.title}</h4>
-                      <p>{accommodation.description}</p>
+      {isBreakTime ? (
+        <BreakTimer duration={breakDuration} onFinish={() => setIsBreakTime(false)} />
+      ) : (
+        <>
+            <h2 className="dashboard-title">Welcome, {user.firstName || user.username || ''}</h2>
+
+            {breakSettings?.isEnabled && !previewMode && (
+                <div className="take-break-section">
+                <Button type="primary" size="large" onClick={handleTakeBreak}>
+                    Take a Break
+                </Button>
+                </div>
+            )}
+
+            <div className={`main-content-grid ${hasVisibleCharts ? 'charts-visible' : 'no-charts'}`}>
+                {/* Accommodations Section */}
+                {studentViewConfig?.showAccommodations && (
+                <div className="accommodations-section">
+                    <h3 className="section-title">Your Accommodations</h3>
+                    <div className="accommodations-grid">
+                    {accommodations?.map(accommodation => {
+                        const imagePath = accommodation.image?.startsWith('http')
+                          ? accommodation.image
+                          : (accommodation.image?.startsWith('/') ? accommodation.image : `/${accommodation.image}`);
+                        return (
+                          <div 
+                            key={accommodation._id || accommodation.id}
+                            className={`accommodation-card ${clickedImageId === (accommodation._id || accommodation.id) ? 'highlighted' : ''}`}
+                            onClick={() => {
+                              setClickedImageId(accommodation._id || accommodation.id);
+                              setTimeout(() => setClickedImageId(null), 1000);
+                            }}
+                          >
+                            {!imagePath || imageErrors[accommodation._id || accommodation.id] ? (
+                              <div className="fallback-image">
+                                <span>No Image</span>
+                              </div>
+                            ) : (
+                              <img 
+                                src={imagePath}
+                                alt={accommodation.title}
+                                onError={() => handleImageError(accommodation._id || accommodation.id)}
+                              />
+                            )}
+                            <div className="accommodation-info">
+                              <h4>{accommodation.title}</h4>
+                              <p>{accommodation.description}</p>
+                            </div>
+                          </div>
+                        );
+                    })}
                     </div>
-                  </div>
-                );
-              })}
+                </div>
+                )}
+                {/* Charts Section */}
+                {hasVisibleCharts && (
+                <div className="charts-section">
+                    <h3 className="section-title">Your Progress</h3>
+                    <Select
+                    value={selectedChart}
+                    style={{ width: '100%', marginBottom: '20px' }}
+                    onChange={value => setSelectedChart(value)}
+                    placeholder="Select a chart to view"
+                    >
+                    {studentViewConfig.selectedCharts.map(chart => (
+                        <Option key={`${chart.type}-${chart.id}`} value={`${chart.type}-${chart.id}`}>
+                        {chart.title} ({chart.type})
+                        </Option>
+                    ))}
+                    </Select>
+                    <div className="chart-display-area">
+                    {renderSelectedChart()}
+                    </div>
+                </div>
+                )}
             </div>
-          </div>
-        )}
-        {/* Charts Section */}
-        {hasVisibleCharts && (
-          <div className="charts-section">
-            <h3 className="section-title">Your Progress</h3>
-            <Select
-              value={selectedChart}
-              style={{ width: '100%', marginBottom: '20px' }}
-              onChange={value => setSelectedChart(value)}
-              placeholder="Select a chart to view"
-            >
-              {studentViewConfig.selectedCharts.map(chart => (
-                <Option key={`${chart.type}-${chart.id}`} value={`${chart.type}-${chart.id}`}>
-                  {chart.title} ({chart.type})
-                </Option>
-              ))}
-            </Select>
-            <div className="chart-display-area">
-              {renderSelectedChart()}
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Message when nothing is configured to be shown */}
-      {!studentViewConfig?.showAccommodations && !hasVisibleCharts && (
-        <div className="empty-dashboard-message">
-          <p>Your dashboard is not yet configured.</p>
-          <p>Please contact your teacher for access to your accommodations and charts.</p>
-        </div>
+            {/* Message when nothing is configured to be shown */}
+            {!studentViewConfig?.showAccommodations && !hasVisibleCharts && (
+                <div className="empty-dashboard-message">
+                <p>Your dashboard is not yet configured.</p>
+                <p>Please contact your teacher for access to your accommodations and charts.</p>
+                </div>
+            )}
+        </>
       )}
     </div>
   );

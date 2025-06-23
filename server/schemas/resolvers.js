@@ -234,6 +234,7 @@ const addDurationToTrackForStudent= async (_, { durationId, studentId }, context
 const resolvers = {
   Query: {
     me: async (parent, args, context) => {
+      console.log('ME resolver called with context user:', context.user);
       if (context.user) {
         console.log('Context user found:', context.user);
         try {
@@ -251,7 +252,13 @@ const resolvers = {
             throw new AuthenticationError("User associated with this token no longer exists.");
           }
           
-          console.log('User data from DB:', userData);
+          console.log('User data from DB:', {
+            _id: userData._id,
+            username: userData.username,
+            isAdmin: userData.isAdmin,
+            firstName: userData.firstName,
+            lastName: userData.lastName
+          });
           return userData;
 
         } catch (err) {
@@ -1288,6 +1295,103 @@ const resolvers = {
         throw new ApolloError(
           "Failed to update student view configuration",
           "UPDATE_STUDENT_VIEW_CONFIG_ERROR",
+          { originalError: error },
+        );
+      }
+    },
+    updateBreakSettings: async (_, { studentId, settings }, context) => {
+      console.log('updateBreakSettings called with:', { studentId, settings });
+      
+      if (!context.user || !context.user.isAdmin) {
+        console.log('Authentication failed - user:', context.user);
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const user = await User.findById(studentId);
+        if (!user) {
+          console.log('Student not found with ID:', studentId);
+          throw new UserInputError("Student not found");
+        }
+
+        console.log('Current breakSettings:', user.breakSettings);
+        console.log('New settings to apply:', settings);
+
+        // Update the settings
+        user.breakSettings = {
+          ...user.breakSettings,
+          ...settings
+        };
+        
+        console.log('Updated breakSettings:', user.breakSettings);
+        
+        const updatedUser = await user.save();
+        console.log('User saved successfully');
+
+        return updatedUser;
+      } catch (error) {
+        console.error('Error in updateBreakSettings:', error);
+        throw new ApolloError(
+          "Failed to update break settings",
+          "UPDATE_BREAK_SETTINGS_ERROR",
+          { originalError: error },
+        );
+      }
+    },
+    takeBreak: async (_, { studentId }, context) => {
+      // A student can only initiate their own break
+      if (!context.user || context.user._id.toString() !== studentId) {
+        throw new AuthenticationError("You are not authorized to perform this action.");
+      }
+
+      try {
+        const user = await User.findById(studentId);
+        if (!user) {
+          throw new UserInputError("Student not found");
+        }
+
+        const { isEnabled, dailyLimit, hasDelay, delayDuration } = user.breakSettings;
+
+        // 1. Check if the feature is enabled
+        if (!isEnabled) {
+          throw new ApolloError("Breaks are not enabled for this student.", "BREAKS_DISABLED");
+        }
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // 2. Check daily limit
+        if (dailyLimit > 0) {
+          const breaksToday = user.breakHistory.filter(bh => new Date(bh) >= startOfToday);
+          if (breaksToday.length >= dailyLimit) {
+            throw new ApolloError("You have reached your daily break limit.", "LIMIT_REACHED");
+          }
+        }
+
+        // 3. Check delay between breaks
+        if (hasDelay && user.breakHistory.length > 0) {
+          const lastBreak = new Date(user.breakHistory[user.breakHistory.length - 1]);
+          const minutesSinceLastBreak = (now.getTime() - lastBreak.getTime()) / (1000 * 60);
+          if (minutesSinceLastBreak < delayDuration) {
+            const waitTime = Math.ceil(delayDuration - minutesSinceLastBreak);
+            throw new ApolloError(`You must wait another ${waitTime} minute(s) before taking another break.`, "DELAY_ACTIVE");
+          }
+        }
+
+        // All checks passed, add the break
+        user.breakHistory.push(now);
+        await user.save();
+
+        return user;
+
+      } catch (error) {
+        // Re-throw Apollo-specific errors, wrap others
+        if (error instanceof ApolloError || error instanceof AuthenticationError || error instanceof UserInputError) {
+          throw error;
+        }
+        throw new ApolloError(
+          "Failed to take a break.",
+          "TAKE_BREAK_ERROR",
           { originalError: error },
         );
       }

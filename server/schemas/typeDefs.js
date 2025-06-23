@@ -14,6 +14,8 @@ const typeDefs = gql`
     behaviorDurations: [Duration!]!
     interventions: [InterventionList!]!
     studentViewConfig: StudentViewConfig
+    breakSettings: BreakSettings
+    breakHistory: [String]
   }
 
   type AccommodationList {
@@ -27,6 +29,12 @@ const typeDefs = gql`
     isActive: Boolean!
     createdAt: String
     templateId: AccommodationList
+    updateStudentViewConfig(
+      studentId: ID!
+      showAccommodations: Boolean!
+      selectedCharts: [SelectedChartInput!]!
+    ): User
+    updateBreakSettings(studentId: ID!, settings: BreakSettingsInput!): User
   }
   type DailyCounts {
     date: String!
@@ -116,6 +124,22 @@ const typeDefs = gql`
   type StudentViewConfig {
     showAccommodations: Boolean!
     selectedCharts: [SelectedChart!]!
+  }
+
+  type BreakSettings {
+    isEnabled: Boolean
+    duration: Int
+    hasDelay: Boolean
+    delayDuration: Int
+    dailyLimit: Int
+  }
+
+  input BreakSettingsInput {
+    isEnabled: Boolean
+    duration: Int
+    hasDelay: Boolean
+    delayDuration: Int
+    dailyLimit: Int
   }
 
   type Query {
@@ -223,6 +247,8 @@ const typeDefs = gql`
       showAccommodations: Boolean!
       selectedCharts: [SelectedChartInput!]!
     ): User
+    updateBreakSettings(studentId: ID!, settings: BreakSettingsInput!): User
+    takeBreak(studentId: ID!): User
   }
 
   input SelectedChartInput {

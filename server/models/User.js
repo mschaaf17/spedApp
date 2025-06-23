@@ -81,6 +81,16 @@ const UserSchema = new Schema({
       },
     ],
   },
+  breakSettings: {
+    isEnabled: { type: Boolean, default: false },
+    duration: { type: Number, default: 5 }, // in minutes
+    hasDelay: { type: Boolean, default: false },
+    delayDuration: { type: Number, default: 15 }, // in minutes
+    dailyLimit: { type: Number, default: 0 }, // 0 for unlimited
+  },
+  breakHistory: [{
+    type: Date,
+  }],
 });
 
 // set up pre-save middleware to create password

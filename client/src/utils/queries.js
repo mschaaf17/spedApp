@@ -116,6 +116,14 @@ query Me {
           title
         }
       }
+      breakSettings {
+        isEnabled
+        duration
+        hasDelay
+        delayDuration
+        dailyLimit
+      }
+      breakHistory
     }
     accommodations {
   _id
@@ -202,6 +210,14 @@ query Me {
         title
       }
     }
+    breakSettings {
+      isEnabled
+      duration
+      hasDelay
+      delayDuration
+      dailyLimit
+    }
+    breakHistory
   }
 }
 `;
@@ -332,6 +348,14 @@ query User($identifier: String!, $isUsername: Boolean!) {
           title
         }
       }
+      breakSettings {
+        isEnabled
+        duration
+        hasDelay
+        delayDuration
+        dailyLimit
+      }
+      breakHistory
     }
     accommodations {
   _id
@@ -424,6 +448,14 @@ query User($identifier: String!, $isUsername: Boolean!) {
         title
       }
     }
+    breakSettings {
+      isEnabled
+      duration
+      hasDelay
+      delayDuration
+      dailyLimit
+    }
+    breakHistory
   }
 }
 

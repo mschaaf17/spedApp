@@ -1,0 +1,36 @@
+.break-timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    padding: 40px;
+    background-color: #f0f8ff; /* AliceBlue */
+    border-radius: 12px;
+    text-align: center;
+  }
+  
+  .break-title {
+    font-size: 2.5rem;
+    color: #005f73; /* A deep teal */
+    margin-bottom: 20px;
+  }
+  
+  .timer-display {
+    font-size: 6rem;
+    font-weight: bold;
+    color: #0a9396; /* A brighter teal */
+    background-color: #e9f5f5;
+    padding: 20px 40px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .break-message {
+    font-size: 1.2rem;
+    color: #005f73;
+    margin-bottom: 30px;
+  } 

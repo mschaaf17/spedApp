@@ -9,6 +9,7 @@
   padding: 10px;
   background-color: transparent;
   min-height: auto;
+  border: 2px dashed #ccc;
 }
 
 .preview-mode .dashboard-title {
@@ -136,6 +137,11 @@
   font-size: 2em;
 }
 
+.take-break-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
 .main-content-grid {
   display: grid;
   gap: 20px;
@@ -251,4 +257,13 @@
 
 .empty-dashboard-message p:last-child {
   font-size: 1em;
+}
+
+.empty-dashboard-message p {
+  margin: 5px 0;
+}
+
+.take-break-section {
+  text-align: center;
+  margin: 20px 0;
 }

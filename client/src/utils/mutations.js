@@ -484,3 +484,27 @@ mutation UpdateStudentViewConfig($studentId: ID!, $showAccommodations: Boolean!,
   }
 }
 `;
+
+export const UPDATE_BREAK_SETTINGS = gql`
+  mutation UpdateBreakSettings($studentId: ID!, $settings: BreakSettingsInput!) {
+    updateBreakSettings(studentId: $studentId, settings: $settings) {
+      _id
+      breakSettings {
+        isEnabled
+        duration
+        hasDelay
+        delayDuration
+        dailyLimit
+      }
+    }
+  }
+`;
+
+export const TAKE_BREAK = gql`
+  mutation takeBreak($studentId: ID!) {
+    takeBreak(studentId: $studentId) {
+      _id
+      breakHistory
+    }
+  }
+`;
