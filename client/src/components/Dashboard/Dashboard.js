@@ -638,7 +638,7 @@ const Dashboard = () => {
     // Create a clean selectedCharts array without GraphQL-specific properties
     const cleanSelectedCharts = selectedCharts.map(chart => ({
       type: chart.type,
-      id: chart.type.startsWith('break-') ? null : chart.id, // Send null for break charts
+      id: chart.id, // Always use the id, even for break charts
       title: chart.title
     }));
 
@@ -1413,6 +1413,7 @@ const Dashboard = () => {
                             checked={selectedCharts.some(chart => 
                               chart.type === behavior.type && chart.id === behavior.id
                             )}
+                            disabled={behavior.type.startsWith('break-') && !showBreaks}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 setSelectedCharts([...selectedCharts, { type: behavior.type, id: behavior.id, title: behavior.title }]);
