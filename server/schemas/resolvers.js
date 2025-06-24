@@ -1272,6 +1272,11 @@ const resolvers = {
       }
 
       try {
+        console.log('updateStudentViewConfig called with:');
+        console.log('studentId:', studentId);
+        console.log('showAccommodations:', showAccommodations);
+        console.log('selectedCharts:', JSON.stringify(selectedCharts, null, 2));
+
         const updatedUser = await User.findByIdAndUpdate(
           studentId,
           {
@@ -1290,8 +1295,16 @@ const resolvers = {
           throw new UserInputError("Student not found");
         }
 
+        console.log('Successfully updated user:', updatedUser._id);
         return updatedUser;
       } catch (error) {
+        console.error('Error in updateStudentViewConfig:', error);
+        if (error && error.errors) {
+          // Mongoose validation errors
+          Object.keys(error.errors).forEach(key => {
+            console.error(`Validation error for ${key}:`, error.errors[key].message);
+          });
+        }
         throw new ApolloError(
           "Failed to update student view configuration",
           "UPDATE_STUDENT_VIEW_CONFIG_ERROR",

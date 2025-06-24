@@ -1,6 +1,6 @@
- import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect} from 'react'
 // import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar';
- import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 // import Duration from '../../../components/DataTrackingMeasures/duration'
 // import ABC from '../../../components/DataTrackingMeasures/ABC'
 // import Frequency from '../../../components/DataTrackingMeasures/frequency'
@@ -422,6 +422,11 @@ function calculateAimline(frequencyData, goalValue, targetDateStr, interventionS
     
     // Calculate aimline value for this day
     const aimlineValue = startValue + ((goalValue - startValue) / (relevantData.length - 1)) * daysFromStart;
+    
+    if (!startDate || !currentDate) {
+      console.warn('Missing start or end date:', startDate, currentDate);
+      continue;
+    }
     
     aimlinePoints.push({
       date: sorted[i].date,

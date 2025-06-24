@@ -70,10 +70,11 @@ const UserSchema = new Schema({
       {
         type: {
           type: String,
-          enum: ['frequency', 'duration'],
+          enum: ['frequency', 'duration', 'break-frequency', 'break-duration'],
         },
         id: {
-          type: Schema.Types.ObjectId,
+          type: Schema.Types.Mixed,
+          required: false,
         },
         title: {
           type: String,

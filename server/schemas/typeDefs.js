@@ -117,7 +117,7 @@ const typeDefs = gql`
 
   type SelectedChart {
     type: String!
-    id: ID!
+    id: ID
     title: String!
   }
 
@@ -254,7 +254,7 @@ const typeDefs = gql`
 
   input SelectedChartInput {
     type: String!
-    id: ID!
+    id: ID
     title: String!
   }
 

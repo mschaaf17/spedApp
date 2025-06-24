@@ -7,6 +7,8 @@ import { TAKE_BREAK, END_BREAK } from '../../../utils/mutations';
 import Auth from '../../../utils/auth';
 import FrequencyCharts from '../../../components/DataTrackingMeasures/frequencyCharts';
 import DurationCharts from '../../../components/DataTrackingMeasures/durationCharts';
+import BreakFrequencyCharts from '../../../components/DataTrackingMeasures/breakFrequencyCharts';
+import BreakDurationCharts from '../../../components/DataTrackingMeasures/breakDurationCharts';
 import BreakTimer from '../BreakTimer/BreakTimer';
 import './index.css';
 
@@ -91,7 +93,9 @@ const StudentAccommodations = ({
   useEffect(() => {
     if (studentViewConfig?.selectedCharts?.length > 0) {
       const firstChart = studentViewConfig.selectedCharts[0];
-      setSelectedChart(`${firstChart.type}-${firstChart.id}`);
+      // Use the type-id format for all charts (break charts now have unique ids)
+      const chartValue = `${firstChart.type}-${firstChart.id}`;
+      setSelectedChart(chartValue);
     } else {
       setSelectedChart(null); // Reset if no charts are available
     }
@@ -249,33 +253,118 @@ const StudentAccommodations = ({
     }));
   };
 
+  const getBehaviors = () => {
+    // Use props if provided, otherwise use fetched data
+    const studentData = user;
+
+    const durations = (studentData.behaviorDurations || []).map(d => ({
+      id: d._id,
+      title: d.behaviorTitle,
+      type: 'duration',
+      data: d
+    }));
+
+    const frequencies = (studentData.behaviorFrequencies || []).map(f => ({
+      id: f._id,
+      title: f.behaviorTitle,
+      type: 'frequency',
+      data: f
+    }));
+
+    // Add break charts if student has break settings enabled
+    const breakCharts = [];
+    if (studentData.breakSettings?.isEnabled) {
+      breakCharts.push({
+        id: 'break-frequency',
+        title: 'Break Frequency',
+        type: 'break-frequency',
+        data: {
+          breakHistory: studentData.breakHistory || [],
+          breakSettings: studentData.breakSettings
+        }
+      });
+      breakCharts.push({
+        id: 'break-duration',
+        title: 'Break Duration',
+        type: 'break-duration',
+        data: {
+          breakHistory: studentData.breakHistory || [],
+          breakSettings: studentData.breakSettings
+        }
+      });
+    }
+
+    return [...durations, ...frequencies, ...breakCharts];
+  };
+
+  // Build a map of all available behaviors for easy lookup
+  const allBehaviors = getBehaviors();
+  const behaviorMap = {};
+  allBehaviors.forEach(b => {
+    behaviorMap[`${b.type}-${b.id}`] = b;
+  });
+
+  // Get only the behaviors that are configured for this student
+  const getConfiguredBehaviors = () => {
+    if (!studentViewConfig?.selectedCharts) return [];
+    
+    return studentViewConfig.selectedCharts
+      .map(chart => {
+        const chartKey = `${chart.type}-${chart.id}`;
+        return behaviorMap[chartKey];
+      })
+      .filter(Boolean); // Remove any undefined entries
+  };
+
   const renderSelectedChart = () => {
     if (!selectedChart) return null;
-    const [type, id] = selectedChart.split('-');
-    if (type === 'frequency') {
-      const frequency = behaviorFrequencies?.find(f => f._id === id || f.id === id);
-      if (frequency) {
-        return (
-          <div className="frequency-chart-container">
-            <FrequencyCharts frequencies={[frequency]} interventions={[]} />
-          </div>
-        );
-      }
-    } else if (type === 'duration') {
-      const duration = behaviorDurations?.find(d => d._id === id || d.id === id);
-      if (duration) {
-        return (
-          <div className="duration-chart-container">
-            <DurationCharts durations={[duration]} interventions={[]} />
-          </div>
-        );
-      }
+    
+    const behavior = behaviorMap[selectedChart];
+    if (!behavior) return null;
+
+    if (behavior.type === 'frequency') {
+      return (
+        <div className="frequency-chart-container">
+          <FrequencyCharts frequencies={[behavior.data]} interventions={[]} />
+        </div>
+      );
+    } else if (behavior.type === 'duration') {
+      return (
+        <div className="duration-chart-container">
+          <DurationCharts durations={[behavior.data]} interventions={[]} />
+        </div>
+      );
+    } else if (behavior.type === 'break-frequency') {
+      return (
+        <div className="break-frequency-chart-container">
+          <BreakFrequencyCharts
+            breakHistory={behavior.data.breakHistory}
+            breakSettings={behavior.data.breakSettings}
+          />
+        </div>
+      );
+    } else if (behavior.type === 'break-duration') {
+      return (
+        <div className="break-duration-chart-container">
+          <BreakDurationCharts
+            breakHistory={behavior.data.breakHistory}
+            breakSettings={behavior.data.breakSettings}
+          />
+        </div>
+      );
     }
     return null;
   };
 
   const hasVisibleCharts = studentViewConfig?.selectedCharts?.length > 0;
   
+  console.log('Student breakHistory:', user.breakHistory);
+  console.log('Student breakSettings:', breakSettings);
+  console.log('Student view config:', studentViewConfig);
+  console.log('All behaviors:', allBehaviors);
+  console.log('Configured behaviors:', getConfiguredBehaviors());
+  console.log('Behavior map keys:', Object.keys(behaviorMap));
+
   return (
     <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
       {isBreakTime ? (
@@ -346,16 +435,20 @@ const StudentAccommodations = ({
                 <div className="charts-section">
                     <h3 className="section-title">Your Progress</h3>
                     <Select
-                    value={selectedChart}
-                    style={{ width: '100%', marginBottom: '20px' }}
-                    onChange={value => setSelectedChart(value)}
-                    placeholder="Select a chart to view"
+                      value={selectedChart}
+                      optionLabelProp="label"
+                      style={{ width: '100%', marginBottom: '20px' }}
+                      onChange={value => setSelectedChart(value)}
+                      placeholder="Select a chart to view"
                     >
-                    {studentViewConfig.selectedCharts.map(chart => (
-                        <Option key={`${chart.type}-${chart.id}`} value={`${chart.type}-${chart.id}`}>
-                        {chart.title} ({chart.type})
-                        </Option>
-                    ))}
+                      {getConfiguredBehaviors().map(behavior => {
+                        const chartKey = `${behavior.type}-${behavior.id}`;
+                        return (
+                          <Option key={chartKey} value={chartKey} label={`${behavior.title} (${behavior.type})`}>
+                            {behavior.title} ({behavior.type})
+                          </Option>
+                        );
+                      })}
                     </Select>
                     <div className="chart-display-area">
                     {renderSelectedChart()}
