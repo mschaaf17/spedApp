@@ -448,7 +448,7 @@ const StudentAccommodations = ({
                   <div className="charts-section">
                     <h3 className="section-title">Your Progress</h3>
                     <Select
-                      value={selectedChart}
+                      value={getConfiguredBehaviors().some(b => `${b.type}-${b.id}` === selectedChart) ? selectedChart : undefined}
                       style={{ width: '100%', marginBottom: '20px' }}
                       onChange={value => setSelectedChart(value)}
                       placeholder="Select a chart to view"
@@ -456,7 +456,6 @@ const StudentAccommodations = ({
                     >
                       {getConfiguredBehaviors().map(behavior => {
                         const chartKey = `${behavior.type}-${behavior.id}`;
-                        console.log('Dropdown behavior:', behavior);
                         const label = `${behavior.title} (${behavior.type})`;
                         return (
                           <Option key={chartKey} value={chartKey} label={label}>
