@@ -20,6 +20,7 @@ const StudentAccommodations = ({
   behaviorDurations: propDurations,
   studentViewConfig: propConfig,
   breakSettings: propBreakSettings,
+  breakHistory: propBreakHistory,
   previewMode = false
 }) => {
   const { username: userParam } = useParams();
@@ -58,6 +59,7 @@ const StudentAccommodations = ({
   const behaviorDurations = propDurations ?? user.behaviorDurations ?? [];
   const studentViewConfig = propConfig ?? user.studentViewConfig ?? {};
   const breakSettings = propBreakSettings ?? user.breakSettings ?? {};
+  const breakHistory = propBreakHistory ?? user.breakHistory ?? [];
 
   // Calculate break count and remaining breaks
   const calculateBreakInfo = () => {
@@ -93,11 +95,10 @@ const StudentAccommodations = ({
   useEffect(() => {
     if (studentViewConfig?.selectedCharts?.length > 0) {
       const firstChart = studentViewConfig.selectedCharts[0];
-      // Use the type-id format for all charts (break charts now have unique ids)
       const chartValue = `${firstChart.type}-${firstChart.id}`;
       setSelectedChart(chartValue);
     } else {
-      setSelectedChart(null); // Reset if no charts are available
+      setSelectedChart(null);
     }
   }, [studentViewConfig]);
 
@@ -255,7 +256,12 @@ const StudentAccommodations = ({
 
   const getBehaviors = () => {
     // Use props if provided, otherwise use fetched data
-    const studentData = user;
+    const studentData = {
+      behaviorFrequencies: propFrequencies ?? user.behaviorFrequencies ?? [],
+      behaviorDurations: propDurations ?? user.behaviorDurations ?? [],
+      breakSettings: propBreakSettings ?? user.breakSettings ?? {},
+      breakHistory: propBreakHistory ?? user.breakHistory ?? [],
+    };
 
     const durations = (studentData.behaviorDurations || []).map(d => ({
       id: d._id,
@@ -364,6 +370,13 @@ const StudentAccommodations = ({
   console.log('All behaviors:', allBehaviors);
   console.log('Configured behaviors:', getConfiguredBehaviors());
   console.log('Behavior map keys:', Object.keys(behaviorMap));
+  console.log('props:', {
+    propFrequencies,
+    propDurations,
+    propBreakSettings,
+    propConfig
+  });
+  console.log('user:', user);
 
   return (
     <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
@@ -432,28 +445,30 @@ const StudentAccommodations = ({
                 )}
                 {/* Charts Section */}
                 {hasVisibleCharts && (
-                <div className="charts-section">
+                  <div className="charts-section">
                     <h3 className="section-title">Your Progress</h3>
                     <Select
                       value={selectedChart}
-                      optionLabelProp="label"
                       style={{ width: '100%', marginBottom: '20px' }}
                       onChange={value => setSelectedChart(value)}
                       placeholder="Select a chart to view"
+                      optionLabelProp="label"
                     >
                       {getConfiguredBehaviors().map(behavior => {
                         const chartKey = `${behavior.type}-${behavior.id}`;
+                        console.log('Dropdown behavior:', behavior);
+                        const label = `${behavior.title} (${behavior.type})`;
                         return (
-                          <Option key={chartKey} value={chartKey} label={`${behavior.title} (${behavior.type})`}>
-                            {behavior.title} ({behavior.type})
+                          <Option key={chartKey} value={chartKey} label={label}>
+                            {label}
                           </Option>
                         );
                       })}
                     </Select>
                     <div className="chart-display-area">
-                    {renderSelectedChart()}
+                      {renderSelectedChart()}
                     </div>
-                </div>
+                  </div>
                 )}
             </div>
             {/* Message when nothing is configured to be shown */}

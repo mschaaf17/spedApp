@@ -638,7 +638,7 @@ const Dashboard = () => {
     // Create a clean selectedCharts array without GraphQL-specific properties
     const cleanSelectedCharts = selectedCharts.map(chart => ({
       type: chart.type,
-      id: chart.id, // <-- Always use the id, even for break charts
+      id: chart.type.startsWith('break-') ? null : chart.id, // Send null for break charts
       title: chart.title
     }));
 
@@ -1410,26 +1410,16 @@ const Dashboard = () => {
                           </div>
                           <input
                             type="checkbox"
-                            checked={selectedCharts.some(chart => {
-                              // For break charts, only check the type since id is null
-                              if (behavior.type.startsWith('break-')) {
-                                return chart.type === behavior.type;
-                              }
-                              // For regular charts, check both type and id
-                              return chart.type === behavior.type && chart.id === behavior.id;
-                            })}
+                            checked={selectedCharts.some(chart => 
+                              chart.type === behavior.type && chart.id === behavior.id
+                            )}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 setSelectedCharts([...selectedCharts, { type: behavior.type, id: behavior.id, title: behavior.title }]);
                               } else {
-                                setSelectedCharts(selectedCharts.filter(chart => {
-                                  // For break charts, only check the type since id is null
-                                  if (behavior.type.startsWith('break-')) {
-                                    return chart.type !== behavior.type;
-                                  }
-                                  // For regular charts, check both type and id
-                                  return !(chart.type === behavior.type && chart.id === behavior.id);
-                                }));
+                                setSelectedCharts(selectedCharts.filter(chart => 
+                                  !(chart.type === behavior.type && chart.id === behavior.id)
+                                ));
                               }
                             }}
                             style={{ transform: 'scale(1.1)' }}
@@ -1470,6 +1460,7 @@ const Dashboard = () => {
                           showAccommodations,
                           selectedCharts
                         }}
+                        breakHistory={selectedStudentData?.user?.breakHistory}
                         breakSettings={showBreaks ? {
                           isEnabled: true,
                           duration: breakSettings.duration,
