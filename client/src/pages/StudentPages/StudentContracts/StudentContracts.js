@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation } from '@apollo/client';
+import { QUERY_ME } from '../../../utils/queries';
+import { QUERY_CONTRACTS } from '../../../utils/queries';
+import { UPDATE_CONTRACT_ENTRY } from '../../../utils/mutations';
+import './index.css';
+
+const StudentContracts = () => {
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState(null);
+
+  const { data: userData } = useQuery(QUERY_ME);
+  const { data: contractsData, refetch: refetchContracts } = useQuery(QUERY_CONTRACTS, {
+    variables: { studentId: userData?.me?._id },
+    skip: !userData?.me?._id
+  });
+
+  const [updateContractEntry] = useMutation(UPDATE_CONTRACT_ENTRY);
+
+  const contracts = contractsData?.contracts || [];
+  const student = userData?.me;
+
+  const handleUpdateEntry = async (contractId, date, time, value, note = '') => {
+    try {
+      await updateContractEntry({
+        variables: {
+          input: {
+            contractId,
+            date,
+            time,
+            value,
+            note
+          }
+        }
+      });
+      refetchContracts();
+    } catch (error) {
+      console.error('Error updating contract entry:', error);
+    }
+  };
+
+  const handleScoreSelect = (contract, time, value) => {
+    if (value !== 'smiley' && value !== '5') {
+      setCurrentEntry({ contract, time, value });
+      setShowNoteModal(true);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      handleUpdateEntry(contract._id, today, time, value);
+    }
+  };
+
+  const handleNoteSubmit = () => {
+    if (currentEntry) {
+      const note = document.getElementById('note-input').value;
+      const today = new Date().toISOString().split('T')[0];
+      handleUpdateEntry(currentEntry.contract._id, today, currentEntry.time, currentEntry.value, note);
+      setShowNoteModal(false);
+      setCurrentEntry(null);
+    }
+  };
+
+  const getSmileyValue = (value) => {
+    switch (value) {
+      case 'smiley': return '😊';
+      case 'neutral': return '😐';
+      case 'sad': return '😞';
+      default: return '';
+    }
+  };
+
+  if (!student) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  return (
+    <div className="student-contracts-container">
+      <h2>My Behavior Contracts</h2>
+      
+      {contracts.length === 0 ? (
+        <div className="no-contracts">
+          <p>You don't have any behavior contracts assigned yet.</p>
+          <p>Your teacher will create contracts for you when needed.</p>
+        </div>
+      ) : (
+        <div className="contracts-list">
+          {contracts.map((contract) => (
+            <div key={contract._id} className="contract-card">
+              <div className="contract-header">
+                <h3>{contract.title}</h3>
+                <div className="contract-info">
+                  <span className="contract-type">{contract.type}</span>
+                  <span className="contract-measure-type">{contract.measureType}</span>
+                </div>
+              </div>
+
+              <div className="contract-chart">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Behavior</th>
+                      {contract.times.map((time) => (
+                        <th key={time}>{time}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contract.rows.map((row) => (
+                      <tr key={row}>
+                        <td className="behavior-name">{row}</td>
+                        {contract.times.map((time) => {
+                          const today = new Date().toISOString().split('T')[0];
+                          const dayEntry = contract.chart.find(day => day.date === today);
+                          const timeEntry = dayEntry?.entries.find(entry => entry.time === time);
+                          
+                          return (
+                            <td key={time} className="score-cell">
+                              {contract.measureType === 'smileys' ? (
+                                <div className="smiley-selector">
+                                  <button
+                                    className={`smiley-btn ${timeEntry?.value === 'smiley' ? 'selected' : ''}`}
+                                    onClick={() => handleScoreSelect(contract, time, 'smiley')}
+                                  >
+                                    😊
+                                  </button>
+                                  <button
+                                    className={`smiley-btn ${timeEntry?.value === 'neutral' ? 'selected' : ''}`}
+                                    onClick={() => handleScoreSelect(contract, time, 'neutral')}
+                                  >
+                                    😐
+                                  </button>
+                                  <button
+                                    className={`smiley-btn ${timeEntry?.value === 'sad' ? 'selected' : ''}`}
+                                    onClick={() => handleScoreSelect(contract, time, 'sad')}
+                                  >
+                                    😞
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="number-selector">
+                                  {[1, 2, 3, 4, 5].map((num) => (
+                                    <button
+                                      key={num}
+                                      className={`number-btn ${timeEntry?.value === num.toString() ? 'selected' : ''}`}
+                                      onClick={() => handleScoreSelect(contract, time, num.toString())}
+                                    >
+                                      {num}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              {timeEntry?.note && (
+                                <div className="note-indicator" title={timeEntry.note}>
+                                  📝
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Note Modal */}
+      {showNoteModal && (
+        <div className="note-modal-overlay">
+          <div className="note-modal">
+            <h3>Add Note</h3>
+            <p>Please provide a note explaining why this score was given:</p>
+            <textarea
+              id="note-input"
+              placeholder="Enter your note here..."
+              rows="4"
+            />
+            <div className="modal-actions">
+              <button onClick={handleNoteSubmit} className="submit-btn">
+                Submit
+              </button>
+              <button onClick={() => setShowNoteModal(false)} className="cancel-btn">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default StudentContracts; 

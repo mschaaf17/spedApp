@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Table, Select, Space, Button, Modal } from 'antd';
+import { Table, Select, Space, Button, Modal, Tag } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ME, QUERY_INTERVENTION_TEMPLATES, QUERY_ASSIGNED_INTERVENTIONS } from '../../../utils/queries';
 import { ADD_INTERVENTION_FOR_STUDENT } from '../../../utils/mutations';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import LockIcon from '@mui/icons-material/Lock';
 
 const InterventionDataTable = ({ 
   submitInterventionForStudent,
@@ -29,6 +30,12 @@ const InterventionDataTable = ({
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedBehavior, setSelectedBehavior] = useState(null);
+
+  // Helper function to check if an intervention is a core intervention
+  const isCoreIntervention = (title) => {
+    const lowerTitle = title.toLowerCase();
+    return lowerTitle.includes('break') || lowerTitle.includes('contract');
+  };
 
   const handleAddIntervention = async (interventionId, studentId, behaviorId) => {
     try {
@@ -71,6 +78,16 @@ const InterventionDataTable = ({
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
+      render: (title) => (
+        <Space>
+          {title}
+          {isCoreIntervention(title) && (
+            <Tag color="blue" icon={<LockIcon />}>
+              Core
+            </Tag>
+          )}
+        </Space>
+      ),
     },
     {
       title: 'Function',
@@ -177,13 +194,14 @@ const InterventionDataTable = ({
               </>
             )}
             
-            {/* Remove button - only show if no students have this intervention */}
-            {studentsWithIntervention.length === 0 && onRemoveIntervention && (
+            {/* Remove button - only show if no students have this intervention AND it's not a core intervention */}
+            {studentsWithIntervention.length === 0 && onRemoveIntervention && 
+             !isCoreIntervention(record.title) && (
               <Button
                 danger
                 icon={<DeleteForeverIcon />}
                 onClick={() => handleRemoveIntervention(record._id, record.title)}
-                title="Remove intervention (only available if no students have it assigned)"
+                title="Remove intervention (only available if no students have it assigned and it's not a core intervention)"
               >
                 Remove
               </Button>

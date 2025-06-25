@@ -103,6 +103,10 @@ const UserSchema = new Schema({
       }
     }, // duration in minutes
   }],
+  contracts: [{
+    type: Schema.Types.ObjectId,
+    ref: "Contract",
+  }],
 });
 
 // set up pre-save middleware to create password

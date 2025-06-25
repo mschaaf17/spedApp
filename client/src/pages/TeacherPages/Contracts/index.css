@@ -1,0 +1,440 @@
+.contracts-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.contracts-container h2 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Student Selection */
+.student-selection {
+  margin-bottom: 30px;
+}
+
+.student-selection h3 {
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.student-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.student-button {
+  padding: 10px 20px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.student-button:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.student-button.active {
+  border-color: #007bff;
+  background: #007bff;
+  color: white;
+}
+
+/* Contracts Content */
+.contracts-content {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.contracts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.contracts-header h3 {
+  color: #333;
+  margin: 0;
+}
+
+.create-contract-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.create-contract-btn:hover {
+  background: #218838;
+}
+
+/* Create Contract Form */
+.create-contract-form {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  border: 1px solid #dee2e6;
+}
+
+.create-contract-form h4 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.measure-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 4px;
+  background: white;
+}
+
+.measure-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.measure-checkbox:hover {
+  background: #f8f9fa;
+}
+
+.measure-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.time-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.time-inputs input {
+  width: auto;
+  min-width: 120px;
+}
+
+.time-inputs button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.weekday-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.day-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.day-checkbox:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.day-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.save-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.save-btn:hover {
+  background: #0056b3;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel-btn:hover {
+  background: #545b62;
+}
+
+/* Contracts List */
+.contracts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contract-card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  background: white;
+}
+
+.contract-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contract-header h4 {
+  color: #333;
+  margin: 0;
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+}
+
+.contract-info {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.contract-info p {
+  margin: 5px 0;
+  color: #666;
+}
+
+/* Contract Chart */
+.contract-chart {
+  overflow-x: auto;
+}
+
+.contract-chart table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 400px;
+}
+
+.contract-chart th,
+.contract-chart td {
+  border: 1px solid #dee2e6;
+  padding: 12px 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.contract-chart th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.contract-chart td:first-child {
+  text-align: left;
+  font-weight: 600;
+  background: #f8f9fa;
+  min-width: 150px;
+}
+
+.contract-chart select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 14px;
+}
+
+.note-indicator {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .contracts-container {
+    padding: 15px;
+  }
+  
+  .contracts-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .create-contract-btn {
+    width: 100%;
+  }
+  
+  .student-list {
+    justify-content: center;
+  }
+  
+  .student-button {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .measure-selection {
+    grid-template-columns: 1fr;
+  }
+  
+  .weekday-selection {
+    justify-content: center;
+  }
+  
+  .day-checkbox {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .save-btn,
+  .cancel-btn {
+    width: 100%;
+  }
+  
+  .contract-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .delete-btn {
+    width: 100%;
+  }
+  
+  .contract-chart {
+    font-size: 12px;
+  }
+  
+  .contract-chart th,
+  .contract-chart td {
+    padding: 8px 4px;
+  }
+  
+  .contract-chart select {
+    padding: 6px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contracts-container {
+    padding: 10px;
+  }
+  
+  .contracts-content {
+    padding: 15px;
+  }
+  
+  .create-contract-form {
+    padding: 15px;
+  }
+  
+  .contract-card {
+    padding: 15px;
+  }
+  
+  .contract-chart table {
+    min-width: 300px;
+  }
+  
+  .contract-chart th,
+  .contract-chart td {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .contract-chart select {
+    padding: 4px;
+    font-size: 11px;
+  }
+} 

@@ -16,6 +16,46 @@ const typeDefs = gql`
     studentViewConfig: StudentViewConfig
     breakSettings: BreakSettings
     breakHistory: [BreakRecord]
+    contracts: [Contract!]!
+  }
+
+  type ContractMeasure {
+    _id: ID!
+    name: String!
+    description: String
+    category: String!
+    isActive: Boolean!
+    createdBy: User!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type ContractEntry {
+    time: String!
+    value: String!
+    note: String
+  }
+
+  type ContractChartDay {
+    date: String!
+    entries: [ContractEntry!]!
+  }
+
+  type Contract {
+    _id: ID!
+    title: String!
+    assignedBy: User!
+    student: User!
+    contractMeasures: [ContractMeasure!]!
+    type: String!
+    times: [String!]!
+    measureType: String!
+    rows: [String!]!
+    chart: [ContractChartDay!]!
+    notes: [String!]!
+    isActive: Boolean!
+    createdAt: String!
+    updatedAt: String!
   }
 
   type AccommodationList {
@@ -142,6 +182,35 @@ const typeDefs = gql`
     dailyLimit: Int
   }
 
+  input ContractEntryInput {
+    time: String!
+    value: String!
+    note: String
+  }
+
+  input ContractChartDayInput {
+    date: String!
+    entries: [ContractEntryInput!]!
+  }
+
+  input CreateContractInput {
+    title: String!
+    studentId: ID!
+    contractMeasureIds: [ID!]!
+    type: String!
+    times: [String!]!
+    measureType: String!
+    rows: [String!]!
+  }
+
+  input UpdateContractEntryInput {
+    contractId: ID!
+    date: String!
+    time: String!
+    value: String!
+    note: String
+  }
+
   type Query {
     me: User
     users: [User]
@@ -156,6 +225,9 @@ const typeDefs = gql`
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
     interventionListForStudent(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
     interventionListForStudentByBehavior(studentId: ID, behaviorId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
+    contractMeasures(category: String, isActive: Boolean): [ContractMeasure!]!
+    contracts(studentId: ID, isActive: Boolean): [Contract!]!
+    contract(contractId: ID!): Contract
   }
 
   type Mutation {
@@ -250,6 +322,13 @@ const typeDefs = gql`
     updateBreakSettings(studentId: ID!, settings: BreakSettingsInput!): User
     takeBreak(studentId: ID!): User
     endBreak(studentId: ID!): User
+
+    createContract(input: CreateContractInput!): Contract
+    updateContractEntry(input: UpdateContractEntryInput!): Contract
+    deleteContract(contractId: ID!): Contract
+    addContractToStudent(contractId: ID!, studentId: ID!): User
+    addContractMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
+    addContractMeasure(name: String!, description: String!, category: String!): ContractMeasure
   }
 
   input SelectedChartInput {

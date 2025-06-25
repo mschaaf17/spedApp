@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 
+
 export const QUERY_ME = gql`
 query Me {
   me {
@@ -128,6 +129,52 @@ query Me {
         endTime
         duration
       }
+      contracts {
+      _id
+      title
+      assignedBy {
+        _id
+        username
+        firstName
+        lastName
+      }
+      student {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+        createdBy {
+          _id
+          username
+          firstName
+          lastName
+        }
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
+    }
     }
     accommodations {
   _id
@@ -225,6 +272,52 @@ query Me {
       startTime
       endTime
       duration
+    }
+    contracts {
+      _id
+      title
+      assignedBy {
+        _id
+        username
+        firstName
+        lastName
+      }
+      student {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+        createdBy {
+          _id
+          username
+          firstName
+          lastName
+        }
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
     }
   }
 }
@@ -368,6 +461,44 @@ query User($identifier: String!, $isUsername: Boolean!) {
         endTime
         duration
       }
+      contracts {
+        _id
+        title
+        contractMeasures {
+          _id
+          name
+          description
+          category
+        }
+        type
+        times
+        measureType
+        rows
+        isActive
+        createdAt
+        updatedAt
+        assignedBy {
+          _id
+          username
+          firstName
+          lastName
+        }
+        student {
+          _id
+          username
+          firstName
+          lastName
+        }
+        chart {
+          date
+          entries {
+            time
+            value
+            note
+          }
+        }
+        notes
+      }
     }
     accommodations {
   _id
@@ -472,10 +603,54 @@ query User($identifier: String!, $isUsername: Boolean!) {
       endTime
       duration
     }
+    contracts {
+      _id
+      title
+      assignedBy {
+        _id
+        username
+        firstName
+        lastName
+      }
+      student {
+        _id
+        isAdmin
+        username
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+        createdBy {
+          _id
+          username
+          firstName
+          lastName
+        }
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
+    }
   }
 }
-
-
 `;
 
 export const QUERY_STUDENT_LIST = gql`
@@ -725,6 +900,108 @@ export const QUERY_DURATION_TEMPLATES = gql`
         status
         isActive
       }
+    }
+  }
+`;
+
+// Contract Queries
+export const QUERY_CONTRACT_MEASURES = gql`
+  query ContractMeasures($category: String, $isActive: Boolean) {
+    contractMeasures(category: $category, isActive: $isActive) {
+      _id
+      name
+      description
+      category
+      isActive
+      createdBy {
+        _id
+        firstName
+        lastName
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const QUERY_CONTRACTS = gql`
+  query Contracts($studentId: ID, $isActive: Boolean) {
+    contracts(studentId: $studentId, isActive: $isActive) {
+      _id
+      title
+      assignedBy {
+        _id
+        firstName
+        lastName
+      }
+      student {
+        _id
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const QUERY_CONTRACT = gql`
+  query Contract($contractId: ID!) {
+    contract(contractId: $contractId) {
+      _id
+      title
+      assignedBy {
+        _id
+        firstName
+        lastName
+      }
+      student {
+        _id
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
     }
   }
 `;

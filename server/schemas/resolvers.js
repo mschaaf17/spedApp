@@ -9,6 +9,8 @@ const {
   InterventionList,
   Frequency,
   Duration,
+  Contract,
+  ContractMeasure,
 } = require("../models");
 const { signToken } = require("../utils/auth");
 const moment = require("moment");
@@ -420,6 +422,45 @@ const resolvers = {
         _id: durationId,
         createdFor: studentId
       });
+    },
+
+    contractMeasures: async (parent, { category, isActive }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      
+      const filter = {};
+      if (category) filter.category = category;
+      if (isActive !== undefined) filter.isActive = isActive;
+      
+      const measures = await ContractMeasure.find(filter);
+      return measures;
+    },
+
+    contracts: async (parent, args, context) => {
+      console.log('User contracts field resolver called for user:', parent._id);
+      console.log('parent.contracts array:', parent.contracts);
+      
+      const userContracts = await Contract.find({
+        _id: { $in: parent.contracts },
+        isActive: true
+      });
+      
+      console.log('Found contracts in database:', userContracts);
+      return userContracts ? userContracts : [];
+    },
+
+    contract: async (parent, { contractId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      
+      const contract = await Contract.findById(contractId);
+      if (!contract) {
+        throw new UserInputError("Contract not found");
+      }
+      
+      return contract;
     },
   },
 
@@ -1471,6 +1512,248 @@ const resolvers = {
         throw error;
       }
     },
+
+    createContract: async (_, { input }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const contract = await Contract.create({
+          title: input.title,
+          assignedBy: context.user._id,
+          student: input.studentId,
+          contractMeasures: input.contractMeasureIds,
+          type: input.type,
+          times: input.times,
+          measureType: input.measureType,
+          rows: input.rows,
+          chart: [],
+          notes: [],
+          isActive: true
+        });
+
+        // Add contract to student's contracts array
+        await User.findByIdAndUpdate(
+          input.studentId,
+          { $addToSet: { contracts: contract._id } }
+        );
+
+        return contract;
+      } catch (error) {
+        console.error('Error creating contract:', error);
+        throw new ApolloError("Failed to create contract", "CREATE_CONTRACT_ERROR");
+      }
+    },
+
+    updateContractEntry: async (_, { input }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const contract = await Contract.findById(input.contractId);
+        if (!contract) {
+          throw new UserInputError("Contract not found");
+        }
+
+        // Find or create the day entry
+        let dayEntry = contract.chart.find(day => day.date === input.date);
+        if (!dayEntry) {
+          dayEntry = {
+            date: input.date,
+            entries: []
+          };
+          contract.chart.push(dayEntry);
+        }
+
+        // Find or create the time entry
+        let timeEntry = dayEntry.entries.find(entry => entry.time === input.time);
+        if (!timeEntry) {
+          timeEntry = {
+            time: input.time,
+            value: input.value,
+            note: input.note || ""
+          };
+          dayEntry.entries.push(timeEntry);
+        } else {
+          // Update existing entry
+          timeEntry.value = input.value;
+          timeEntry.note = input.note || "";
+        }
+
+        await contract.save();
+        return contract;
+      } catch (error) {
+        console.error('Error updating contract entry:', error);
+        throw new ApolloError("Failed to update contract entry", "UPDATE_CONTRACT_ENTRY_ERROR");
+      }
+    },
+
+    deleteContract: async (_, { contractId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const contract = await Contract.findById(contractId);
+        if (!contract) {
+          throw new UserInputError("Contract not found");
+        }
+
+        // Remove contract from student's contracts array
+        await User.findByIdAndUpdate(
+          contract.student,
+          { $pull: { contracts: contractId } }
+        );
+
+        // Delete the contract
+        await Contract.findByIdAndDelete(contractId);
+
+        return contract;
+      } catch (error) {
+        console.error('Error deleting contract:', error);
+        throw new ApolloError("Failed to delete contract", "DELETE_CONTRACT_ERROR");
+      }
+    },
+
+    addContractToStudent: async (_, { contractId, studentId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        // Find the contract template
+        const contractTemplate = await Contract.findById(contractId);
+        if (!contractTemplate) {
+          throw new UserInputError("Contract template not found");
+        }
+
+        // Check if student already has this contract
+        const existingContract = await Contract.findOne({
+          student: studentId,
+          title: contractTemplate.title,
+          isActive: true
+        });
+
+        if (existingContract) {
+          throw new UserInputError("Student already has this contract assigned");
+        }
+
+        // Create a new contract for the student based on the template
+        const newContract = await Contract.create({
+          title: contractTemplate.title,
+          assignedBy: context.user._id,
+          student: studentId,
+          contractMeasures: contractTemplate.contractMeasures,
+          type: contractTemplate.type,
+          times: contractTemplate.times,
+          measureType: contractTemplate.measureType,
+          rows: contractTemplate.rows,
+          chart: [],
+          notes: [],
+          isActive: true
+        });
+
+        // Add the contract to the student's contracts array
+        const updatedUser = await User.findByIdAndUpdate(
+          studentId,
+          { $addToSet: { contracts: newContract._id } },
+          { new: true }
+        ).populate('contracts');
+
+        return updatedUser;
+      } catch (error) {
+        console.error('Error adding contract to student:', error);
+        throw new ApolloError("Failed to add contract to student", "ADD_CONTRACT_TO_STUDENT_ERROR");
+      }
+    },
+
+    addContractMeasureToStudent: async (_, { contractMeasureId, studentId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        console.log('addContractMeasureToStudent called with:', { contractMeasureId, studentId });
+        
+        // Find the contract measure
+        const contractMeasure = await ContractMeasure.findById(contractMeasureId);
+        if (!contractMeasure) {
+          throw new UserInputError("Contract measure not found");
+        }
+        console.log('Found contract measure:', contractMeasure);
+
+        // Check if student already has a contract with this measure
+        const existingContract = await Contract.findOne({
+          student: studentId,
+          contractMeasures: contractMeasureId,
+          isActive: true
+        });
+
+        if (existingContract) {
+          throw new UserInputError("Student already has a contract with this measure assigned");
+        }
+
+        // Create a new contract for the student based on the contract measure
+        const newContract = await Contract.create({
+          title: contractMeasure.name,
+          assignedBy: context.user._id,
+          student: studentId,
+          contractMeasures: [contractMeasureId],
+          type: 'daily',
+          times: ['Morning', 'Afternoon'],
+          measureType: 'smileys',
+          rows: ['1', '2', '3', '4', '5'],
+          chart: [],
+          notes: [],
+          isActive: true
+        });
+        console.log('Created new contract:', newContract);
+
+        // Add the contract to the student's contracts array
+        const updatedUser = await User.findByIdAndUpdate(
+          studentId,
+          { $addToSet: { contracts: newContract._id } },
+          { new: true }
+        ).populate('contracts');
+        
+        console.log('Updated user contracts array:', updatedUser.contracts);
+        console.log('Updated user:', {
+          _id: updatedUser._id,
+          username: updatedUser.username,
+          contractsCount: updatedUser.contracts ? updatedUser.contracts.length : 0
+        });
+
+        return updatedUser;
+      } catch (error) {
+        console.error('Error adding contract measure to student:', error);
+        throw new ApolloError("Failed to add contract measure to student", "ADD_CONTRACT_MEASURE_TO_STUDENT_ERROR");
+      }
+    },
+
+    addContractMeasure: async (_, { name, description, category }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const contractMeasure = await ContractMeasure.create({
+          name,
+          description,
+          category,
+          createdBy: context.user._id,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        return contractMeasure;
+      } catch (error) {
+        console.error('Error creating contract measure:', error);
+        throw new ApolloError("Failed to create contract measure", "ADD_CONTRACT_MEASURE_ERROR");
+      }
+    },
   },
 
   AccommodationList: {
@@ -1668,6 +1951,18 @@ const resolvers = {
       });
       return userInterventions ? userInterventions : [];
     },
+    contracts: async (parent, args, context) => {
+      console.log('User contracts field resolver called for user:', parent._id);
+      console.log('parent.contracts array:', parent.contracts);
+      
+      const userContracts = await Contract.find({
+        _id: { $in: parent.contracts },
+        isActive: true
+      });
+      
+      console.log('Found contracts in database:', userContracts);
+      return userContracts ? userContracts : [];
+    },
   },
 
   Duration: {
@@ -1713,6 +2008,39 @@ const resolvers = {
       }
       
       return behavior;
+    },
+  },
+
+  Contract: {
+    assignedBy: async (parent, args, context) => {
+      const user = await User.findById(parent.assignedBy);
+      return user;
+    },
+    student: async (parent, args, context) => {
+      const user = await User.findById(parent.student);
+      return user;
+    },
+    contractMeasures: async (parent, args, context) => {
+      console.log('Contract contractMeasures field resolver called for contract:', parent._id);
+      console.log('parent.contractMeasures array:', parent.contractMeasures);
+      
+      if (!parent.contractMeasures || parent.contractMeasures.length === 0) {
+        return [];
+      }
+      
+      const contractMeasures = await ContractMeasure.find({
+        _id: { $in: parent.contractMeasures }
+      });
+      
+      console.log('Found contract measures in database:', contractMeasures);
+      return contractMeasures || [];
+    },
+  },
+
+  ContractMeasure: {
+    createdBy: async (parent, args, context) => {
+      const user = await User.findById(parent.createdBy);
+      return user;
     },
   },
 };

@@ -65,6 +65,12 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
               .some(dur =>
                 (dur.templateId || dur._id) === selectedTemplate._id
               ));
+          } else if (selectedTemplate.__typename === 'Contract') {
+            // Exclude students who already have this contract measure assigned
+            return !((student.contracts || [])
+              .filter(contract => contract.isActive)
+              .some(contract => contract.contractMeasures && 
+                contract.contractMeasures.some(measure => measure._id === selectedTemplate._id)));
           }
           return true;
         })
@@ -77,11 +83,25 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
       setSelectOptions(options);
 
       (meData.students || []).forEach(student => {
-        const hasActive = (student.behaviorFrequencies || [])
-          .filter(freq => freq.isActive)
-          .some(freq =>
-            (freq.templateId || freq._id) === selectedTemplate._id
-          );
+        let hasActive = false;
+        if (selectedTemplate.__typename === 'Frequency') {
+          hasActive = (student.behaviorFrequencies || [])
+            .filter(freq => freq.isActive)
+            .some(freq =>
+              (freq.templateId || freq._id) === selectedTemplate._id
+            );
+        } else if (selectedTemplate.__typename === 'Duration') {
+          hasActive = (student.behaviorDurations || [])
+            .filter(dur => dur.isActive)
+            .some(dur =>
+              (dur.templateId || dur._id) === selectedTemplate._id
+            );
+        } else if (selectedTemplate.__typename === 'Contract') {
+          hasActive = (student.contracts || [])
+            .filter(contract => contract.isActive)
+            .some(contract => contract.contractMeasures && 
+              contract.contractMeasures.some(measure => measure._id === selectedTemplate._id));
+        }
         console.log(`${student.firstName} ${student.lastName}: hasActive=${hasActive}`);
       });
     }
@@ -125,11 +145,27 @@ const displaySelect = (rowId) => {
 //change this to only the person logged in
   const generateFilters = (key) => {
     if (!mergedData) return [];
-    const values = [...new Set(mergedData.map(data=> data[key]))];
-    return values.map(value => ({
-      text: value,
-      value: value,
-    }));
+    
+    const values = [...new Set(mergedData.map(data => {
+      if (key === 'behaviorTitle') {
+        return data.behaviorTitle || data.name || '';
+      } else if (key === 'operationalDefinition') {
+        return data.operationalDefinition || data.description || '';
+      } else if (key === 'dataMeasureType') {
+        if (data.__typename === 'Frequency') return 'Frequency';
+        if (data.__typename === 'Duration') return 'Duration';
+        if (data.__typename === 'Contract') return 'Contract';
+        return data.dataMeasureType || '';
+      }
+      return data[key] || '';
+    }))];
+    
+    return values
+      .filter(value => value !== '') // Remove empty values
+      .map(value => ({
+        text: value,
+        value: value,
+      }));
   };
 
   const getRowClassName = (record, index) => {
@@ -148,6 +184,12 @@ const displaySelect = (rowId) => {
           return !(student.behaviorDurations || [])
             .filter(dur => dur.isActive)
             .some(dur => (dur.templateId || dur._id) === record._id);
+        } else if (record.__typename === 'Contract') {
+          // For contracts, check if student already has this contract measure assigned
+          return !(student.contracts || [])
+            .filter(contract => contract.isActive)
+            .some(contract => contract.contractMeasures && 
+              contract.contractMeasures.some(measure => measure._id === record._id));
         }
         return true;
       })
@@ -170,15 +212,22 @@ const displaySelect = (rowId) => {
         return (student.behaviorDurations || [])
           .filter(dur => dur.isActive)
           .some(dur => (dur.templateId || dur._id) === record._id);
+      } else if (record.__typename === 'Contract') {
+        // For contracts, check if student has this contract measure assigned
+        return (student.contracts || [])
+          .filter(contract => contract.isActive)
+          .some(contract => contract.contractMeasures && 
+            contract.contractMeasures.some(measure => measure._id === record._id));
       }
       return false;
     });
   };
 
   const handleRemoveDataMeasure = (record) => {
+    const title = record.behaviorTitle || record.name || 'this data measure';
     Modal.confirm({
       title: 'Confirm Deletion',
-      content: `Are you sure you want to delete "${record.behaviorTitle}"? This action cannot be undone and will permanently remove this data measure template.`,
+      content: `Are you sure you want to delete "${title}"? This action cannot be undone and will permanently remove this data measure template.`,
       okText: 'Yes, Delete',
       okType: 'danger',
       cancelText: 'Cancel',
@@ -196,13 +245,23 @@ const displaySelect = (rowId) => {
       filterSearch: true,
       filters: generateFilters('behaviorTitle'),
       filteredValue: filteredInfo.behaviorTitle || null,
-      onFilter: (value, record) => record.behaviorTitle.trim().toLowerCase().includes(value.trim().toLowerCase()),
-      sorter: (a, b) => a.behaviorTitle.length - b.behaviorTitle.length,
+      onFilter: (value, record) => {
+        const title = record.behaviorTitle || record.name || '';
+        return title.trim().toLowerCase().includes(value.trim().toLowerCase());
+      },
+      sorter: (a, b) => {
+        const titleA = a.behaviorTitle || a.name || '';
+        const titleB = b.behaviorTitle || b.name || '';
+        return titleA.length - titleB.length;
+      },
       sortOrder: sortedInfo.columnKey === 'behaviorTitle' ? sortedInfo.order : null,
       ellipsis: true,
-      render: (text) => (
-        <span style={{ textTransform: 'capitalize' }}>{text}</span>
-      )
+      render: (text, record) => {
+        const title = record.behaviorTitle || record.name || '';
+        return (
+          <span style={{ textTransform: 'capitalize' }}>{title}</span>
+        );
+      }
       
     },
     {
@@ -212,12 +271,22 @@ const displaySelect = (rowId) => {
       filterSearch: true,
       filters: generateFilters('dataMeasureType'),
       filteredValue: filteredInfo.dataMeasureType || null,
-      onFilter: (value, record) => record.dataMeasureType.trim().toLowerCase().includes(value.trim().toLowerCase()),
-      sorter: (a, b) => a.dataMeasureType - b.dataMeasureType,
+      onFilter: (value, record) => {
+        const type = record.dataMeasureType || record.__typename || '';
+        return type.trim().toLowerCase().includes(value.trim().toLowerCase());
+      },
+      sorter: (a, b) => {
+        const typeA = a.dataMeasureType || a.__typename || '';
+        const typeB = b.dataMeasureType || b.__typename || '';
+        return typeA.localeCompare(typeB);
+      },
       sortOrder: sortedInfo.columnKey === 'dataMeasureType' ? sortedInfo.order : null,
       ellipsis: true,
       render: (_, record) => {
-        return record.__typename === 'Frequency' ? 'Frequency' : 'Duration';
+        if (record.__typename === 'Frequency') return 'Frequency';
+        if (record.__typename === 'Duration') return 'Duration';
+        if (record.__typename === 'Contract') return 'Contract';
+        return record.dataMeasureType || 'Unknown';
       }
     },
     {
@@ -227,10 +296,20 @@ const displaySelect = (rowId) => {
       filterSearch: true,
       filters: generateFilters('operationalDefinition'),
       filteredValue: filteredInfo.operationalDefinition || null,
-      onFilter: (value, record) => record.operationalDefinition.trim().toLowerCase().includes(value.trim().toLowerCase()),
-      sorter: (a, b) => a.operationalDefinition.length - b.operationalDefinition.length,
+      onFilter: (value, record) => {
+        const definition = record.operationalDefinition || record.description || '';
+        return definition.trim().toLowerCase().includes(value.trim().toLowerCase());
+      },
+      sorter: (a, b) => {
+        const defA = a.operationalDefinition || a.description || '';
+        const defB = b.operationalDefinition || b.description || '';
+        return defA.length - defB.length;
+      },
       sortOrder: sortedInfo.columnKey === 'operationalDefinition' ? sortedInfo.order : null,
       ellipsis: true,
+      render: (text, record) => {
+        return record.operationalDefinition || record.description || '';
+      }
     },
     {
         title: 'Actions',

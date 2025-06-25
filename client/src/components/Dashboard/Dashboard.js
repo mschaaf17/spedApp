@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm, message, Form, InputNumber, Switch, Radio } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES } from '../../utils/queries';
-import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, UPDATE_STUDENT_VIEW_CONFIG, UPDATE_BREAK_SETTINGS } from '../../utils/mutations';
+import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES, QUERY_CONTRACT_MEASURES } from '../../utils/queries';
+import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, UPDATE_STUDENT_VIEW_CONFIG, UPDATE_BREAK_SETTINGS, ADD_CONTRACT_TO_STUDENT, ADD_CONTRACT_MEASURE_TO_STUDENT } from '../../utils/mutations';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -51,7 +51,7 @@ const Dashboard = () => {
   const [selectedBehavior, setSelectedBehavior] = useState(null);
   const [addedStudents, setAddedStudents] = useState({});
   const [showAddIntervention, setShowAddIntervention] = useState(false);
-  const [selectedBehaviorForIntervention, setSelectedBehaviorForIntervention] = useState(null);
+  const [selectedBehaviorForIntervention, setSelectedBehaviorForIntervention] = useState([]);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [showAddAccommodation, setShowAddAccommodation] = useState(false);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
@@ -105,6 +105,9 @@ const Dashboard = () => {
   // Queries for data measure templates
   const { loading: frequencyLoading, data: frequencyData } = useQuery(QUERY_FREQUENCY_TEMPLATES);
   const { loading: durationLoading, data: durationData } = useQuery(QUERY_DURATION_TEMPLATES);
+  const { loading: contractLoading, data: contractData } = useQuery(QUERY_CONTRACT_MEASURES, {
+    variables: { isActive: true }
+  });
 
   // Mutations for adding/removing students, interventions, and accommodations
   const [addStudentToList] = useMutation(ADD_STUDENT_TO_LIST);
@@ -116,6 +119,8 @@ const Dashboard = () => {
   const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   const [updateStudentViewConfig] = useMutation(UPDATE_STUDENT_VIEW_CONFIG);
   const [updateBreakSettings] = useMutation(UPDATE_BREAK_SETTINGS);
+  const [addContractToStudent] = useMutation(ADD_CONTRACT_TO_STUDENT);
+  const [addContractMeasureToStudent] = useMutation(ADD_CONTRACT_MEASURE_TO_STUDENT);
 
   const myStudents = meData?.me?.students || [];
   const getAllStudents = allStudentsData?.students || [];
@@ -123,11 +128,12 @@ const Dashboard = () => {
   const interventionTemplates = templateData?.interventionList || [];
   const allAccommodations = accommodationData?.accommodationList || [];
   const accommodationTemplates = accommodationTemplateData?.accommodationList || [];
-  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading || selectedStudentLoading || frequencyLoading || durationLoading;
+  const loading = meLoading || allStudentsLoading || interventionsLoading || templateLoading || accommodationLoading || accommodationTemplateLoading || selectedStudentLoading || frequencyLoading || durationLoading || contractLoading;
 
   // Data measure templates
   const frequencyTemplates = frequencyData?.frequency?.filter(t => t.isTemplate) || [];
   const durationTemplates = durationData?.duration?.filter(t => t.isTemplate) || [];
+  const contractTemplates = contractData?.contractMeasures || [];
 
   // Get interventions for the selected student with complete data
   const getStudentInterventions = () => {
@@ -244,30 +250,38 @@ const Dashboard = () => {
 
   // Handle adding an intervention to the student
   const handleAddIntervention = async () => {
-    if (!selectedBehaviorForIntervention || !selectedIntervention) {
+    if (!selectedBehaviorForIntervention.length || !selectedIntervention) {
       return;
     }
 
     try {
-      await addInterventionForStudent({
-        variables: {
-          interventionId: selectedIntervention,
-          studentId: selectedStudent._id,
-          behaviorId: selectedBehaviorForIntervention
-        },
-        refetchQueries: [
-          { query: QUERY_ME },
-          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
-        ]
-      });
+      // Create an intervention for each selected behavior
+      const promises = selectedBehaviorForIntervention.map(behaviorId => 
+        addInterventionForStudent({
+          variables: {
+            interventionId: selectedIntervention,
+            studentId: selectedStudent._id,
+            behaviorId: behaviorId
+          },
+          refetchQueries: [
+            { query: QUERY_ME },
+            { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+          ]
+        })
+      );
+
+      await Promise.all(promises);
 
       // Reset form and close modal
-      setSelectedBehaviorForIntervention(null);
+      setSelectedBehaviorForIntervention([]);
       setSelectedIntervention(null);
       setShowAddIntervention(false);
       
+      message.success(`Intervention added to ${selectedBehaviorForIntervention.length} behavior${selectedBehaviorForIntervention.length > 1 ? 's' : ''}`);
+      
     } catch (error) {
       console.error('Error adding intervention:', error);
+      message.error('Failed to add intervention to some behaviors');
     }
   };
 
@@ -434,6 +448,13 @@ const Dashboard = () => {
         label: `${d.behaviorTitle} (Duration)`
       }));
     
+    const contracts = (studentData.contracts || [])
+      .filter(c => c.isActive)
+      .map(c => ({
+        value: c._id,
+        label: `${c.title} (Contract)`
+      }));
+    
     // Add break charts if student has break settings enabled
     const breakCharts = [];
     if (studentData.breakSettings?.isEnabled) {
@@ -447,7 +468,7 @@ const Dashboard = () => {
       });
     }
     
-    return [...frequencies, ...durations, ...breakCharts];
+    return [...frequencies, ...durations, ...contracts, ...breakCharts];
   };
 
   // Get available interventions (filter out already assigned ones)
@@ -496,12 +517,23 @@ const Dashboard = () => {
   const getAvailableDataMeasures = () => {
     if (!selectedStudent) return [];
     
+    // Use detailed student data if available (more up-to-date)
+    const studentData = selectedStudentData?.user || selectedStudent;
+    
     // Get currently active behaviors from the student
-    const studentFrequencies = (selectedStudent.behaviorFrequencies || [])
+    const studentFrequencies = (studentData.behaviorFrequencies || [])
       .map(f => f.templateId || f._id); // Use templateId if available, fallback to _id
     
-    const studentDurations = (selectedStudent.behaviorDurations || [])
+    const studentDurations = (studentData.behaviorDurations || [])
       .map(d => d.templateId || d._id); // Use templateId if available, fallback to _id
+    
+    // For contracts, we need to check if any existing contract contains the contract measure
+    const assignedContractMeasureIds = new Set();
+    (studentData.contracts || []).forEach(contract => {
+      (contract.contractMeasures || []).forEach(measure => {
+        assignedContractMeasureIds.add(measure._id);
+      });
+    });
     
     const assignedIds = new Set([...studentFrequencies, ...studentDurations]);
     
@@ -519,6 +551,13 @@ const Dashboard = () => {
         .map(dur => ({
           value: dur._id,
           label: dur.behaviorTitle
+        }));
+    } else if (selectedDataMeasureType === 'contract') {
+      return contractTemplates
+        .filter(contract => !assignedContractMeasureIds.has(contract._id))
+        .map(contract => ({
+          value: contract._id,
+          label: contract.name
         }));
     }
     
@@ -595,17 +634,80 @@ const Dashboard = () => {
     }
 
     try {
-      await addDataMeasureToStudent({
-        variables: {
-          dataMeasureId: selectedDataMeasure,
-          studentId: selectedStudent._id,
-          dataMeasureType: selectedDataMeasureType
-        },
-        refetchQueries: [
-          { query: QUERY_ME },
-          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
-        ]
-      });
+      if (selectedDataMeasureType === 'contract') {
+        // Handle contract assignment
+        await addContractMeasureToStudent({
+          variables: {
+            contractMeasureId: selectedDataMeasure,
+            studentId: selectedStudent._id
+          },
+          update: (cache, { data }) => {
+            // Update the cache for the admin's view (QUERY_ME)
+            try {
+              const existingData = cache.readQuery({ query: QUERY_ME });
+              if (existingData?.me?.students) {
+                const updatedStudents = existingData.me.students.map(student => 
+                  student._id === selectedStudent._id 
+                    ? { ...student, contracts: data.addContractMeasureToStudent.contracts }
+                    : student
+                );
+                cache.writeQuery({
+                  query: QUERY_ME,
+                  data: {
+                    ...existingData,
+                    me: {
+                      ...existingData.me,
+                      students: updatedStudents
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.log('Could not update QUERY_ME cache for contract:', error);
+            }
+
+            // Update the cache for the student's view (QUERY_USER)
+            try {
+              const existingUserData = cache.readQuery({ 
+                query: QUERY_USER, 
+                variables: { identifier: selectedStudent.username, isUsername: true } 
+              });
+              if (existingUserData?.user) {
+                cache.writeQuery({
+                  query: QUERY_USER,
+                  variables: { identifier: selectedStudent.username, isUsername: true },
+                  data: {
+                    ...existingUserData,
+                    user: {
+                      ...existingUserData.user,
+                      contracts: data.addContractMeasureToStudent.contracts
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.log('Could not update QUERY_USER cache for contract:', error);
+            }
+          },
+          refetchQueries: [
+            { query: QUERY_ME },
+            { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+          ]
+        });
+      } else {
+        // Handle frequency and duration assignment
+        await addDataMeasureToStudent({
+          variables: {
+            dataMeasureId: selectedDataMeasure,
+            studentId: selectedStudent._id,
+            dataMeasureType: selectedDataMeasureType
+          },
+          refetchQueries: [
+            { query: QUERY_ME },
+            { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+          ]
+        });
+      }
 
       // Manual refetch to ensure immediate update
       await refetchMe();
@@ -742,6 +844,9 @@ const Dashboard = () => {
   // Check if student has a "Break" accommodation or intervention
   const studentHasBreaksFeature = selectedStudentData?.user?.accommodations.some(a => a.title.toLowerCase().includes('break')) ||
                                  selectedStudentData?.user?.interventions.some(i => i.title.toLowerCase().includes('break'));
+
+  // Check if student has a "Contracts" intervention
+  const studentHasContractsFeature = selectedStudentData?.user?.interventions.some(i => i.title.toLowerCase().includes('contract'));
 
   const handleSaveBreakSettings = async () => {
     if (!selectedStudent) return;
@@ -1161,6 +1266,28 @@ const Dashboard = () => {
                     </div>
                   </TabPane>
 
+                  {studentHasContractsFeature && (
+                    <TabPane tab="Contracts" key="contracts">
+                      <div className="contracts-content">
+                        <div className="contracts-header">
+                          <h4>Behavior Contracts</h4>
+                          <p>Manage behavior contracts for {selectedStudent?.firstName}</p>
+                          <Button type="primary" onClick={() => navigate('/contracts')}>
+                            Manage Contracts
+                          </Button>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '24px' }}>
+                          <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                            Click "Manage Contracts" to create and manage behavior contracts for {selectedStudent?.firstName}.
+                          </p>
+                          <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
+                            Contracts allow you to track specific behaviors with smiley faces or numbers throughout the day or week.
+                          </p>
+                        </div>
+                      </div>
+                    </TabPane>
+                  )}
+
                   {studentHasBreaksFeature && (
                     <TabPane tab="Breaks" key="breaks">
                       <div className="breaks-config-section">
@@ -1482,27 +1609,28 @@ const Dashboard = () => {
 
       {/* Add Intervention Modal */}
       <Modal
-        title="Add Intervention"
+        title="Add Intervention to Behaviors"
         open={showAddIntervention}
         onOk={handleAddIntervention}
         onCancel={() => {
           setShowAddIntervention(false);
-          setSelectedBehaviorForIntervention(null);
+          setSelectedBehaviorForIntervention([]);
           setSelectedIntervention(null);
         }}
-        okText="Add Intervention"
+        okText="Add Intervention to Selected Behaviors"
         cancelText="Cancel"
         okButtonProps={{ 
-          disabled: !selectedBehaviorForIntervention || !selectedIntervention || getAvailableBehaviors().length === 0 || getAvailableInterventions().length === 0
+          disabled: !selectedBehaviorForIntervention.length || !selectedIntervention || getAvailableBehaviors().length === 0 || getAvailableInterventions().length === 0
         }}
       >
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-            Select Behavior:
+            Select Behaviors:
           </label>
           {getAvailableBehaviors().length > 0 ? (
             <Select
-              placeholder="Select a behavior"
+              mode="multiple"
+              placeholder="Select behaviors"
               style={{ width: '100%' }}
               value={selectedBehaviorForIntervention}
               onChange={setSelectedBehaviorForIntervention}
@@ -1700,7 +1828,8 @@ const Dashboard = () => {
             }}
             options={[
               { value: 'frequency', label: 'Frequency' },
-              { value: 'duration', label: 'Duration' }
+              { value: 'duration', label: 'Duration' },
+              { value: 'contract', label: 'Contract' }
             ]}
           />
         </div>
@@ -1708,11 +1837,11 @@ const Dashboard = () => {
         {selectedDataMeasureType && (
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              Select {selectedDataMeasureType === 'frequency' ? 'Frequency' : 'Duration'} Behavior:
+              Select {selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} Behavior:
             </label>
             {getAvailableDataMeasures().length > 0 ? (
               <Select
-                placeholder={`Select a ${selectedDataMeasureType} behavior`}
+                placeholder={`Select a ${selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} behavior`}
                 style={{ width: '100%' }}
                 value={selectedDataMeasure}
                 onChange={setSelectedDataMeasure}
@@ -1727,10 +1856,10 @@ const Dashboard = () => {
                 border: '1px dashed #d9d9d9'
               }}>
                 <p style={{ margin: '0 0 12px 0', color: '#666' }}>
-                  No more {selectedDataMeasureType} templates available for this student.
+                  No more {selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} templates available for this student.
                 </p>
                 <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
-                  All {selectedDataMeasureType} templates have been assigned to this student.
+                  All {selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} templates have been assigned to this student.
                 </p>
                 <Button 
                   type="primary" 
@@ -1758,13 +1887,15 @@ const Dashboard = () => {
                 dataMeasure = frequencyTemplates.find(f => f._id === selectedDataMeasure);
               } else if (selectedDataMeasureType === 'duration') {
                 dataMeasure = durationTemplates.find(d => d._id === selectedDataMeasure);
+              } else if (selectedDataMeasureType === 'contract') {
+                dataMeasure = contractTemplates.find(c => c._id === selectedDataMeasure);
               }
               
               return dataMeasure ? (
                 <div>
-                  <p><strong>Behavior Title:</strong> {dataMeasure.behaviorTitle}</p>
-                  <p><strong>Operational Definition:</strong> {dataMeasure.operationalDefinition}</p>
-                  <p><strong>Type:</strong> {selectedDataMeasureType === 'frequency' ? 'Frequency' : 'Duration'}</p>
+                  <p><strong>Behavior Title:</strong> {dataMeasure.behaviorTitle || dataMeasure.name}</p>
+                  <p><strong>Operational Definition:</strong> {dataMeasure.operationalDefinition || dataMeasure.description}</p>
+                  <p><strong>Type:</strong> {selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'}</p>
                 </div>
               ) : null;
             })()}

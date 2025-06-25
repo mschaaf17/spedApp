@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Layout, Tabs, Button, Modal, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_ACCOMMODATION_TEMPLATES, QUERY_INTERVENTION_TEMPLATES, QUERY_FREQUENCY_LIST, QUERY_DURATION_LIST } from '../../utils/queries';
-import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_ACCOMMODATION_TEMPLATE, REMOVE_ACCOMMODATION, ADD_INTERVENTION_TEMPLATE, REMOVED_INTERVENTION_FROM_LIST, ADD_FREQUENCY_TITLE, REMOVE_FREQUENCY_TITLE, ADD_DURATION_TITLE, REMOVE_DURATION_TITLE, ADD_ACCOMMODATION_FOR_STUDENT, ADD_INTERVENTION_FOR_STUDENT, ADD_DATA_MEASURE_TO_STUDENT } from '../../utils/mutations';
+import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_ACCOMMODATION_TEMPLATES, QUERY_INTERVENTION_TEMPLATES, QUERY_FREQUENCY_LIST, QUERY_DURATION_LIST, QUERY_CONTRACT_MEASURES } from '../../utils/queries';
+import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_ACCOMMODATION_TEMPLATE, REMOVE_ACCOMMODATION, ADD_INTERVENTION_TEMPLATE, REMOVED_INTERVENTION_FROM_LIST, ADD_FREQUENCY_TITLE, REMOVE_FREQUENCY_TITLE, ADD_DURATION_TITLE, REMOVE_DURATION_TITLE, ADD_ACCOMMODATION_FOR_STUDENT, ADD_INTERVENTION_FOR_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, ADD_CONTRACT_MEASURE_TO_STUDENT } from '../../utils/mutations';
 
 // Import table components
 import StudentTable from '../../components/Tables/studentTable';
@@ -41,7 +41,10 @@ const AdminSettings = () => {
     variables: { isTemplate: true, isActive: true }
   });
   const { loading: frequencyLoading, data: frequencyData } = useQuery(QUERY_FREQUENCY_LIST);
-  const { loading: durationLoading, data: durationData } = useQuery(QUERY_DURATION_LIST);
+  const { loading: durationLoading, data: durationData } = useQuery(QUERY_DURATION_LIST, {
+    variables: { isTemplate: true }
+  });
+  const { loading: contractMeasuresLoading, data: contractMeasuresData } = useQuery(QUERY_CONTRACT_MEASURES);
 
   // Mutations
   const [addStudentToList] = useMutation(ADD_STUDENT_TO_LIST);
@@ -57,6 +60,7 @@ const AdminSettings = () => {
   const [addAccommodationForStudent] = useMutation(ADD_ACCOMMODATION_FOR_STUDENT);
   const [addInterventionForStudent] = useMutation(ADD_INTERVENTION_FOR_STUDENT);
   const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
+  const [addContractMeasureToStudent] = useMutation(ADD_CONTRACT_MEASURE_TO_STUDENT);
 
   // Data
   const myStudents = meData?.me?.students || [];
@@ -65,14 +69,16 @@ const AdminSettings = () => {
   const interventionList = interventionData?.interventionList || [];
   const frequencyList = frequencyData?.frequency || [];
   const durationList = durationData?.duration || [];
+  const contractMeasures = contractMeasuresData?.contractMeasures || [];
 
   // Merge frequency and duration data for data measures (only templates)
   const mergedDataMeasures = [
     ...frequencyList.filter(freq => freq.isTemplate).map(freq => ({ ...freq, __typename: 'Frequency', dataMeasureType: 'Frequency' })),
-    ...durationList.filter(dur => dur.isTemplate).map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' }))
+    ...durationList.filter(dur => dur.isTemplate).map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' })),
+    ...contractMeasures.map(contract => ({ ...contract, __typename: 'Contract', dataMeasureType: 'Contract' }))
   ];
 
-  const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading;
+  const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading || contractMeasuresLoading;
 
   // Student management functions
   const handleAddStudent = async (studentId) => {
@@ -111,6 +117,12 @@ const AdminSettings = () => {
   };
 
   const isStudentAdded = (userId) => !!addedStudents[userId];
+
+  // Helper function to check if an intervention is a core intervention
+  const isCoreIntervention = (title) => {
+    const lowerTitle = title.toLowerCase();
+    return lowerTitle.includes('break') || lowerTitle.includes('contract');
+  };
 
   // Accommodation management functions
   const handleAssignAccommodation = async (accommodationId, studentId) => {
@@ -155,6 +167,17 @@ const AdminSettings = () => {
 
   const handleDeleteIntervention = async (interventionId) => {
     try {
+      // Find the intervention to check its title
+      const intervention = interventionList.find(intervention => intervention._id === interventionId);
+      
+      if (intervention) {
+        const title = intervention.title.toLowerCase();
+        if (isCoreIntervention(title)) {
+          message.warning('Cannot delete core interventions: Breaks and Contracts are always available to all teachers.');
+          return;
+        }
+      }
+      
       await removedInterventionFromList({
         variables: { interventionId: interventionId },
         refetchQueries: [{ query: QUERY_INTERVENTION_TEMPLATES, variables: { isTemplate: true, isActive: true } }]
@@ -169,6 +192,44 @@ const AdminSettings = () => {
   // Data measure management functions
   const handleAssignDataMeasure = async (dataMeasureId, studentId) => {
     try {
+      // Find the data measure to determine its type
+      const dataMeasure = mergedDataMeasures.find(measure => measure._id === dataMeasureId);
+      
+      if (dataMeasure && dataMeasure.__typename === 'Contract') {
+        // For contracts, use the new contract measure mutation
+        await addContractMeasureToStudent({
+          variables: { contractMeasureId: dataMeasureId, studentId },
+          update: (cache, { data }) => {
+            // Update the cache for the admin's view (QUERY_ME)
+            try {
+              const existingData = cache.readQuery({ query: QUERY_ME });
+              if (existingData?.me?.students) {
+                const updatedStudents = existingData.me.students.map(student => 
+                  student._id === studentId 
+                    ? { ...student, contracts: data.addContractMeasureToStudent.contracts }
+                    : student
+                );
+                cache.writeQuery({
+                  query: QUERY_ME,
+                  data: {
+                    ...existingData,
+                    me: {
+                      ...existingData.me,
+                      students: updatedStudents
+                    }
+                  }
+                });
+              }
+            } catch (error) {
+              console.log('Could not update QUERY_ME cache for contract:', error);
+            }
+          },
+          refetchQueries: [{ query: QUERY_ME }]
+        });
+        message.success('Contract measure assigned successfully');
+        return;
+      }
+      
       await addDataMeasureToStudent({
         variables: { dataMeasureId, studentId },
         refetchQueries: [{ query: QUERY_ME }]
@@ -192,6 +253,10 @@ const AdminSettings = () => {
           variables: { _id: dataMeasure._id },
           refetchQueries: [{ query: QUERY_DURATION_LIST }]
         });
+      } else if (dataMeasure.__typename === 'Contract') {
+        // Note: Contract measures don't have a delete mutation yet, so we'll skip this for now
+        message.info('Contract measure deletion not implemented yet');
+        return;
       }
       message.success('Data measure deleted successfully');
     } catch (error) {

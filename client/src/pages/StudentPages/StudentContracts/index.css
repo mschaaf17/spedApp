@@ -1,0 +1,362 @@
+.student-contracts-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.student-contracts-container h2 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.no-contracts {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+}
+
+.no-contracts p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+/* Contract Cards */
+.contracts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contract-card {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.contract-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.contract-header h3 {
+  color: #333;
+  margin: 0 0 10px 0;
+  font-size: 20px;
+}
+
+.contract-info {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.contract-type,
+.contract-measure-type {
+  background: #e9ecef;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: capitalize;
+}
+
+/* Contract Chart */
+.contract-chart {
+  overflow-x: auto;
+}
+
+.contract-chart table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 400px;
+}
+
+.contract-chart th,
+.contract-chart td {
+  border: 1px solid #dee2e6;
+  padding: 12px 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.contract-chart th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.behavior-name {
+  text-align: left !important;
+  font-weight: 600;
+  background: #f8f9fa;
+  min-width: 150px;
+  color: #333;
+}
+
+.score-cell {
+  position: relative;
+  min-width: 120px;
+}
+
+/* Smiley Selector */
+.smiley-selector {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.smiley-btn {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.smiley-btn:hover {
+  border-color: #007bff;
+  transform: scale(1.1);
+}
+
+.smiley-btn.selected {
+  border-color: #28a745;
+  background: #d4edda;
+  transform: scale(1.1);
+}
+
+/* Number Selector */
+.number-selector {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.number-btn {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.number-btn:hover {
+  border-color: #007bff;
+  transform: scale(1.1);
+}
+
+.number-btn.selected {
+  border-color: #28a745;
+  background: #d4edda;
+  transform: scale(1.1);
+}
+
+.note-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 12px;
+  color: #dc3545;
+  cursor: help;
+}
+
+/* Note Modal */
+.note-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.note-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.note-modal h3 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.note-modal p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.note-modal textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.submit-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.submit-btn:hover {
+  background: #0056b3;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel-btn:hover {
+  background: #545b62;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 18px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-contracts-container {
+    padding: 15px;
+  }
+  
+  .contract-card {
+    padding: 15px;
+  }
+  
+  .contract-header h3 {
+    font-size: 18px;
+  }
+  
+  .contract-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .contract-chart {
+    font-size: 12px;
+  }
+  
+  .contract-chart th,
+  .contract-chart td {
+    padding: 8px 4px;
+  }
+  
+  .smiley-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+  
+  .number-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .note-modal {
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .submit-btn,
+  .cancel-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-contracts-container {
+    padding: 10px;
+  }
+  
+  .contract-card {
+    padding: 12px;
+  }
+  
+  .contract-chart table {
+    min-width: 300px;
+  }
+  
+  .contract-chart th,
+  .contract-chart td {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .smiley-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  
+  .number-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  
+  .behavior-name {
+    min-width: 100px;
+    font-size: 11px;
+  }
+} 

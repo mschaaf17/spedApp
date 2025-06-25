@@ -4,6 +4,7 @@ const Frequency = require('../models/Frequency');
 const InterventionList = require('../models/InterventionList');
 const AccommodationList = require('../models/AccommodationList');
 const Duration = require('../models/Duration');
+const ContractMeasure = require('../models/ContractMeasure');
 
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/inclusion-student-app';
@@ -17,6 +18,7 @@ async function seed() {
   await InterventionList.deleteMany({});
   await AccommodationList.deleteMany({});
   await Duration.deleteMany({});
+  await ContractMeasure.deleteMany({});
 
 
   // Create users
@@ -123,6 +125,16 @@ async function seed() {
     title: 'Breaks',
     summary: 'Student will take breaks when needed',
     function: 'Escape',
+    createdBy: admin._id,
+    isTemplate: true,
+    isActive: true,
+    createdAt: new Date('2025-06-07T00:00:00.000Z')
+  });
+
+  const interventionTemplate2 = await InterventionList.create({
+    title: 'Contracts',
+    summary: 'Student will use behavior contracts to track and improve specific behaviors',
+    function: 'Attention',
     createdBy: admin._id,
     isTemplate: true,
     isActive: true,
@@ -360,6 +372,73 @@ async function seed() {
   student.behaviorDurations.push(outOfSeatDuration._id);
   student.interventions.push(outOfSeatIntervention._id);
   await student.save();
+
+  // Create contract measures
+  const contractMeasures = [
+    {
+      name: "Raise hand before speaking",
+      description: "Student raises their hand and waits to be called on before speaking",
+      category: "behavior",
+      createdBy: admin._id
+    },
+    {
+      name: "Stay in seat",
+      description: "Student remains seated during class activities unless given permission to move",
+      category: "behavior",
+      createdBy: admin._id
+    },
+    {
+      name: "Complete assigned work",
+      description: "Student finishes all assigned tasks within the given time frame",
+      category: "academic",
+      createdBy: admin._id
+    },
+    {
+      name: "Follow directions",
+      description: "Student follows teacher instructions the first time they are given",
+      category: "behavior",
+      createdBy: admin._id
+    },
+    {
+      name: "Use appropriate voice level",
+      description: "Student speaks at an appropriate volume for the classroom setting",
+      category: "behavior",
+      createdBy: admin._id
+    },
+    {
+      name: "Work independently",
+      description: "Student completes tasks without constant supervision",
+      category: "academic",
+      createdBy: admin._id
+    },
+    {
+      name: "Participate in group activities",
+      description: "Student actively engages in classroom discussions and group work",
+      category: "social",
+      createdBy: admin._id
+    },
+    {
+      name: "Use kind words",
+      description: "Student speaks respectfully to peers and adults",
+      category: "social",
+      createdBy: admin._id
+    },
+    {
+      name: "Organize materials",
+      description: "Student keeps desk and materials neat and organized",
+      category: "behavior",
+      createdBy: admin._id
+    },
+    {
+      name: "Ask for help when needed",
+      description: "Student appropriately requests assistance when struggling with a task",
+      category: "academic",
+      createdBy: admin._id
+    }
+  ];
+
+  const createdContractMeasures = await ContractMeasure.insertMany(contractMeasures);
+  console.log(`Created ${createdContractMeasures.length} contract measures`);
 
   console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);
   console.log('assignedIntervention:', assignedIntervention, 'interventionDate:', assignedIntervention.createdAt);

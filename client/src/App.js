@@ -26,6 +26,7 @@ import StudentList from './pages/TeacherPages/StudentsAssignedToTeacher/Students
 import DataMeasuresList from './pages/TeacherPages/DataMeasures/DataMeasuresTab';
 import Interventions from './pages/TeacherPages/Interventions/InterventionsTab'
 import AccommodationList from './pages/TeacherPages/Accommodations/AccommodationsTab';
+import Contracts from './pages/TeacherPages/Contracts/Contracts';
 
 // teacher pages: specific to student
 import SideMenuLandingPage from './pages/TeacherPages/SideMenuLandingPage'
@@ -36,6 +37,7 @@ import AddAccommodationsForStudent from './pages/TeacherPages/Accommodations/Add
 import StudentProfile from './pages/StudentPages/StudentProfile'
 import StudentGraph from './pages/StudentViewableGraphs'
 import AdditionalStudentInfo from './pages/TeacherPages/AdditionalStudentInfo'
+import StudentContracts from './pages/StudentPages/StudentContracts/StudentContracts'
 
 
 const authLink = setContext((_, { headers }) => {
@@ -127,6 +129,7 @@ function App() {
           <Route path ="/dataMeasures" element ={<DataMeasuresList/>} />
           <Route path="/interventions" element={<Interventions/>} />
           <Route path ="/accommodations" element={<AccommodationList/>}/>
+          <Route path="/contracts" element={<Contracts/>} />
 
           {/* teacher pages: student specific pages */}
           <Route path ="/studentProfile/:username/SideMenuLandingPage"element ={<SideMenuLandingPage/>}/>
@@ -140,6 +143,7 @@ function App() {
           <Route path ="/breakTimer" element ={<BreakTimer/>} />
           <Route path ="/data" element = {<StudentGraph/>}/>
           <Route path ="/studentProfile/:username" element={<StudentProfile/>}/>
+          <Route path="/studentContracts" element={<StudentContracts/>} />
          
         </Routes>
         <Footer />

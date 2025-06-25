@@ -525,3 +525,141 @@ export const END_BREAK = gql`
     }
   }
 `;
+
+// Contract Mutations
+export const CREATE_CONTRACT = gql`
+  mutation CreateContract($input: CreateContractInput!) {
+    createContract(input: $input) {
+      _id
+      title
+      assignedBy {
+        _id
+        firstName
+        lastName
+      }
+      student {
+        _id
+        firstName
+        lastName
+      }
+      contractMeasures {
+        _id
+        name
+        description
+        category
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_CONTRACT_ENTRY = gql`
+  mutation UpdateContractEntry($input: UpdateContractEntryInput!) {
+    updateContractEntry(input: $input) {
+      _id
+      title
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+    }
+  }
+`;
+
+export const DELETE_CONTRACT = gql`
+  mutation DeleteContract($contractId: ID!) {
+    deleteContract(contractId: $contractId) {
+      _id
+      title
+    }
+  }
+`;
+
+export const ADD_CONTRACT_TO_STUDENT = gql`
+  mutation AddContractToStudent($contractId: ID!, $studentId: ID!) {
+    addContractToStudent(contractId: $contractId, studentId: $studentId) {
+      _id
+      username
+      firstName
+      lastName
+      contracts {
+        _id
+        title
+        contractMeasures {
+          _id
+          name
+          description
+          category
+        }
+        type
+        times
+        measureType
+        rows
+        isActive
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const ADD_CONTRACT_MEASURE = gql`
+  mutation AddContractMeasure($name: String!, $description: String!, $category: String!) {
+    addContractMeasure(name: $name, description: $description, category: $category) {
+      _id
+      name
+      description
+      category
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const ADD_CONTRACT_MEASURE_TO_STUDENT = gql`
+  mutation AddContractMeasureToStudent($contractMeasureId: ID!, $studentId: ID!) {
+    addContractMeasureToStudent(contractMeasureId: $contractMeasureId, studentId: $studentId) {
+      _id
+      username
+      firstName
+      lastName
+      contracts {
+        _id
+        title
+        contractMeasures {
+          _id
+          name
+          description
+          category
+        }
+        type
+        times
+        measureType
+        rows
+        isActive
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
