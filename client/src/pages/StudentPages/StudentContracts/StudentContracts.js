@@ -94,6 +94,37 @@ const StudentContracts = () => {
                 </div>
               </div>
 
+              {/* Check-in Times Display (only for daily contracts) */}
+              {contract.type === 'daily' && contract.times.length > 0 && (
+                <div className="check-in-times-display" style={{ 
+                  background: '#e3f2fd', 
+                  border: '1px solid #2196f3', 
+                  borderRadius: 6, 
+                  padding: 12,
+                  marginBottom: 16,
+                  textAlign: 'center'
+                }}>
+                  <h6 style={{ margin: '0 0 8px 0', color: '#1976d2', fontSize: '14px' }}>
+                    📅 Check-in Times - You must check in at these times:
+                  </h6>
+                  <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    {contract.times.map((time, index) => (
+                      <span key={index} style={{ 
+                        padding: '4px 8px', 
+                        background: 'white', 
+                        border: '1px solid #2196f3', 
+                        borderRadius: 4,
+                        fontWeight: 500,
+                        color: '#1976d2',
+                        fontSize: '13px'
+                      }}>
+                        {time}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="contract-chart">
                 <table>
                   <thead>

@@ -16,7 +16,7 @@ const Contracts = () => {
     title: '',
     contractMeasureIds: [],
     type: 'daily',
-    times: [],
+    times: [''],
     measureType: 'smileys',
     rows: []
   });
@@ -71,7 +71,7 @@ const Contracts = () => {
         title: '',
         contractMeasureIds: [],
         type: 'daily',
-        times: [],
+        times: [''],
         measureType: 'smileys',
         rows: []
       });
@@ -282,7 +282,15 @@ const Contracts = () => {
                 <label>Contract Type:</label>
                 <select
                   value={contractForm.type}
-                  onChange={(e) => setContractForm({...contractForm, type: e.target.value})}
+                  onChange={(e) => {
+                    const newType = e.target.value;
+                    setContractForm({
+                      ...contractForm, 
+                      type: newType,
+                      // Reset times based on new type
+                      times: newType === 'daily' ? [''] : []
+                    });
+                  }}
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -293,35 +301,164 @@ const Contracts = () => {
                 <label>Set Check In Time(s):</label>
                 {contractForm.type === 'daily' ? (
                   <div className="time-inputs">
-                    <input
-                      type="time"
-                      onChange={(e) => setContractForm({...contractForm, times: [e.target.value]})}
-                    />
-                    <button onClick={() => setContractForm({...contractForm, times: [...contractForm.times, '']})}>
-                      Add Time
-                    </button>
+                    <div style={{ marginBottom: 12 }}>
+                      <input
+                        type="time"
+                        value={contractForm.times[contractForm.times.length - 1] || ''}
+                        onChange={(e) => {
+                          const newTimes = [...contractForm.times];
+                          newTimes[newTimes.length - 1] = e.target.value;
+                          setContractForm({...contractForm, times: newTimes});
+                        }}
+                        style={{ marginRight: 8, padding: 6 }}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setContractForm({...contractForm, times: [...contractForm.times, '']})}
+                        style={{ padding: '6px 12px', background: '#28a745', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        Add Time
+                      </button>
+                    </div>
+                    
+                    {/* Show current times */}
+                    {contractForm.times.length > 0 && contractForm.times.some(time => time) && (
+                      <div style={{ marginTop: 12 }}>
+                        <h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Check-in Times:</h5>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {contractForm.times.filter(time => time).map((time, index) => (
+                            <div key={index} style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              padding: '4px 8px', 
+                              background: '#f8f9fa', 
+                              border: '1px solid #dee2e6', 
+                              borderRadius: 4 
+                            }}>
+                              <span style={{ marginRight: 8 }}>{time}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTimes = contractForm.times.filter((_, i) => i !== index);
+                                  setContractForm({...contractForm, times: newTimes});
+                                }}
+                                style={{ 
+                                  background: '#dc3545', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  borderRadius: '50%', 
+                                  width: 20, 
+                                  height: 20, 
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="weekday-selection">
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                      <label key={day} className="day-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={contractForm.times.includes(day)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setContractForm({...contractForm, times: [...contractForm.times, day]});
-                            } else {
-                              setContractForm({...contractForm, times: contractForm.times.filter(t => t !== day)});
-                            }
-                          }}
-                        />
-                        {day}
-                      </label>
-                    ))}
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Select Days:</label>
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                        <label key={day} className="day-checkbox" style={{ display: 'block', marginBottom: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={contractForm.times.includes(day)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setContractForm({...contractForm, times: [...contractForm.times, day]});
+                              } else {
+                                setContractForm({...contractForm, times: contractForm.times.filter(t => t !== day)});
+                              }
+                            }}
+                            style={{ marginRight: 8 }}
+                          />
+                          {day}
+                        </label>
+                      ))}
+                    </div>
+                    
+                    {/* Show selected days */}
+                    {contractForm.times.length > 0 && (
+                      <div style={{ marginTop: 12 }}>
+                        <h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Selected Days:</h5>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {contractForm.times.map((day, index) => (
+                            <div key={index} style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              padding: '4px 8px', 
+                              background: '#f8f9fa', 
+                              border: '1px solid #dee2e6', 
+                              borderRadius: 4 
+                            }}>
+                              <span style={{ marginRight: 8 }}>{day}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTimes = contractForm.times.filter((_, i) => i !== index);
+                                  setContractForm({...contractForm, times: newTimes});
+                                }}
+                                style={{ 
+                                  background: '#dc3545', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  borderRadius: '50%', 
+                                  width: 20, 
+                                  height: 20, 
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Check-in Times Preview (only for daily contracts) */}
+              {contractForm.type === 'daily' && contractForm.times.length > 0 && contractForm.times.some(time => time) && (
+                <div className="form-group" style={{ marginTop: 20 }}>
+                  <h5 style={{ margin: '0 0 12px 0', color: '#333' }}>Check-in Times Preview</h5>
+                  <p style={{ fontSize: '14px', color: '#666', marginBottom: 12 }}>
+                    This is what will appear at the top of the contract to show students when to check in:
+                  </p>
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    border: '1px solid #dee2e6', 
+                    borderRadius: 6, 
+                    padding: 16,
+                    textAlign: 'center'
+                  }}>
+                    <h6 style={{ margin: '0 0 8px 0', color: '#495057' }}>Check-in Times:</h6>
+                    <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
+                      {contractForm.times.filter(time => time).map((time, index) => (
+                        <span key={index} style={{ 
+                          padding: '6px 12px', 
+                          background: 'white', 
+                          border: '1px solid #ced4da', 
+                          borderRadius: 4,
+                          fontWeight: 500,
+                          color: '#495057'
+                        }}>
+                          {time}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Measure Type:</label>
@@ -365,17 +502,49 @@ const Contracts = () => {
                 <div className="contract-info">
                   <p><strong>Type:</strong> {contract.type}</p>
                   <p><strong>Measure Type:</strong> {contract.measureType}</p>
-                  <p><strong>Times:</strong> {contract.times.join(', ')}</p>
+                  <p><strong>Times:</strong> {contract.times.filter(Boolean).join(', ')}</p>
                 </div>
 
                 {/* Contract Preview */}
                 <div className="contract-preview" style={{ marginBottom: 24 }}>
                   <h5 style={{ margin: '8px 0' }}>Contract Preview</h5>
+                  
+                  {/* Check-in Times Display (only for daily contracts) */}
+                  {contract.type === 'daily' && contract.times.length > 0 && (
+                    <div style={{ 
+                      background: '#e3f2fd', 
+                      border: '1px solid #2196f3', 
+                      borderRadius: 6, 
+                      padding: 12,
+                      marginBottom: 16,
+                      textAlign: 'center'
+                    }}>
+                      <h6 style={{ margin: '0 0 8px 0', color: '#1976d2', fontSize: '14px' }}>
+                        📅 Check-in Times - Students must check in at these times:
+                      </h6>
+                      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        {contract.times.filter(Boolean).map((time, index) => (
+                          <span key={index} style={{ 
+                            padding: '4px 8px', 
+                            background: 'white', 
+                            border: '1px solid #2196f3', 
+                            borderRadius: 4,
+                            fontWeight: 500,
+                            color: '#1976d2',
+                            fontSize: '13px'
+                          }}>
+                            {time}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <table className="contract-preview-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8 }}>
                     <thead>
                       <tr>
                         <th style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>Behavior</th>
-                        {contract.times.map((time) => (
+                        {contract.times.filter(Boolean).map((time) => (
                           <th key={time} style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>{time}</th>
                         ))}
                       </tr>
@@ -384,7 +553,7 @@ const Contracts = () => {
                       {contract.rows.map((row) => (
                         <tr key={row}>
                           <td style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa', fontWeight: 500 }}>{row}</td>
-                          {contract.times.map((time) => (
+                          {contract.times.filter(Boolean).map((time) => (
                             <td key={time} style={{ border: '1px solid #ccc', padding: 6, textAlign: 'center' }}>
                               {contract.measureType === 'smileys' ? (
                                 <span style={{ fontSize: 22 }}>
@@ -413,7 +582,7 @@ const Contracts = () => {
                     <thead>
                       <tr>
                         <th>Behavior</th>
-                        {contract.times.map((time) => (
+                        {contract.times.filter(Boolean).map((time) => (
                           <th key={time}>{time}</th>
                         ))}
                       </tr>
@@ -422,7 +591,7 @@ const Contracts = () => {
                       {contract.rows.map((row) => (
                         <tr key={row}>
                           <td>{row}</td>
-                          {contract.times.map((time) => {
+                          {contract.times.filter(Boolean).map((time) => {
                             const today = new Date().toISOString().split('T')[0];
                             const dayEntry = contract.chart.find(day => day.date === today);
                             const timeEntry = dayEntry?.entries.find(entry => entry.time === time);
