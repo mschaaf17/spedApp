@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { QUERY_ME } from '../../../utils/queries';
 import { QUERY_CONTRACTS, QUERY_CONTRACT_MEASURES } from '../../../utils/queries';
-import { CREATE_CONTRACT, UPDATE_CONTRACT_ENTRY, DELETE_CONTRACT } from '../../../utils/mutations';
+import { CREATE_CONTRACT, UPDATE_CONTRACT_ENTRY, DELETE_CONTRACT, ADD_CONTRACT_DATA_MEASURE_TO_STUDENT, UPDATE_CONTRACT_ACTIVE_STATUS } from '../../../utils/mutations';
+import { Switch, message } from 'antd';
 import './index.css';
 
 const Contracts = () => {
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [selectedStudent, setSelectedStudent] = useState(location.state?.selectedStudent || null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [contractForm, setContractForm] = useState({
     title: '',
@@ -16,9 +20,9 @@ const Contracts = () => {
     measureType: 'smileys',
     rows: []
   });
-
-  const { data: userData } = useQuery(QUERY_ME);
-  const { data: contractMeasuresData } = useQuery(QUERY_CONTRACT_MEASURES);
+  const [addingMeasureId, setAddingMeasureId] = useState('');
+  const { data: userData, refetch: refetchMe } = useQuery(QUERY_ME);
+  const { data: contractMeasuresData, refetch: refetchContractMeasures } = useQuery(QUERY_CONTRACT_MEASURES);
   const { data: contractsData, refetch: refetchContracts } = useQuery(QUERY_CONTRACTS, {
     variables: { studentId: selectedStudent?._id },
     skip: !selectedStudent
@@ -27,14 +31,29 @@ const Contracts = () => {
   const [createContract] = useMutation(CREATE_CONTRACT);
   const [updateContractEntry] = useMutation(UPDATE_CONTRACT_ENTRY);
   const [deleteContract] = useMutation(DELETE_CONTRACT);
+  const [addContractDataMeasureToStudent] = useMutation(ADD_CONTRACT_DATA_MEASURE_TO_STUDENT);
+  const [updateContractActiveStatus] = useMutation(UPDATE_CONTRACT_ACTIVE_STATUS);
 
   const students = userData?.me?.students || [];
-  const contractMeasures = contractMeasuresData?.contractMeasures || [];
+  const allContractMeasures = contractMeasuresData?.contractMeasures || [];
   const contracts = contractsData?.contracts || [];
 
+  // Get contract measures already assigned to the student (from their contractDataMeasures)
+  const studentContractDataMeasures = selectedStudent?.contractDataMeasures || [];
+  const assignedContractMeasures = studentContractDataMeasures;
+  const unassignedContractMeasures = allContractMeasures.filter(measure => 
+    !studentContractDataMeasures.some(studentMeasure => studentMeasure._id === measure._id)
+  );
+
   const handleStudentSelect = (student) => {
-    setSelectedStudent(student);
+    // Get the full student data from userData to ensure we have contractDataMeasures
+    const fullStudentData = userData?.me?.students?.find(s => s._id === student._id);
+    setSelectedStudent(fullStudentData || student);
     setShowCreateForm(false);
+  };
+
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
   };
 
   const handleCreateContract = async () => {
@@ -57,8 +76,33 @@ const Contracts = () => {
         rows: []
       });
       refetchContracts();
+      refetchMe();
     } catch (error) {
       console.error('Error creating contract:', error);
+    }
+  };
+
+  const handleAddContractMeasure = async () => {
+    if (!addingMeasureId) return;
+    try {
+      const result = await addContractDataMeasureToStudent({
+        variables: {
+          contractMeasureId: addingMeasureId,
+          studentId: selectedStudent._id
+        }
+      });
+      
+      // Update the selectedStudent with the new contractDataMeasures
+      const updatedStudent = result.data.addContractDataMeasureToStudent;
+      setSelectedStudent(updatedStudent);
+      setAddingMeasureId('');
+      
+      // Refresh all data
+      refetchMe();
+      refetchContracts();
+      refetchContractMeasures();
+    } catch (error) {
+      console.error('Error adding contract measure to student:', error);
     }
   };
 
@@ -87,8 +131,22 @@ const Contracts = () => {
         variables: { contractId }
       });
       refetchContracts();
+      refetchMe();
     } catch (error) {
       console.error('Error deleting contract:', error);
+    }
+  };
+
+  // Add handler for toggling contract active status
+  const handleToggleActive = async (contract) => {
+    try {
+      await updateContractActiveStatus({
+        variables: { contractId: contract._id, isActive: !contract.isActive },
+      });
+      message.success(`Contract "${contract.title}" is now ${!contract.isActive ? 'active' : 'inactive'}`);
+      refetchContracts();
+    } catch (error) {
+      message.error('Failed to update contract status');
     }
   };
 
@@ -107,23 +165,32 @@ const Contracts = () => {
 
   return (
     <div className="contracts-container">
-      <h2>Contracts</h2>
-      
-      {/* Student Selection */}
-      <div className="student-selection">
-        <h3>Select Student</h3>
-        <div className="student-list">
-          {students.map((student) => (
-            <button
-              key={student._id}
-              className={`student-button ${selectedStudent?._id === student._id ? 'active' : ''}`}
-              onClick={() => handleStudentSelect(student)}
-            >
-              {student.firstName} {student.lastName}
-            </button>
-          ))}
-        </div>
+      <div className="contracts-header-main">
+        <h2>Contracts</h2>
+        {selectedStudent && (
+          <button onClick={handleBackToDashboard} className="back-btn">
+            ← Back to Dashboard
+          </button>
+        )}
       </div>
+      
+      {/* Student Selection - Only show if no student is pre-selected */}
+      {!selectedStudent && (
+        <div className="student-selection">
+          <h3>Select Student</h3>
+          <div className="student-list">
+            {students.map((student) => (
+              <button
+                key={student._id}
+                className={`student-button ${selectedStudent?._id === student._id ? 'active' : ''}`}
+                onClick={() => handleStudentSelect(student)}
+              >
+                {student.firstName} {student.lastName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selectedStudent && (
         <div className="contracts-content">
@@ -153,8 +220,13 @@ const Contracts = () => {
 
               <div className="form-group">
                 <label>Select Behaviors:</label>
+                {assignedContractMeasures.length === 0 ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={{ color: '#888' }}>No contract behaviors assigned to this student yet.</span>
+                  </div>
+                ) : null}
                 <div className="measure-selection">
-                  {contractMeasures.map((measure) => (
+                  {assignedContractMeasures.map((measure) => (
                     <label key={measure._id} className="measure-checkbox">
                       <input
                         type="checkbox"
@@ -179,6 +251,31 @@ const Contracts = () => {
                     </label>
                   ))}
                 </div>
+                {/* Add new contract data measure dropdown */}
+                {unassignedContractMeasures.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ fontWeight: 500 }}>Add New Contract Data Measure:</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                      <select
+                        value={addingMeasureId}
+                        onChange={e => setAddingMeasureId(e.target.value)}
+                        style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                      >
+                        <option value="">Select a contract measure...</option>
+                        {unassignedContractMeasures.map(measure => (
+                          <option key={measure._id} value={measure._id}>{measure.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={handleAddContractMeasure}
+                        style={{ padding: '8px 16px', borderRadius: 4, background: '#007bff', color: 'white', border: 'none', cursor: 'pointer' }}
+                        disabled={!addingMeasureId}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
@@ -193,7 +290,7 @@ const Contracts = () => {
               </div>
 
               <div className="form-group">
-                <label>Times:</label>
+                <label>Set Check In Time(s):</label>
                 {contractForm.type === 'daily' ? (
                   <div className="time-inputs">
                     <input
@@ -250,6 +347,13 @@ const Contracts = () => {
               <div key={contract._id} className="contract-card">
                 <div className="contract-header">
                   <h4>{contract.title}</h4>
+                  <Switch
+                    checked={contract.isActive}
+                    checkedChildren="Active"
+                    unCheckedChildren="Inactive"
+                    onChange={() => handleToggleActive(contract)}
+                    style={{ marginLeft: 12 }}
+                  />
                   <button 
                     onClick={() => handleDeleteContract(contract._id)}
                     className="delete-btn"
@@ -262,6 +366,45 @@ const Contracts = () => {
                   <p><strong>Type:</strong> {contract.type}</p>
                   <p><strong>Measure Type:</strong> {contract.measureType}</p>
                   <p><strong>Times:</strong> {contract.times.join(', ')}</p>
+                </div>
+
+                {/* Contract Preview */}
+                <div className="contract-preview" style={{ marginBottom: 24 }}>
+                  <h5 style={{ margin: '8px 0' }}>Contract Preview</h5>
+                  <table className="contract-preview-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>Behavior</th>
+                        {contract.times.map((time) => (
+                          <th key={time} style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>{time}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contract.rows.map((row) => (
+                        <tr key={row}>
+                          <td style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa', fontWeight: 500 }}>{row}</td>
+                          {contract.times.map((time) => (
+                            <td key={time} style={{ border: '1px solid #ccc', padding: 6, textAlign: 'center' }}>
+                              {contract.measureType === 'smileys' ? (
+                                <span style={{ fontSize: 22 }}>
+                                  {/* Show all 3 smileys as faded, for preview */}
+                                  <span style={{ opacity: 0.7, marginRight: 2 }}>😊</span>
+                                  <span style={{ opacity: 0.7, marginRight: 2 }}>😐</span>
+                                  <span style={{ opacity: 0.7 }}>😞</span>
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: 16 }}>
+                                  {/* Show numbers 1-5 as faded, for preview */}
+                                  {[1,2,3,4,5].map(n => <span key={n} style={{ opacity: 0.7, marginRight: 2 }}>{n}</span>)}
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Contract Chart */}

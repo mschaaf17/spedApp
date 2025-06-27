@@ -17,6 +17,7 @@ const typeDefs = gql`
     breakSettings: BreakSettings
     breakHistory: [BreakRecord]
     contracts: [Contract!]!
+    contractDataMeasures: [ContractMeasure!]!
   }
 
   type ContractMeasure {
@@ -328,7 +329,12 @@ const typeDefs = gql`
     deleteContract(contractId: ID!): Contract
     addContractToStudent(contractId: ID!, studentId: ID!): User
     addContractMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
+    toggleContractsForStudent(studentId: ID!, enabled: Boolean!): User
     addContractMeasure(name: String!, description: String!, category: String!): ContractMeasure
+    deleteContractMeasure(contractMeasureId: ID!): ContractMeasure
+    addContractDataMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
+    removeContractDataMeasureFromStudent(contractMeasureId: ID!, studentId: ID!): User
+    updateContractActiveStatus(contractId: ID!, isActive: Boolean!): Contract
   }
 
   input SelectedChartInput {

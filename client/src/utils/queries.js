@@ -175,6 +175,19 @@ query Me {
       createdAt
       updatedAt
     }
+    contractDataMeasures {
+      _id
+      name
+      description
+      category
+      isActive
+      createdBy {
+        _id
+        username
+        firstName
+        lastName
+      }
+    }
     }
     accommodations {
   _id
@@ -318,6 +331,19 @@ query Me {
       isActive
       createdAt
       updatedAt
+    }
+    contractDataMeasures {
+      _id
+      name
+      description
+      category
+      isActive
+      createdBy {
+        _id
+        username
+        firstName
+        lastName
+      }
     }
   }
 }
@@ -648,6 +674,19 @@ query User($identifier: String!, $isUsername: Boolean!) {
       isActive
       createdAt
       updatedAt
+    }
+    contractDataMeasures {
+      _id
+      name
+      description
+      category
+      isActive
+      createdBy {
+        _id
+        username
+        firstName
+        lastName
+      }
     }
   }
 }

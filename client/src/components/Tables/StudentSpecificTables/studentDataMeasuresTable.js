@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Tag, Tooltip, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ME } from '../../../utils/queries';
-import { REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT, DELETE_CONTRACT } from '../../../utils/mutations';
+import { REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, REMOVE_DURATION_BEING_TRACKED_FOR_STUDENT, DELETE_CONTRACT, REMOVE_CONTRACT_DATA_MEASURE_FROM_STUDENT } from '../../../utils/mutations';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -31,6 +31,11 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
       { query: QUERY_ME }
     ]
   });
+  const [removeContractDataMeasure] = useMutation(REMOVE_CONTRACT_DATA_MEASURE_FROM_STUDENT, {
+    refetchQueries: [
+      { query: QUERY_ME }
+    ]
+  });
 
   // Combine frequencies and durations into one data source
   const getDataMeasures = () => {
@@ -39,6 +44,7 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
     console.log('Student data in getDataMeasures:', student);
     console.log('Student behaviorFrequencies:', student.behaviorFrequencies);
     console.log('Student behaviorDurations:', student.behaviorDurations);
+    console.log('Student contractDataMeasures:', student.contractDataMeasures);
 
     const frequencies = (student.behaviorFrequencies || [])
       .filter(freq => freq.isActive)
@@ -76,32 +82,8 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
         };
       });
 
-    const contracts = (student.contracts || [])
-      .filter(contract => contract.isActive)
-      .map(contract => {
-        console.log('Processing contract:', {
-          _id: contract._id,
-          title: contract.title,
-          contractMeasures: contract.contractMeasures,
-          createdAt: contract.createdAt
-        });
-        
-        // For contracts created from contract measures, use the contract measure name as the behavior title
-        // The contract title is set to the contract measure name, so we can use it directly
-        const behaviorTitle = contract.title || 'Contract';
-        
-        return {
-          ...contract,
-          behaviorTitle: behaviorTitle, // Use the contract title (which is the contract measure name)
-          operationalDefinition: contract.contractMeasures?.map(cm => cm.name || cm.description).join(', ') || 'No measures defined',
-          dataMeasureType: 'Contract',
-          type: 'contract',
-          icon: <AssessmentOutlinedIcon style={{ color: '#722ed1' }} />,
-          status: contract.isActive ? 'Active' : 'Inactive'
-        };
-      });
-
-    const result = [...frequencies, ...durations, ...contracts];
+    // Only include frequencies and durations, not contract data measures
+    const result = [...frequencies, ...durations];
     console.log('Final dataMeasures result:', result);
     return result;
   };
@@ -149,9 +131,11 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
           }
         });
       } else if (deleteRecord.type === 'contract') {
-        await deleteContract({
+        // For contract data measures, remove them from the student
+        await removeContractDataMeasure({
           variables: {
-            contractId: deleteRecord._id
+            contractMeasureId: deleteRecord._id,
+            studentId: student._id
           }
         });
       }

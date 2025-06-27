@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Select, Card, Tabs, Button, Table, Space, Input, Dropdown, Modal, Popconfirm, message, Form, InputNumber, Switch, Radio } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_INTERVENTION_TEMPLATES, QUERY_ACCOMMODATION_TEMPLATES, QUERY_USER, QUERY_FREQUENCY_TEMPLATES, QUERY_DURATION_TEMPLATES, QUERY_CONTRACT_MEASURES } from '../../utils/queries';
-import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, UPDATE_STUDENT_VIEW_CONFIG, UPDATE_BREAK_SETTINGS, ADD_CONTRACT_TO_STUDENT, ADD_CONTRACT_MEASURE_TO_STUDENT } from '../../utils/mutations';
+import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_INTERVENTION_FOR_STUDENT, REMOVE_INTERVENTION_FROM_STUDENT, ADD_ACCOMMODATION_FOR_STUDENT, REMOVE_ACCOMMODATION_FROM_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, UPDATE_STUDENT_VIEW_CONFIG, UPDATE_BREAK_SETTINGS, ADD_CONTRACT_TO_STUDENT, ADD_CONTRACT_MEASURE_TO_STUDENT, TOGGLE_CONTRACTS_FOR_STUDENT, DELETE_CONTRACT } from '../../utils/mutations';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -121,6 +121,8 @@ const Dashboard = () => {
   const [updateBreakSettings] = useMutation(UPDATE_BREAK_SETTINGS);
   const [addContractToStudent] = useMutation(ADD_CONTRACT_TO_STUDENT);
   const [addContractMeasureToStudent] = useMutation(ADD_CONTRACT_MEASURE_TO_STUDENT);
+  const [toggleContractsForStudent] = useMutation(TOGGLE_CONTRACTS_FOR_STUDENT);
+  const [deleteContract] = useMutation(DELETE_CONTRACT);
 
   const myStudents = meData?.me?.students || [];
   const getAllStudents = allStudentsData?.students || [];
@@ -138,18 +140,52 @@ const Dashboard = () => {
   // Get interventions for the selected student with complete data
   const getStudentInterventions = () => {
     if (!selectedStudent) return [];
-    
-    // Use detailed student data if available (includes behaviorId field)
+    let interventions = [];
     if (selectedStudentData?.user) {
-      return selectedStudentData.user.interventions || [];
+      interventions = [...(selectedStudentData.user.interventions || [])];
+    } else if (allInterventions) {
+      interventions = [...allInterventions.filter(intervention => 
+        intervention.studentId?._id === selectedStudent._id
+      )];
     }
+
+    console.log('Existing interventions:', interventions);
+
+    // Add synthetic Contracts intervention(s) for each active contract
+    const contracts = selectedStudentData?.user?.contracts?.filter(c => c.isActive) || [];
+    console.log('Active contracts for student:', contracts);
     
-    // Fallback to basic intervention data from QUERY_ME
-    if (!allInterventions) return [];
-    
-    return allInterventions.filter(intervention => 
-      intervention.studentId?._id === selectedStudent._id
+    // Check if there's already a real "Contracts" intervention
+    const hasRealContractsIntervention = interventions.some(i => 
+      i.title && i.title.toLowerCase().includes('contract')
     );
+    console.log('Has real contracts intervention:', hasRealContractsIntervention);
+
+    // Create synthetic interventions for each active contract
+    const syntheticInterventions = contracts.map(contract => {
+      console.log('Processing contract:', contract.title, 'with measures:', contract.contractMeasures);
+      
+      const behaviorNames = contract.contractMeasures?.map(m => m.name) || [];
+      console.log('Behavior names for contract:', behaviorNames);
+      
+      return {
+        _id: `contract-${contract._id}`,
+        title: `Contracts: ${contract.title}`, // Add "Contracts: " prefix
+        behaviorTitle: behaviorNames.length > 0 ? behaviorNames.join(', ') : 'No behaviors assigned', // List contract behaviors
+        summary: 'A behavior contract is a written agreement between a student and teacher that outlines specific behaviors to be improved and the rewards/consequences for meeting or not meeting those goals.',
+        function: 'Attention',
+        isActive: true,
+        createdAt: contract.createdAt, // Use contract creation date as assigned date
+        isTemplate: false,
+        studentId: selectedStudent,
+        behaviorId: null
+      };
+    });
+
+    // Combine existing interventions with synthetic ones
+    const finalInterventions = [...interventions, ...syntheticInterventions];
+    console.log('Final interventions list:', finalInterventions);
+    return finalInterventions;
   };
 
   // Handle student selection from dropdown
@@ -448,13 +484,6 @@ const Dashboard = () => {
         label: `${d.behaviorTitle} (Duration)`
       }));
     
-    const contracts = (studentData.contracts || [])
-      .filter(c => c.isActive)
-      .map(c => ({
-        value: c._id,
-        label: `${c.title} (Contract)`
-      }));
-    
     // Add break charts if student has break settings enabled
     const breakCharts = [];
     if (studentData.breakSettings?.isEnabled) {
@@ -468,7 +497,7 @@ const Dashboard = () => {
       });
     }
     
-    return [...frequencies, ...durations, ...contracts, ...breakCharts];
+    return [...frequencies, ...durations, ...breakCharts];
   };
 
   // Get available interventions (filter out already assigned ones)
@@ -514,7 +543,7 @@ const Dashboard = () => {
   };
 
   // Get available data measures (filter out already assigned ones)
-  const getAvailableDataMeasures = () => {
+  const getAvailableDataMeasures = (filterType = null) => {
     if (!selectedStudent) return [];
     
     // Use detailed student data if available (more up-to-date)
@@ -527,41 +556,41 @@ const Dashboard = () => {
     const studentDurations = (studentData.behaviorDurations || [])
       .map(d => d.templateId || d._id); // Use templateId if available, fallback to _id
     
-    // For contracts, we need to check if any existing contract contains the contract measure
-    const assignedContractMeasureIds = new Set();
-    (studentData.contracts || []).forEach(contract => {
-      (contract.contractMeasures || []).forEach(measure => {
-        assignedContractMeasureIds.add(measure._id);
-      });
-    });
+    // For contracts, we need to check if any existing contract contains that contract measure ID
+    const studentContractMeasureIds = (studentData.contracts || [])
+      .filter(contract => contract.isActive)
+      .flatMap(contract => contract.contractMeasures || [])
+      .map(measure => measure._id);
     
-    const assignedIds = new Set([...studentFrequencies, ...studentDurations]);
+    const result = [];
     
-    // Filter based on selected type
-    if (selectedDataMeasureType === 'frequency') {
-      return frequencyTemplates
-        .filter(freq => !assignedIds.has(freq._id))
-        .map(freq => ({
-          value: freq._id,
-          label: freq.behaviorTitle
-        }));
-    } else if (selectedDataMeasureType === 'duration') {
-      return durationTemplates
-        .filter(dur => !assignedIds.has(dur._id))
-        .map(dur => ({
-          value: dur._id,
-          label: dur.behaviorTitle
-        }));
-    } else if (selectedDataMeasureType === 'contract') {
-      return contractTemplates
-        .filter(contract => !assignedContractMeasureIds.has(contract._id))
-        .map(contract => ({
-          value: contract._id,
-          label: contract.name
-        }));
+    // Add frequency templates (filter out already assigned)
+    if (frequencyTemplates && (!filterType || filterType === 'frequency')) {
+      frequencyTemplates
+        .filter(freq => !studentFrequencies.includes(freq._id))
+        .forEach(freq => {
+          result.push({
+            value: freq._id,
+            label: `${freq.behaviorTitle} (Frequency)`,
+            type: 'frequency'
+          });
+        });
     }
     
-    return [];
+    // Add duration templates (filter out already assigned)
+    if (durationTemplates && (!filterType || filterType === 'duration')) {
+      durationTemplates
+        .filter(dur => !studentDurations.includes(dur._id))
+        .forEach(dur => {
+          result.push({
+            value: dur._id,
+            label: `${dur.behaviorTitle} (Duration)`,
+            type: 'duration'
+          });
+        });
+    }
+    
+    return result;
   };
 
   // Handle removing an intervention from the student
@@ -930,6 +959,52 @@ const Dashboard = () => {
     }
   };
 
+  const handleToggleContracts = async (checked) => {
+    if (!selectedStudent) return;
+    
+    try {
+      await toggleContractsForStudent({
+        variables: {
+          studentId: selectedStudent._id,
+          enabled: checked
+        },
+        refetchQueries: [
+          { query: QUERY_ME },
+          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+        ]
+      });
+      
+      message.success(`Contracts ${checked ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      console.error('Error toggling contracts:', error);
+      message.error(`Failed to ${checked ? 'enable' : 'disable'} contracts`);
+    }
+  };
+
+  // Remove contract handler
+  const handleRemoveContract = async (contractId) => {
+    Modal.confirm({
+      title: 'Remove Contract',
+      content: 'Are you sure you want to remove this contract from the student? This action cannot be undone.',
+      okText: 'Remove',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteContract({
+            variables: { contractId },
+          });
+          message.success('Contract removed successfully');
+          if (selectedStudent?.username) {
+            refetchSelectedStudent();
+          }
+        } catch (error) {
+          message.error('Failed to remove contract');
+        }
+      },
+    });
+  };
+
   return (
     <Layout className="dashboard-layout">
       <div className="dashboard-content">
@@ -1150,13 +1225,20 @@ const Dashboard = () => {
                             title: 'Behavior',
                             dataIndex: 'behaviorId',
                             key: 'behavior',
-                            render: (behaviorId) => behaviorId?.behaviorTitle || '—',
+                            render: (behaviorId, record) => {
+                              // For synthetic contract interventions, use behaviorTitle directly
+                              if (record.behaviorTitle) {
+                                return record.behaviorTitle;
+                              }
+                              // For real interventions, use behaviorId?.behaviorTitle
+                              return behaviorId?.behaviorTitle || '—';
+                            },
                           },
                           {
                             title: 'Assigned Date',
                             dataIndex: 'createdAt',
                             key: 'createdAt',
-                            render: (createdAt) => {
+                            render: (createdAt, record) => {
                               if (!createdAt) return '—';
                               let dateObj;
                               if (typeof createdAt === "number") {
@@ -1266,27 +1348,51 @@ const Dashboard = () => {
                     </div>
                   </TabPane>
 
-                  {studentHasContractsFeature && (
-                    <TabPane tab="Contracts" key="contracts">
-                      <div className="contracts-content">
-                        <div className="contracts-header">
-                          <h4>Behavior Contracts</h4>
-                          <p>Manage behavior contracts for {selectedStudent?.firstName}</p>
-                          <Button type="primary" onClick={() => navigate('/contracts')}>
-                            Manage Contracts
-                          </Button>
-                        </div>
-                        <div style={{ textAlign: 'center', padding: '24px' }}>
-                          <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
-                            Click "Manage Contracts" to create and manage behavior contracts for {selectedStudent?.firstName}.
-                          </p>
-                          <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
-                            Contracts allow you to track specific behaviors with smiley faces or numbers throughout the day or week.
-                          </p>
-                        </div>
+                  <TabPane tab="Contracts" key="contracts">
+                    <div className="contracts-content">
+                      <div className="contracts-header">
+                        <h4>Behavior Contracts</h4>
                       </div>
-                    </TabPane>
-                  )}
+                      <div style={{ 
+                        textAlign: 'center', 
+                        padding: '24px',
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: '8px',
+                        marginBottom: '24px'
+                      }}>
+                        {(selectedStudentData?.user?.contracts && selectedStudentData.user.contracts.length > 0) ? (
+                          <div>
+                            <Table
+                              columns={[
+                                { title: 'Contract Title', dataIndex: 'title', key: 'title' },
+                                { title: 'Contract Type', dataIndex: 'type', key: 'type' },
+                                { title: 'Status', dataIndex: 'isActive', key: 'isActive', render: (active) => <span style={{ color: active ? 'green' : 'red' }}>{active ? 'active' : 'inactive'}</span> },
+                                { title: 'Measure Type', dataIndex: 'measureType', key: 'measureType' },
+                                { title: 'Data Measure(s)', dataIndex: 'contractMeasures', key: 'contractMeasures', render: (measures) => measures && measures.length ? measures.map(m => m.name).join(', ') : '—' },
+                                { title: 'Action', key: 'action', render: (_, record) => <Button danger size="small" onClick={() => handleRemoveContract(record._id)}>remove</Button> },
+                              ]}
+                              dataSource={selectedStudentData?.user?.contracts || []}
+                              rowKey="_id"
+                              pagination={false}
+                              style={{ marginBottom: 16 }}
+                            />
+                            <Button type="default" style={{ marginTop: 16 }} onClick={() => navigate('/contracts', { state: { selectedStudent } })}>
+                              Manage Contracts
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                              No contracts assigned to this student yet.
+                            </p>
+                            <Button type="default" onClick={() => navigate('/contracts', { state: { selectedStudent } })}>
+                              Manage Contracts
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabPane>
 
                   {studentHasBreaksFeature && (
                     <TabPane tab="Breaks" key="breaks">
@@ -1811,7 +1917,7 @@ const Dashboard = () => {
         okText="Add Data Measure"
         cancelText="Cancel"
         okButtonProps={{ 
-          disabled: !selectedDataMeasure || !selectedDataMeasureType || getAvailableDataMeasures().length === 0
+          disabled: !selectedDataMeasure || !selectedDataMeasureType || getAvailableDataMeasures(selectedDataMeasureType).length === 0
         }}
       >
         <div style={{ marginBottom: 16 }}>
@@ -1828,8 +1934,7 @@ const Dashboard = () => {
             }}
             options={[
               { value: 'frequency', label: 'Frequency' },
-              { value: 'duration', label: 'Duration' },
-              { value: 'contract', label: 'Contract' }
+              { value: 'duration', label: 'Duration' }
             ]}
           />
         </div>
@@ -1839,13 +1944,13 @@ const Dashboard = () => {
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
               Select {selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} Behavior:
             </label>
-            {getAvailableDataMeasures().length > 0 ? (
+            {getAvailableDataMeasures(selectedDataMeasureType).length > 0 ? (
               <Select
                 placeholder={`Select a ${selectedDataMeasureType === 'frequency' ? 'Frequency' : selectedDataMeasureType === 'duration' ? 'Duration' : 'Contract'} behavior`}
                 style={{ width: '100%' }}
                 value={selectedDataMeasure}
                 onChange={setSelectedDataMeasure}
-                options={getAvailableDataMeasures()}
+                options={getAvailableDataMeasures(selectedDataMeasureType)}
               />
             ) : (
               <div style={{ 
@@ -1887,8 +1992,6 @@ const Dashboard = () => {
                 dataMeasure = frequencyTemplates.find(f => f._id === selectedDataMeasure);
               } else if (selectedDataMeasureType === 'duration') {
                 dataMeasure = durationTemplates.find(d => d._id === selectedDataMeasure);
-              } else if (selectedDataMeasureType === 'contract') {
-                dataMeasure = contractTemplates.find(c => c._id === selectedDataMeasure);
               }
               
               return dataMeasure ? (

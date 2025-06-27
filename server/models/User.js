@@ -107,6 +107,10 @@ const UserSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Contract",
   }],
+  contractDataMeasures: [{
+    type: Schema.Types.ObjectId,
+    ref: "ContractMeasure",
+  }],
 });
 
 // set up pre-save middleware to create password

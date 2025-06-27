@@ -594,6 +594,37 @@ export const DELETE_CONTRACT = gql`
   }
 `;
 
+export const UPDATE_CONTRACT_ACTIVE_STATUS = gql`
+  mutation UpdateContractActiveStatus($contractId: ID!, $isActive: Boolean!) {
+    updateContractActiveStatus(contractId: $contractId, isActive: $isActive) {
+      _id
+      title
+      contractMeasures {
+        _id
+        name
+        description
+        category
+      }
+      type
+      times
+      measureType
+      rows
+      chart {
+        date
+        entries {
+          time
+          value
+          note
+        }
+      }
+      notes
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const ADD_CONTRACT_TO_STUDENT = gql`
   mutation AddContractToStudent($contractId: ID!, $studentId: ID!) {
     addContractToStudent(contractId: $contractId, studentId: $studentId) {
@@ -636,6 +667,20 @@ export const ADD_CONTRACT_MEASURE = gql`
   }
 `;
 
+export const DELETE_CONTRACT_MEASURE = gql`
+  mutation DeleteContractMeasure($contractMeasureId: ID!) {
+    deleteContractMeasure(contractMeasureId: $contractMeasureId) {
+      _id
+      name
+      description
+      category
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const ADD_CONTRACT_MEASURE_TO_STUDENT = gql`
   mutation AddContractMeasureToStudent($contractMeasureId: ID!, $studentId: ID!) {
     addContractMeasureToStudent(contractMeasureId: $contractMeasureId, studentId: $studentId) {
@@ -659,6 +704,60 @@ export const ADD_CONTRACT_MEASURE_TO_STUDENT = gql`
         isActive
         createdAt
         updatedAt
+      }
+    }
+  }
+`;
+
+export const TOGGLE_CONTRACTS_FOR_STUDENT = gql`
+  mutation ToggleContractsForStudent($studentId: ID!, $enabled: Boolean!) {
+    toggleContractsForStudent(studentId: $studentId, enabled: $enabled) {
+      _id
+      username
+      firstName
+      lastName
+      interventions {
+        _id
+        title
+        summary
+        function
+        isActive
+      }
+    }
+  }
+`;
+
+export const ADD_CONTRACT_DATA_MEASURE_TO_STUDENT = gql`
+  mutation AddContractDataMeasureToStudent($contractMeasureId: ID!, $studentId: ID!) {
+    addContractDataMeasureToStudent(contractMeasureId: $contractMeasureId, studentId: $studentId) {
+      _id
+      username
+      firstName
+      lastName
+      contractDataMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+      }
+    }
+  }
+`;
+
+export const REMOVE_CONTRACT_DATA_MEASURE_FROM_STUDENT = gql`
+  mutation RemoveContractDataMeasureFromStudent($contractMeasureId: ID!, $studentId: ID!) {
+    removeContractDataMeasureFromStudent(contractMeasureId: $contractMeasureId, studentId: $studentId) {
+      _id
+      username
+      firstName
+      lastName
+      contractDataMeasures {
+        _id
+        name
+        description
+        category
+        isActive
       }
     }
   }

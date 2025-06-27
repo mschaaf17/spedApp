@@ -9,6 +9,7 @@ import StudentTable from '../../components/Tables/studentTable';
 import AccommodationListTable from '../../components/Tables/GeneralTables/accommodationListTable';
 import InterventionListTable from '../../components/Tables/GeneralTables/interventionListTable';
 import DataMeasuresListTable from '../../components/Tables/GeneralTables/dataMeasuresListTable';
+import ContractMeasuresAdminTable from '../../components/Tables/GeneralTables/ContractMeasuresAdminTable';
 
 // Import add new item components
 import AddNewAccommodation from '../../components/AddNewAccommodation/AddNewAccommodation';
@@ -74,8 +75,8 @@ const AdminSettings = () => {
   // Merge frequency and duration data for data measures (only templates)
   const mergedDataMeasures = [
     ...frequencyList.filter(freq => freq.isTemplate).map(freq => ({ ...freq, __typename: 'Frequency', dataMeasureType: 'Frequency' })),
-    ...durationList.filter(dur => dur.isTemplate).map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' })),
-    ...contractMeasures.map(contract => ({ ...contract, __typename: 'Contract', dataMeasureType: 'Contract' }))
+    ...durationList.filter(dur => dur.isTemplate).map(dur => ({ ...dur, __typename: 'Duration', dataMeasureType: 'Duration' }))
+    // No contracts here!
   ];
 
   const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading || contractMeasuresLoading;
@@ -121,7 +122,7 @@ const AdminSettings = () => {
   // Helper function to check if an intervention is a core intervention
   const isCoreIntervention = (title) => {
     const lowerTitle = title.toLowerCase();
-    return lowerTitle.includes('break') || lowerTitle.includes('contract');
+    return lowerTitle.includes('break'); // Only protect Breaks, Contracts are now managed through student dashboard
   };
 
   // Accommodation management functions
@@ -173,7 +174,7 @@ const AdminSettings = () => {
       if (intervention) {
         const title = intervention.title.toLowerCase();
         if (isCoreIntervention(title)) {
-          message.warning('Cannot delete core interventions: Breaks and Contracts are always available to all teachers.');
+          message.warning('Cannot delete core interventions: Breaks are always available to all teachers.');
           return;
         }
       }
@@ -196,34 +197,9 @@ const AdminSettings = () => {
       const dataMeasure = mergedDataMeasures.find(measure => measure._id === dataMeasureId);
       
       if (dataMeasure && dataMeasure.__typename === 'Contract') {
-        // For contracts, use the new contract measure mutation
+        // For contracts, use the contract measure mutation
         await addContractMeasureToStudent({
           variables: { contractMeasureId: dataMeasureId, studentId },
-          update: (cache, { data }) => {
-            // Update the cache for the admin's view (QUERY_ME)
-            try {
-              const existingData = cache.readQuery({ query: QUERY_ME });
-              if (existingData?.me?.students) {
-                const updatedStudents = existingData.me.students.map(student => 
-                  student._id === studentId 
-                    ? { ...student, contracts: data.addContractMeasureToStudent.contracts }
-                    : student
-                );
-                cache.writeQuery({
-                  query: QUERY_ME,
-                  data: {
-                    ...existingData,
-                    me: {
-                      ...existingData.me,
-                      students: updatedStudents
-                    }
-                  }
-                });
-              }
-            } catch (error) {
-              console.log('Could not update QUERY_ME cache for contract:', error);
-            }
-          },
           refetchQueries: [{ query: QUERY_ME }]
         });
         message.success('Contract measure assigned successfully');
@@ -369,6 +345,14 @@ const AdminSettings = () => {
                 handleDelete={handleDeleteDataMeasure}
               />
             </div>
+          </TabPane>
+
+          <TabPane tab="Contracts Data Measures" key="contractsDataMeasures">
+            {/* New table for contract data measures */}
+            <ContractMeasuresAdminTable
+              contractMeasures={contractMeasures}
+              refetchContractMeasures={contractMeasuresData?.refetch}
+            />
           </TabPane>
         </Tabs>
       </Content>

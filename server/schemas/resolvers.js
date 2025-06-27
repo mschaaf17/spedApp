@@ -437,17 +437,12 @@ const resolvers = {
       return measures;
     },
 
-    contracts: async (parent, args, context) => {
-      console.log('User contracts field resolver called for user:', parent._id);
-      console.log('parent.contracts array:', parent.contracts);
-      
-      const userContracts = await Contract.find({
-        _id: { $in: parent.contracts },
-        isActive: true
-      });
-      
-      console.log('Found contracts in database:', userContracts);
-      return userContracts ? userContracts : [];
+    contracts: async (parent, { studentId, isActive }, context) => {
+      // Query-level contracts resolver
+      const filter = {};
+      if (studentId) filter.student = studentId;
+      if (isActive !== undefined) filter.isActive = isActive;
+      return await Contract.find(filter).populate('contractMeasures');
     },
 
     contract: async (parent, { contractId }, context) => {
@@ -1539,6 +1534,12 @@ const resolvers = {
           { $addToSet: { contracts: contract._id } }
         );
 
+        // Add contract measures to student's contractDataMeasures array
+        await User.findByIdAndUpdate(
+          input.studentId,
+          { $addToSet: { contractDataMeasures: { $each: input.contractMeasureIds } } }
+        );
+
         return contract;
       } catch (error) {
         console.error('Error creating contract:', error);
@@ -1606,6 +1607,14 @@ const resolvers = {
           contract.student,
           { $pull: { contracts: contractId } }
         );
+
+        // Remove contract measures from student's contractDataMeasures array
+        if (contract.contractMeasures && contract.contractMeasures.length > 0) {
+          await User.findByIdAndUpdate(
+            contract.student,
+            { $pull: { contractDataMeasures: { $in: contract.contractMeasures } } }
+          );
+        }
 
         // Delete the contract
         await Contract.findByIdAndDelete(contractId);
@@ -1754,6 +1763,179 @@ const resolvers = {
         throw new ApolloError("Failed to create contract measure", "ADD_CONTRACT_MEASURE_ERROR");
       }
     },
+
+    deleteContractMeasure: async (_, { contractMeasureId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        const contractMeasure = await ContractMeasure.findById(contractMeasureId);
+        if (!contractMeasure) {
+          throw new UserInputError("Contract measure not found");
+        }
+
+        // Check if this contract measure is being used by any contracts
+        const contractsUsingMeasure = await Contract.find({
+          contractMeasures: contractMeasureId,
+          isActive: true
+        });
+
+        if (contractsUsingMeasure.length > 0) {
+          throw new UserInputError("Cannot delete contract measure that is currently being used by active contracts");
+        }
+
+        // Check if this contract measure is assigned to any students
+        const studentsWithMeasure = await User.find({
+          contractDataMeasures: contractMeasureId
+        });
+
+        if (studentsWithMeasure.length > 0) {
+          throw new UserInputError("Cannot delete contract measure that is currently assigned to students");
+        }
+
+        // Delete the contract measure
+        await ContractMeasure.findByIdAndDelete(contractMeasureId);
+
+        return contractMeasure;
+      } catch (error) {
+        console.error('Error deleting contract measure:', error);
+        if (error.name === 'UserInputError') {
+          throw error;
+        }
+        throw new ApolloError("Failed to delete contract measure", "DELETE_CONTRACT_MEASURE_ERROR");
+      }
+    },
+
+    toggleContractsForStudent: async (_, { studentId, enabled }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+
+      try {
+        console.log('toggleContractsForStudent called with:', { studentId, enabled });
+        
+        if (enabled) {
+          // Find the Contracts intervention template
+          const contractsTemplate = await InterventionList.findOne({
+            title: { $regex: /contract/i },
+            isTemplate: true,
+            isActive: true
+          });
+
+          if (!contractsTemplate) {
+            throw new UserInputError("Contracts intervention template not found");
+          }
+
+          // Check if student already has the Contracts intervention
+          const existingContract = await InterventionList.findOne({
+            studentId,
+            title: contractsTemplate.title,
+            isTemplate: false,
+            isActive: true
+          });
+
+          if (existingContract) {
+            throw new UserInputError("Student already has contracts enabled");
+          }
+
+          // Create the Contracts intervention for the student
+          const newIntervention = await InterventionList.create({
+            title: contractsTemplate.title,
+            summary: contractsTemplate.summary,
+            function: contractsTemplate.function,
+            createdBy: context.user._id,
+            studentId,
+            isTemplate: false,
+            isActive: true,
+          });
+
+          // Add the intervention to the student's interventions array
+          await User.findByIdAndUpdate(
+            studentId,
+            { $addToSet: { interventions: newIntervention._id } }
+          );
+
+          console.log('Created Contracts intervention for student:', newIntervention._id);
+        } else {
+          // Find and remove the Contracts intervention
+          const contractsIntervention = await InterventionList.findOne({
+            studentId,
+            title: { $regex: /contract/i },
+            isTemplate: false,
+            isActive: true
+          });
+
+          if (contractsIntervention) {
+            // Remove from student's interventions array
+            await User.findByIdAndUpdate(
+              studentId,
+              { $pull: { interventions: contractsIntervention._id } }
+            );
+
+            // Soft delete the intervention
+            await InterventionList.findByIdAndUpdate(
+              contractsIntervention._id,
+              { isActive: false }
+            );
+
+            console.log('Removed Contracts intervention for student:', contractsIntervention._id);
+          }
+        }
+
+        // Return updated user
+        const updatedUser = await User.findById(studentId)
+          .populate('interventions')
+          .populate('behaviorFrequencies')
+          .populate('behaviorDurations');
+
+        return updatedUser;
+      } catch (error) {
+        console.error('Error toggling contracts for student:', error);
+        throw new ApolloError("Failed to toggle contracts for student", "TOGGLE_CONTRACTS_ERROR");
+      }
+    },
+    addContractDataMeasureToStudent: async (_, { contractMeasureId, studentId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      const updatedUser = await User.findByIdAndUpdate(
+        studentId,
+        { $addToSet: { contractDataMeasures: contractMeasureId } },
+        { new: true }
+      ).populate('contractDataMeasures');
+      return updatedUser;
+    },
+    removeContractDataMeasureFromStudent: async (_, { contractMeasureId, studentId }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      const updatedUser = await User.findByIdAndUpdate(
+        studentId,
+        { $pull: { contractDataMeasures: contractMeasureId } },
+        { new: true }
+      ).populate('contractDataMeasures');
+      return updatedUser;
+    },
+    updateContractActiveStatus: async (_, { contractId, isActive }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      try {
+        const contract = await Contract.findByIdAndUpdate(
+          contractId,
+          { isActive, updatedAt: new Date() },
+          { new: true }
+        );
+        if (!contract) {
+          throw new UserInputError("Contract not found");
+        }
+        return contract;
+      } catch (error) {
+        console.error('Error updating contract active status:', error);
+        throw new ApolloError("Failed to update contract active status", "UPDATE_CONTRACT_ACTIVE_STATUS_ERROR");
+      }
+    },
   },
 
   AccommodationList: {
@@ -1778,6 +1960,10 @@ const resolvers = {
         _id: { $in: parent.accommodations },
       });
       return accommodations ? accommodations : [];
+    },
+    contractDataMeasures: async (parent, args, context) => {
+      if (!parent.contractDataMeasures || parent.contractDataMeasures.length === 0) return [];
+      return await ContractMeasure.find({ _id: { $in: parent.contractDataMeasures } });
     },
     breakHistory: async (parent, args, context) => {
       // Filter out invalid break records and ensure all have valid startTime
@@ -1952,16 +2138,11 @@ const resolvers = {
       return userInterventions ? userInterventions : [];
     },
     contracts: async (parent, args, context) => {
-      console.log('User contracts field resolver called for user:', parent._id);
-      console.log('parent.contracts array:', parent.contracts);
-      
-      const userContracts = await Contract.find({
+      if (!parent || !parent.contracts) return [];
+      return await Contract.find({
         _id: { $in: parent.contracts },
         isActive: true
-      });
-      
-      console.log('Found contracts in database:', userContracts);
-      return userContracts ? userContracts : [];
+      }).populate('contractMeasures');
     },
   },
 
