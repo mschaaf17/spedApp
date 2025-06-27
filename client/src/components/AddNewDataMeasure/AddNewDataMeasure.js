@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { ADD_FREQUENCY_TITLE, ADD_DURATION_TITLE, ADD_CONTRACT_MEASURE } from '../../utils/mutations';
+import { ADD_FREQUENCY_TITLE, ADD_DURATION_TITLE } from '../../utils/mutations';
 import { Input, Checkbox, Form, Select, Upload, Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { QUERY_FREQUENCY_TEMPLATES, QUERY_CONTRACT_MEASURES } from '../../utils/queries';
+import { QUERY_FREQUENCY_TEMPLATES } from '../../utils/queries';
 const { TextArea } = Input;
 
 
@@ -25,7 +25,7 @@ const AddNewDataMeasure = ({onClose, updateMergedData, mergedData}) => {
   const [componentDisabled, setComponentDisabled] = useState(false);
   const [addFrequencyTitle] = useMutation(ADD_FREQUENCY_TITLE)
   const [addDurationTitle] = useMutation(ADD_DURATION_TITLE)
-  const [addContractMeasure] = useMutation(ADD_CONTRACT_MEASURE)
+  
   const [form] = Form.useForm();
   const [tableData, setTableData] = useState([])
   const [selectedDataType, setSelectedDataType] = useState(null)
@@ -76,20 +76,7 @@ useEffect(() => {
       } catch(error) {
         console.error('Error saving duration data measure: ', error)
       }
-    } else if (dataType === 'contract') {
-      try {
-        await addContractMeasure({
-          variables: {
-            name: behaviorTitle,
-            description: operationalDefinition,
-            category: 'behavior' // Use default category
-          }
-        });
-        showMessage(behaviorTitle);
-        onClose();
-      } catch (error) {
-        console.error('Error saving contract measure: ', error);
-      }
+    
     }
   }
 
@@ -120,7 +107,6 @@ useEffect(() => {
           <Select onChange={handleDataTypeChange}>
             <Select.Option value="frequency">Frequency</Select.Option>
             <Select.Option value="duration">Duration</Select.Option>
-            <Select.Option value="contract">Contract</Select.Option>
           </Select>
         </Form.Item>     
         <Form.Item label="Operational Definition"

@@ -1750,7 +1750,7 @@ const resolvers = {
         const contractMeasure = await ContractMeasure.create({
           name,
           description,
-          category,
+          category: category || 'behavior', // Use default if not provided
           createdBy: context.user._id,
           isActive: true,
           createdAt: new Date(),
@@ -1934,6 +1934,23 @@ const resolvers = {
       } catch (error) {
         console.error('Error updating contract active status:', error);
         throw new ApolloError("Failed to update contract active status", "UPDATE_CONTRACT_ACTIVE_STATUS_ERROR");
+      }
+    },
+    updateContractTimes: async (_, { contractId, times }, context) => {
+      if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You must be logged in as an administrator!");
+      }
+      try {
+        const contract = await Contract.findById(contractId);
+        if (!contract) {
+          throw new UserInputError("Contract not found");
+        }
+        contract.times = times;
+        await contract.save();
+        return contract;
+      } catch (error) {
+        console.error('Error updating contract times:', error);
+        throw new ApolloError("Failed to update contract times", "UPDATE_CONTRACT_TIMES_ERROR");
       }
     },
   },

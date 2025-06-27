@@ -125,6 +125,52 @@ const StudentContracts = () => {
                 </div>
               )}
 
+              {/* Check-in Times Display for weekly contracts */}
+              {contract.type === 'weekly' && contract.times.length > 0 && (
+                <div className="check-in-times-display" style={{ 
+                  background: '#e8f5e8', 
+                  border: '1px solid #4caf50', 
+                  borderRadius: 6, 
+                  padding: 12,
+                  marginBottom: 16,
+                  textAlign: 'center'
+                }}>
+                  <h6 style={{ margin: '0 0 8px 0', color: '#2e7d32', fontSize: '14px' }}>
+                    📅 Weekly Check-in Schedule - You must check in on these days at the specified time:
+                  </h6>
+                  <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    {contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)).map((day, index) => (
+                      <span key={index} style={{ 
+                        padding: '4px 8px', 
+                        background: 'white', 
+                        border: '1px solid #4caf50', 
+                        borderRadius: 4,
+                        fontWeight: 500,
+                        color: '#2e7d32',
+                        fontSize: '13px'
+                      }}>
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+                  {contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)) && (
+                    <div style={{ marginTop: 8 }}>
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        background: 'white', 
+                        border: '1px solid #4caf50', 
+                        borderRadius: 4,
+                        fontWeight: 500,
+                        color: '#2e7d32',
+                        fontSize: '13px'
+                      }}>
+                        Check-in Time: {contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="contract-chart">
                 <table>
                   <thead>

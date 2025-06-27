@@ -65,13 +65,7 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
               .some(dur =>
                 (dur.templateId || dur._id) === selectedTemplate._id
               ));
-          } else if (selectedTemplate.__typename === 'Contract') {
-            // Exclude students who already have this contract measure assigned
-            return !((student.contracts || [])
-              .filter(contract => contract.isActive)
-              .some(contract => contract.contractMeasures && 
-                contract.contractMeasures.some(measure => measure._id === selectedTemplate._id)));
-          }
+          } 
           return true;
         })
         .map(student => ({
@@ -96,12 +90,7 @@ const DataMeasureTable = ({loading, mergedData, meData, selectedDataMeasureId, o
             .some(dur =>
               (dur.templateId || dur._id) === selectedTemplate._id
             );
-        } else if (selectedTemplate.__typename === 'Contract') {
-          hasActive = (student.contracts || [])
-            .filter(contract => contract.isActive)
-            .some(contract => contract.contractMeasures && 
-              contract.contractMeasures.some(measure => measure._id === selectedTemplate._id));
-        }
+        } 
         console.log(`${student.firstName} ${student.lastName}: hasActive=${hasActive}`);
       });
     }
@@ -154,7 +143,7 @@ const displaySelect = (rowId) => {
       } else if (key === 'dataMeasureType') {
         if (data.__typename === 'Frequency') return 'Frequency';
         if (data.__typename === 'Duration') return 'Duration';
-        if (data.__typename === 'Contract') return 'Contract';
+        
         return data.dataMeasureType || '';
       }
       return data[key] || '';
@@ -184,13 +173,7 @@ const displaySelect = (rowId) => {
           return !(student.behaviorDurations || [])
             .filter(dur => dur.isActive)
             .some(dur => (dur.templateId || dur._id) === record._id);
-        } else if (record.__typename === 'Contract') {
-          // For contracts, check if student already has this contract measure assigned
-          return !(student.contracts || [])
-            .filter(contract => contract.isActive)
-            .some(contract => contract.contractMeasures && 
-              contract.contractMeasures.some(measure => measure._id === record._id));
-        }
+        } 
         return true;
       })
       .map(student => ({
@@ -212,12 +195,6 @@ const displaySelect = (rowId) => {
         return (student.behaviorDurations || [])
           .filter(dur => dur.isActive)
           .some(dur => (dur.templateId || dur._id) === record._id);
-      } else if (record.__typename === 'Contract') {
-        // For contracts, check if student has this contract measure assigned
-        return (student.contracts || [])
-          .filter(contract => contract.isActive)
-          .some(contract => contract.contractMeasures && 
-            contract.contractMeasures.some(measure => measure._id === record._id));
       }
       return false;
     });
@@ -285,7 +262,7 @@ const displaySelect = (rowId) => {
       render: (_, record) => {
         if (record.__typename === 'Frequency') return 'Frequency';
         if (record.__typename === 'Duration') return 'Duration';
-        if (record.__typename === 'Contract') return 'Contract';
+       
         return record.dataMeasureType || 'Unknown';
       }
     },

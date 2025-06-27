@@ -330,11 +330,12 @@ const typeDefs = gql`
     addContractToStudent(contractId: ID!, studentId: ID!): User
     addContractMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
     toggleContractsForStudent(studentId: ID!, enabled: Boolean!): User
-    addContractMeasure(name: String!, description: String!, category: String!): ContractMeasure
+    addContractMeasure(name: String!, description: String!, category: String): ContractMeasure
     deleteContractMeasure(contractMeasureId: ID!): ContractMeasure
     addContractDataMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
     removeContractDataMeasureFromStudent(contractMeasureId: ID!, studentId: ID!): User
     updateContractActiveStatus(contractId: ID!, isActive: Boolean!): Contract
+    updateContractTimes(contractId: ID!, times: [String!]!): Contract
   }
 
   input SelectedChartInput {

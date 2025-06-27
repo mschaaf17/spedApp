@@ -654,7 +654,7 @@ export const ADD_CONTRACT_TO_STUDENT = gql`
 `;
 
 export const ADD_CONTRACT_MEASURE = gql`
-  mutation AddContractMeasure($name: String!, $description: String!, $category: String!) {
+  mutation AddContractMeasure($name: String!, $description: String!, $category: String) {
     addContractMeasure(name: $name, description: $description, category: $category) {
       _id
       name
@@ -759,6 +759,16 @@ export const REMOVE_CONTRACT_DATA_MEASURE_FROM_STUDENT = gql`
         category
         isActive
       }
+    }
+  }
+`;
+
+export const UPDATE_CONTRACT_TIMES = gql`
+  mutation UpdateContractTimes($contractId: ID!, $times: [String!]!) {
+    updateContractTimes(contractId: $contractId, times: $times) {
+      _id
+      times
+      updatedAt
     }
   }
 `;

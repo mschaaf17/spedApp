@@ -3,8 +3,8 @@ import { useQuery, useMutation } from '@apollo/client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QUERY_ME } from '../../../utils/queries';
 import { QUERY_CONTRACTS, QUERY_CONTRACT_MEASURES } from '../../../utils/queries';
-import { CREATE_CONTRACT, UPDATE_CONTRACT_ENTRY, DELETE_CONTRACT, ADD_CONTRACT_DATA_MEASURE_TO_STUDENT, UPDATE_CONTRACT_ACTIVE_STATUS } from '../../../utils/mutations';
-import { Switch, message } from 'antd';
+import { CREATE_CONTRACT, UPDATE_CONTRACT_ENTRY, DELETE_CONTRACT, ADD_CONTRACT_DATA_MEASURE_TO_STUDENT, UPDATE_CONTRACT_ACTIVE_STATUS, UPDATE_CONTRACT_TIMES } from '../../../utils/mutations';
+import { Switch, message, Modal, Button } from 'antd';
 import './index.css';
 
 const Contracts = () => {
@@ -33,6 +33,9 @@ const Contracts = () => {
   const [deleteContract] = useMutation(DELETE_CONTRACT);
   const [addContractDataMeasureToStudent] = useMutation(ADD_CONTRACT_DATA_MEASURE_TO_STUDENT);
   const [updateContractActiveStatus] = useMutation(UPDATE_CONTRACT_ACTIVE_STATUS);
+  const [updateContractTimes] = useMutation(UPDATE_CONTRACT_TIMES);
+
+  const [editTimesModal, setEditTimesModal] = useState({ visible: false, contract: null, times: [] });
 
   const students = userData?.me?.students || [];
   const allContractMeasures = contractMeasuresData?.contractMeasures || [];
@@ -384,12 +387,27 @@ const Contracts = () => {
                       ))}
                     </div>
                     
-                    {/* Show selected days */}
+                    {/* Check-in time for weekly contracts */}
+                    <div style={{ marginTop: 16 }}>
+                      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Check-in Time:</label>
+                      <input
+                        type="time"
+                        value={contractForm.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)) || ''}
+                        onChange={(e) => {
+                          // Remove any existing time and add the new one
+                          const daysOnly = contractForm.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+                          setContractForm({...contractForm, times: [...daysOnly, e.target.value]});
+                        }}
+                        style={{ padding: 6, border: '1px solid #ccc', borderRadius: 4 }}
+                      />
+                    </div>
+                    
+                    {/* Show selected days and time */}
                     {contractForm.times.length > 0 && (
                       <div style={{ marginTop: 12 }}>
-                        <h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Selected Days:</h5>
+                        <h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Selected Days & Time:</h5>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {contractForm.times.map((day, index) => (
+                          {contractForm.times.map((item, index) => (
                             <div key={index} style={{ 
                               display: 'flex', 
                               alignItems: 'center', 
@@ -398,7 +416,7 @@ const Contracts = () => {
                               border: '1px solid #dee2e6', 
                               borderRadius: 4 
                             }}>
-                              <span style={{ marginRight: 8 }}>{day}</span>
+                              <span style={{ marginRight: 8 }}>{item}</span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -497,6 +515,13 @@ const Contracts = () => {
                   >
                     Delete
                   </button>
+                  <Button
+                    size="small"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => setEditTimesModal({ visible: true, contract, times: contract.times.filter(Boolean) })}
+                  >
+                    Edit Times
+                  </Button>
                 </div>
                 
                 <div className="contract-info">
@@ -537,6 +562,52 @@ const Contracts = () => {
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Check-in Times Display for weekly contracts */}
+                  {contract.type === 'weekly' && contract.times.length > 0 && (
+                    <div style={{ 
+                      background: '#e8f5e8', 
+                      border: '1px solid #4caf50', 
+                      borderRadius: 6, 
+                      padding: 12,
+                      marginBottom: 16,
+                      textAlign: 'center'
+                    }}>
+                      <h6 style={{ margin: '0 0 8px 0', color: '#2e7d32', fontSize: '14px' }}>
+                        📅 Weekly Check-in Schedule - Students must check in on these days at the specified time:
+                      </h6>
+                      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                        {contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)).map((day, index) => (
+                          <span key={index} style={{ 
+                            padding: '4px 8px', 
+                            background: 'white', 
+                            border: '1px solid #4caf50', 
+                            borderRadius: 4,
+                            fontWeight: 500,
+                            color: '#2e7d32',
+                            fontSize: '13px'
+                          }}>
+                            {day}
+                          </span>
+                        ))}
+                      </div>
+                      {contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)) && (
+                        <div style={{ marginTop: 8 }}>
+                          <span style={{ 
+                            padding: '4px 8px', 
+                            background: 'white', 
+                            border: '1px solid #4caf50', 
+                            borderRadius: 4,
+                            fontWeight: 500,
+                            color: '#2e7d32',
+                            fontSize: '13px'
+                          }}>
+                            Check-in Time: {contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -645,6 +716,97 @@ const Contracts = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Times Modal */}
+      <Modal
+        title="Edit Check-in Times"
+        open={editTimesModal.visible}
+        onOk={async () => {
+          try {
+            await updateContractTimes({
+              variables: {
+                contractId: editTimesModal.contract._id,
+                times: editTimesModal.times.filter(Boolean),
+              },
+            });
+            setEditTimesModal({ visible: false, contract: null, times: [] });
+            refetchContracts();
+            message.success('Check-in times updated!');
+          } catch (err) {
+            message.error('Failed to update times');
+          }
+        }}
+        onCancel={() => setEditTimesModal({ visible: false, contract: null, times: [] })}
+        okText="Save"
+        cancelText="Cancel"
+      >
+        {editTimesModal.contract && (
+          <div>
+            {editTimesModal.contract.type === 'daily' ? (
+              <div>
+                {editTimesModal.times.map((time, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={e => {
+                        const newTimes = [...editTimesModal.times];
+                        newTimes[idx] = e.target.value;
+                        setEditTimesModal(modal => ({ ...modal, times: newTimes }));
+                      }}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Button size="small" danger onClick={() => {
+                      const newTimes = editTimesModal.times.filter((_, i) => i !== idx);
+                      setEditTimesModal(modal => ({ ...modal, times: newTimes }));
+                    }}>Remove</Button>
+                  </div>
+                ))}
+                <Button size="small" onClick={() => setEditTimesModal(modal => ({ ...modal, times: [...modal.times, ''] }))}>Add Time</Button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <h4 style={{ marginBottom: 8 }}>Select Days:</h4>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
+                    <label key={day} style={{ display: 'block', marginBottom: 4 }}>
+                      <input
+                        type="checkbox"
+                        checked={editTimesModal.times.includes(day)}
+                        onChange={e => {
+                          let newTimes;
+                          if (e.target.checked) {
+                            newTimes = [...editTimesModal.times, day];
+                          } else {
+                            newTimes = editTimesModal.times.filter(t => t !== day);
+                          }
+                          setEditTimesModal(modal => ({ ...modal, times: newTimes }));
+                        }}
+                        style={{ marginRight: 8 }}
+                      />
+                      {day}
+                    </label>
+                  ))}
+                </div>
+                
+                <div>
+                  <h4 style={{ marginBottom: 8 }}>Check-in Time:</h4>
+                  <input
+                    type="time"
+                    value={editTimesModal.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)) || ''}
+                    onChange={e => {
+                      // Remove any existing time and add the new one
+                      const daysOnly = editTimesModal.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+                      setEditTimesModal(modal => ({ ...modal, times: [...daysOnly, e.target.value] }));
+                    }}
+                    style={{ padding: 6, border: '1px solid #ccc', borderRadius: 4 }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

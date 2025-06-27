@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout, Tabs, Button, Modal, message } from 'antd';
 import { useQuery, useMutation } from '@apollo/client';
-import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_ACCOMMODATION_TEMPLATES, QUERY_INTERVENTION_TEMPLATES, QUERY_FREQUENCY_LIST, QUERY_DURATION_LIST, QUERY_CONTRACT_MEASURES } from '../../utils/queries';
+import { QUERY_ME, QUERY_STUDENT_LIST, QUERY_ACCOMMODATION_TEMPLATES, QUERY_INTERVENTION_TEMPLATES, QUERY_FREQUENCY_LIST, QUERY_DURATION_LIST, QUERY_CONTRACT_MEASURES, QUERY_CONTRACTS } from '../../utils/queries';
 import { ADD_STUDENT_TO_LIST, REMOVE_STUDENT_FROM_LIST, ADD_ACCOMMODATION_TEMPLATE, REMOVE_ACCOMMODATION, ADD_INTERVENTION_TEMPLATE, REMOVED_INTERVENTION_FROM_LIST, ADD_FREQUENCY_TITLE, REMOVE_FREQUENCY_TITLE, ADD_DURATION_TITLE, REMOVE_DURATION_TITLE, ADD_ACCOMMODATION_FOR_STUDENT, ADD_INTERVENTION_FOR_STUDENT, ADD_DATA_MEASURE_TO_STUDENT, ADD_CONTRACT_MEASURE_TO_STUDENT } from '../../utils/mutations';
 
 // Import table components
@@ -46,6 +46,7 @@ const AdminSettings = () => {
     variables: { isTemplate: true }
   });
   const { loading: contractMeasuresLoading, data: contractMeasuresData } = useQuery(QUERY_CONTRACT_MEASURES);
+  const { loading: contractsLoading, data: contractsData } = useQuery(QUERY_CONTRACTS);
 
   // Mutations
   const [addStudentToList] = useMutation(ADD_STUDENT_TO_LIST);
@@ -71,6 +72,7 @@ const AdminSettings = () => {
   const frequencyList = frequencyData?.frequency || [];
   const durationList = durationData?.duration || [];
   const contractMeasures = contractMeasuresData?.contractMeasures || [];
+  const contracts = contractsData?.contracts || [];
 
   // Merge frequency and duration data for data measures (only templates)
   const mergedDataMeasures = [
@@ -79,7 +81,7 @@ const AdminSettings = () => {
     // No contracts here!
   ];
 
-  const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading || contractMeasuresLoading;
+  const loading = meLoading || allStudentsLoading || accommodationLoading || interventionLoading || frequencyLoading || durationLoading || contractMeasuresLoading || contractsLoading;
 
   // Student management functions
   const handleAddStudent = async (studentId) => {
@@ -352,6 +354,7 @@ const AdminSettings = () => {
             <ContractMeasuresAdminTable
               contractMeasures={contractMeasures}
               refetchContractMeasures={contractMeasuresData?.refetch}
+              contracts={contracts}
             />
           </TabPane>
         </Tabs>
