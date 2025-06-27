@@ -350,12 +350,18 @@ const AdminSettings = () => {
           </TabPane>
 
           <TabPane tab="Contracts Data Measures" key="contractsDataMeasures">
-            {/* New table for contract data measures */}
-            <ContractMeasuresAdminTable
-              contractMeasures={contractMeasures}
-              refetchContractMeasures={contractMeasuresData?.refetch}
-              contracts={contracts}
-            />
+            <div className="tab-content">
+              <div className="tab-header">
+                <h2>Contract Data Measure Management</h2>
+                <p>Create and manage contract behavior templates for student behavior contracts</p>
+              </div>
+              
+              <ContractMeasuresAdminTable
+                contractMeasures={contractMeasures}
+                refetchContractMeasures={contractMeasuresData?.refetch}
+                contracts={contracts}
+              />
+            </div>
           </TabPane>
         </Tabs>
       </Content>
