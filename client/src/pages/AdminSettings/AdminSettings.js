@@ -15,6 +15,7 @@ import ContractMeasuresAdminTable from '../../components/Tables/GeneralTables/Co
 import AddNewAccommodation from '../../components/AddNewAccommodation/AddNewAccommodation';
 import AddNewIntervention from '../../components/AddNewIntervention/AddNewIntervention';
 import AddNewDataMeasure from '../../components/AddNewDataMeasure/AddNewDataMeasure';
+import AddNewContractMeasure from '../../components/AddNewContractMeasure/AddNewContractMeasure';
 
 import './AdminSettings.css';
 
@@ -26,6 +27,7 @@ const AdminSettings = () => {
   const [isAccommodationModalOpen, setAccommodationModalOpen] = useState(false);
   const [isInterventionModalOpen, setInterventionModalOpen] = useState(false);
   const [isDataMeasureModalOpen, setDataMeasureModalOpen] = useState(false);
+  const [isContractMeasureModalOpen, setContractMeasureModalOpen] = useState(false);
 
   // State for table interactions
   const [selectedDataMeasureId, setSelectedDataMeasureId] = useState(null);
@@ -257,6 +259,9 @@ const AdminSettings = () => {
   const openDataMeasureModal = () => setDataMeasureModalOpen(true);
   const closeDataMeasureModal = () => setDataMeasureModalOpen(false);
 
+  const openContractMeasureModal = () => setContractMeasureModalOpen(true);
+  const closeContractMeasureModal = () => setContractMeasureModalOpen(false);
+
   return (
     <Layout className="admin-settings-layout">
       <div className="admin-settings-header">
@@ -354,6 +359,9 @@ const AdminSettings = () => {
               <div className="tab-header">
                 <h2>Contract Data Measure Management</h2>
                 <p>Create and manage contract behavior templates for student behavior contracts</p>
+                <Button type="primary" onClick={openContractMeasureModal}>
+                  Add New Contract Measure
+                </Button>
               </div>
               
               <ContractMeasuresAdminTable
@@ -395,6 +403,23 @@ const AdminSettings = () => {
         width={600}
       >
         <AddNewDataMeasure onClose={closeDataMeasureModal} />
+      </Modal>
+
+      <Modal
+        title="Add New Contract Measure"
+        open={isContractMeasureModalOpen}
+        onCancel={closeContractMeasureModal}
+        footer={null}
+        width={600}
+      >
+        <AddNewContractMeasure 
+          onClose={closeContractMeasureModal} 
+          onSuccess={() => {
+            if (contractMeasuresData?.refetch) {
+              contractMeasuresData.refetch();
+            }
+          }}
+        />
       </Modal>
     </Layout>
   );

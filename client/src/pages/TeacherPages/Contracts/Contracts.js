@@ -5,6 +5,7 @@ import { QUERY_ME } from '../../../utils/queries';
 import { QUERY_CONTRACTS, QUERY_CONTRACT_MEASURES } from '../../../utils/queries';
 import { CREATE_CONTRACT, UPDATE_CONTRACT_ENTRY, DELETE_CONTRACT, ADD_CONTRACT_DATA_MEASURE_TO_STUDENT, UPDATE_CONTRACT_ACTIVE_STATUS, UPDATE_CONTRACT_TIMES } from '../../../utils/mutations';
 import { Switch, message, Modal, Button } from 'antd';
+import AddNewContractMeasure from '../../../components/AddNewContractMeasure/AddNewContractMeasure';
 import './index.css';
 
 const Contracts = () => {
@@ -36,6 +37,7 @@ const Contracts = () => {
   const [updateContractTimes] = useMutation(UPDATE_CONTRACT_TIMES);
 
   const [editTimesModal, setEditTimesModal] = useState({ visible: false, contract: null, times: [] });
+  const [isContractMeasureModalOpen, setIsContractMeasureModalOpen] = useState(false);
 
   const students = userData?.me?.students || [];
   const allContractMeasures = contractMeasuresData?.contractMeasures || [];
@@ -279,6 +281,17 @@ const Contracts = () => {
                     </div>
                   </div>
                 )}
+                
+                {/* Create new contract measure button */}
+                <div style={{ marginTop: 16 }}>
+                  <Button 
+                    type="dashed" 
+                    onClick={() => setIsContractMeasureModalOpen(true)}
+                    style={{ width: '100%' }}
+                  >
+                    + Create New Contract Data Measure
+                  </Button>
+                </div>
               </div>
 
               <div className="form-group">
@@ -806,6 +819,23 @@ const Contracts = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Add New Contract Measure Modal */}
+      <Modal
+        title="Create New Contract Data Measure"
+        open={isContractMeasureModalOpen}
+        onCancel={() => setIsContractMeasureModalOpen(false)}
+        footer={null}
+        width={600}
+      >
+        <AddNewContractMeasure 
+          onClose={() => setIsContractMeasureModalOpen(false)}
+          onSuccess={() => {
+            refetchContractMeasures();
+            refetchMe();
+          }}
+        />
       </Modal>
     </div>
   );

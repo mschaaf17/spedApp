@@ -25,6 +25,10 @@ import DurationTimers from '../DataTrackingMeasures/durationTimers';
 import BreakFrequencyCharts from '../DataTrackingMeasures/breakFrequencyCharts';
 import BreakDurationCharts from '../DataTrackingMeasures/breakDurationCharts';
 
+// Import new tracking components
+import BreakTracking from '../DataTrackingMeasures/BreakTracking';
+import ContractTracking from '../DataTrackingMeasures/ContractTracking';
+
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
 
@@ -62,6 +66,9 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('analyze');
   const [activeTab, setActiveTab] = useState('accommodations');
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  
+  // Tracking tabs state
+  const [activeTrackingTab, setActiveTrackingTab] = useState('frequencyDuration');
   
   // Student View Configuration State
   const [showAccommodations, setShowAccommodations] = useState(false);
@@ -137,6 +144,32 @@ const Dashboard = () => {
   const durationTemplates = durationData?.duration?.filter(t => t.isTemplate) || [];
   const contractTemplates = contractData?.contractMeasures || [];
 
+  // Check if student has a "Break" accommodation or intervention
+  const studentHasBreaksFeature = selectedStudentData?.user?.accommodations?.some(a => a.title.toLowerCase().includes('break')) ||
+                                 selectedStudentData?.user?.interventions?.some(i => i.title.toLowerCase().includes('break'));
+
+  // Auto-update tracking tab when student data changes and we're in track section
+  useEffect(() => {
+    if (activeSection === 'track' && selectedStudentData?.user) {
+      const studentData = selectedStudentData.user;
+      
+      // If current tab is not available for this student, switch to appropriate tab
+      if (activeTrackingTab === 'breaks' && !studentHasBreaksFeature) {
+        if (studentData.contracts?.some(contract => contract.isActive)) {
+          setActiveTrackingTab('contracts');
+        } else {
+          setActiveTrackingTab('frequencyDuration');
+        }
+      } else if (activeTrackingTab === 'contracts' && !studentData.contracts?.some(contract => contract.isActive)) {
+        if (studentHasBreaksFeature) {
+          setActiveTrackingTab('breaks');
+        } else {
+          setActiveTrackingTab('frequencyDuration');
+        }
+      }
+    }
+  }, [selectedStudentData, activeSection, activeTrackingTab, studentHasBreaksFeature]);
+
   // Get interventions for the selected student with complete data
   const getStudentInterventions = () => {
     if (!selectedStudent) return [];
@@ -193,6 +226,9 @@ const Dashboard = () => {
     const student = myStudents.find(s => s._id === value);
     setSelectedStudent(student);
     setSelectedBehavior(null);
+    
+    // Reset tracking tab to default
+    setActiveTrackingTab('frequencyDuration');
     
     // Load student view configuration
     if (student?.studentViewConfig) {
@@ -870,10 +906,6 @@ const Dashboard = () => {
     }
   };
 
-  // Check if student has a "Break" accommodation or intervention
-  const studentHasBreaksFeature = selectedStudentData?.user?.accommodations.some(a => a.title.toLowerCase().includes('break')) ||
-                                 selectedStudentData?.user?.interventions.some(i => i.title.toLowerCase().includes('break'));
-
   // Check if student has a "Contracts" intervention
   const studentHasContractsFeature = selectedStudentData?.user?.interventions.some(i => i.title.toLowerCase().includes('contract'));
 
@@ -1097,7 +1129,18 @@ const Dashboard = () => {
                 type={activeSection === 'track' ? 'primary' : 'default'}
                 size="large"
                 style={{ flex: 1, height: '60px', fontSize: '16px' }}
-                onClick={() => setActiveSection('track')}
+                onClick={() => {
+                  setActiveSection('track');
+                  // Auto-select appropriate tab based on what's available
+                  const studentData = selectedStudentData?.user || selectedStudent;
+                  if (studentHasBreaksFeature) {
+                    setActiveTrackingTab('breaks');
+                  } else if (studentData?.contracts?.some(contract => contract.isActive)) {
+                    setActiveTrackingTab('contracts');
+                  } else {
+                    setActiveTrackingTab('frequencyDuration');
+                  }
+                }}
               >
                 Track Data
               </Button>
@@ -1396,59 +1439,12 @@ const Dashboard = () => {
 
                   {studentHasBreaksFeature && (
                     <TabPane tab="Breaks" key="breaks">
-                      <div className="breaks-config-section">
-                        <h4>Configure Break Settings</h4>
-                        <p>Set the rules for when and how {selectedStudent?.firstName} can take breaks.</p>
-                        <Form layout="vertical" style={{ marginTop: 24 }}>
-                          <Form.Item label="Break Duration (minutes)">
-                            <InputNumber
-                              min={1}
-                              max={60}
-                              value={breakSettings.duration}
-                              onChange={(value) => setBreakSettings(prev => ({ ...prev, duration: value }))}
-                            />
-                          </Form.Item>
-                          <Form.Item label="Daily Break Limit">
-                            <Radio.Group
-                              value={isUnlimitedBreaks}
-                              onChange={(e) => setIsUnlimitedBreaks(e.target.value)}
-                            >
-                              <Radio value={true}>Unlimited</Radio>
-                              <Radio value={false}>Limited</Radio>
-                            </Radio.Group>
-                            {!isUnlimitedBreaks && (
-                              <InputNumber
-                                min={1}
-                                max={10}
-                                value={breakSettings.dailyLimit}
-                                onChange={(value) => setBreakSettings(prev => ({ ...prev, dailyLimit: value }))}
-                                style={{ marginLeft: 16 }}
-                              />
-                            )}
-                          </Form.Item>
-                          <Form.Item label="Enable Delay Between Breaks">
-                            <Switch
-                              checked={breakSettings.hasDelay}
-                              onChange={(checked) => setBreakSettings(prev => ({ ...prev, hasDelay: checked }))}
-                            />
-                          </Form.Item>
-                          {breakSettings.hasDelay && (
-                            <Form.Item label="Delay Duration (minutes)">
-                              <InputNumber
-                                min={1}
-                                max={120}
-                                value={breakSettings.delayDuration}
-                                onChange={(value) => setBreakSettings(prev => ({ ...prev, delayDuration: value }))}
-                              />
-                            </Form.Item>
-                          )}
-                          <Form.Item>
-                            <Button type="primary" onClick={handleSaveBreakSettings}>
-                              Save Break Settings
-                            </Button>
-                          </Form.Item>
-                        </Form>
-                      </div>
+                      <BreakTracking
+                        student={selectedStudent}
+                        breakSettings={selectedStudentData?.user?.breakSettings}
+                        breakHistory={selectedStudentData?.user?.breakHistory}
+                        refetchTrigger={refetchTrigger}
+                      />
                     </TabPane>
                   )}
                 </Tabs>
@@ -1516,27 +1512,52 @@ const Dashboard = () => {
               <div className="track-data-section">
                 <div className="track-data-header">
                   <h3>Data Tracking</h3>
-                  <p>Track frequency and duration data for {selectedStudent.firstName}</p>
+                  <p>Track frequency, duration, breaks, and contract data for {selectedStudent.firstName}</p>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div>
-                    <h4>Frequency Tracking</h4>
-                    <Frequency 
-                      studentId={selectedStudent._id} 
-                      key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
-                      refetchTrigger={refetchTrigger}
-                    />
-                  </div>
-                  <div>
-                    <h4>Duration Tracking</h4>
-                    <DurationTimers 
-                      studentId={selectedStudent._id}
-                      key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}
-                      refetchTrigger={refetchTrigger}
-                    />
-                  </div>
-                </div>
+                <Tabs activeKey={activeTrackingTab} onChange={setActiveTrackingTab} size="large">
+                  <TabPane tab="Frequency & Duration" key="frequencyDuration">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                      <div>
+                        <h4>Frequency Tracking</h4>
+                        <Frequency 
+                          studentId={selectedStudent._id} 
+                          key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
+                          refetchTrigger={refetchTrigger}
+                        />
+                      </div>
+                      <div>
+                        <h4>Duration Tracking</h4>
+                        <DurationTimers 
+                          studentId={selectedStudent._id}
+                          key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}
+                          refetchTrigger={refetchTrigger}
+                        />
+                      </div>
+                    </div>
+                  </TabPane>
+
+                  {studentHasBreaksFeature && (
+                    <TabPane tab="Breaks" key="breaks">
+                      <BreakTracking
+                        student={selectedStudent}
+                        breakSettings={selectedStudentData?.user?.breakSettings}
+                        breakHistory={selectedStudentData?.user?.breakHistory}
+                        refetchTrigger={refetchTrigger}
+                      />
+                    </TabPane>
+                  )}
+
+                  {selectedStudentData?.user?.contracts?.some(contract => contract.isActive) && (
+                    <TabPane tab="Contracts" key="contracts">
+                      <ContractTracking
+                        student={selectedStudent}
+                        contracts={selectedStudentData?.user?.contracts}
+                        refetchTrigger={refetchTrigger}
+                      />
+                    </TabPane>
+                  )}
+                </Tabs>
               </div>
             )}
 
