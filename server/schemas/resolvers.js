@@ -1388,8 +1388,17 @@ const resolvers = {
       }
     },
     takeBreak: async (_, { studentId }, context) => {
-      // A student can only initiate their own break
-      if (!context.user || context.user._id.toString() !== studentId) {
+      if (!context.user) {
+        throw new AuthenticationError("You are not authorized to perform this action.");
+      }
+      
+      // Allow if the user is the student, or is an admin/teacher
+      const isSelf = context.user._id.toString() === studentId;
+      const isAdmin = context.user.isAdmin;
+      const isTeacher = context.user.role === 'teacher' && Array.isArray(context.user.students) && context.user.students.map(s => s.toString()).includes(studentId);
+      
+      // Since admins and teachers are the same, allow either
+      if (!isSelf && !isAdmin && !isTeacher) {
         throw new AuthenticationError("You are not authorized to perform this action.");
       }
 
@@ -1447,8 +1456,17 @@ const resolvers = {
     },
 
     endBreak: async (_, { studentId }, context) => {
-      // A student can only end their own break
-      if (!context.user || context.user._id.toString() !== studentId) {
+      if (!context.user) {
+        throw new AuthenticationError("You are not authorized to perform this action.");
+      }
+      
+      // Allow if the user is the student, or is an admin/teacher
+      const isSelf = context.user._id.toString() === studentId;
+      const isAdmin = context.user.isAdmin;
+      const isTeacher = context.user.role === 'teacher' && Array.isArray(context.user.students) && context.user.students.map(s => s.toString()).includes(studentId);
+      
+      // Since admins and teachers are the same, allow either
+      if (!isSelf && !isAdmin && !isTeacher) {
         throw new AuthenticationError("You are not authorized to perform this action.");
       }
 

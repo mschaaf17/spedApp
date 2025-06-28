@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Card, message, Space, Typography, Divider } from 'antd';
 import { useMutation } from '@apollo/client';
 import { TAKE_BREAK, END_BREAK } from '../../utils/mutations';
-import { QUERY_USER } from '../../utils/queries';
+import { QUERY_USER, QUERY_ME } from '../../utils/queries';
 import { PlayCircleOutlined, PauseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -56,10 +56,71 @@ const BreakTracking = ({ student, breakSettings, breakHistory, refetchTrigger })
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Check if break is over time
+  const isBreakOverTime = () => {
+    if (!breakSettings?.duration || !isBreakActive) return false;
+    const breakDurationInSeconds = breakSettings.duration * 60;
+    return elapsedTime > breakDurationInSeconds;
+  };
+
+  // Get the color for the timer display
+  const getTimerColor = () => {
+    if (isBreakOverTime()) {
+      return '#ff4d4f'; // Red for overtime
+    }
+    return '#1890ff'; // Blue for normal
+  };
+
   const handleStartBreak = async () => {
     try {
       await takeBreak({
         variables: { studentId: student._id },
+        update: (cache, { data }) => {
+          // Update the cache for the student's view (QUERY_USER)
+          try {
+            const existingUserData = cache.readQuery({ 
+              query: QUERY_USER, 
+              variables: { identifier: student.username, isUsername: true } 
+            });
+            if (existingUserData?.user) {
+              cache.writeQuery({
+                query: QUERY_USER,
+                variables: { identifier: student.username, isUsername: true },
+                data: {
+                  ...existingUserData,
+                  user: {
+                    ...existingUserData.user,
+                    breakHistory: data.takeBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_USER cache for break:', error);
+          }
+
+          // Also update QUERY_ME cache if the student is viewing their own dashboard
+          try {
+            const existingData = cache.readQuery({ 
+              query: QUERY_ME,
+              variables: {}
+            });
+            if (existingData?.me) {
+              cache.writeQuery({
+                query: QUERY_ME,
+                data: {
+                  ...existingData,
+                  me: {
+                    ...existingData.me,
+                    breakHistory: data.takeBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_ME cache for break:', error);
+          }
+        },
         refetchQueries: [
           { query: QUERY_USER, variables: { identifier: student.username, isUsername: true } }
         ]
@@ -75,6 +136,52 @@ const BreakTracking = ({ student, breakSettings, breakHistory, refetchTrigger })
     try {
       await endBreak({
         variables: { studentId: student._id },
+        update: (cache, { data }) => {
+          // Update the cache for the student's view (QUERY_USER)
+          try {
+            const existingUserData = cache.readQuery({ 
+              query: QUERY_USER, 
+              variables: { identifier: student.username, isUsername: true } 
+            });
+            if (existingUserData?.user) {
+              cache.writeQuery({
+                query: QUERY_USER,
+                variables: { identifier: student.username, isUsername: true },
+                data: {
+                  ...existingUserData,
+                  user: {
+                    ...existingUserData.user,
+                    breakHistory: data.endBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_USER cache for end break:', error);
+          }
+
+          // Also update QUERY_ME cache if the student is viewing their own dashboard
+          try {
+            const existingData = cache.readQuery({ 
+              query: QUERY_ME,
+              variables: {}
+            });
+            if (existingData?.me) {
+              cache.writeQuery({
+                query: QUERY_ME,
+                data: {
+                  ...existingData,
+                  me: {
+                    ...existingData.me,
+                    breakHistory: data.endBreak.breakHistory
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.log('Could not update QUERY_ME cache for end break:', error);
+          }
+        },
         refetchQueries: [
           { query: QUERY_USER, variables: { identifier: student.username, isUsername: true } }
         ]
@@ -145,23 +252,35 @@ const BreakTracking = ({ student, breakSettings, breakHistory, refetchTrigger })
         <div style={{ textAlign: 'center', padding: '20px' }}>
           {isBreakActive ? (
             <div>
-              <div style={{ fontSize: '48px', marginBottom: '20px', color: '#1890ff' }}>
+              <div style={{ fontSize: '48px', marginBottom: '20px', color: getTimerColor() }}>
                 <ClockCircleOutlined />
               </div>
-              <Title level={2} style={{ color: '#1890ff' }}>
+              <Title level={2} style={{ color: getTimerColor() }}>
                 {formatTime(elapsedTime)}
               </Title>
-              <Text style={{ display: 'block', marginBottom: '20px' }}>
-                Break in progress
+              <Text style={{ display: 'block', marginBottom: '20px', color: getTimerColor() }}>
+                {isBreakOverTime() ? 'Break over time - continue until stopped' : 'Break in progress'}
               </Text>
+              {isBreakOverTime() && (
+                <div style={{ 
+                  backgroundColor: '#fff2f0', 
+                  border: '1px solid #ffccc7', 
+                  borderRadius: '6px', 
+                  padding: '8px 12px', 
+                  marginBottom: '20px',
+                  color: '#ff4d4f'
+                }}>
+                  ⚠️ Break has exceeded the configured duration of {breakSettings?.duration || 5} minutes
+                </div>
+              )}
               <Button 
                 type="primary" 
-                danger 
+                danger={isBreakOverTime()}
                 size="large"
                 icon={<PauseCircleOutlined />}
                 onClick={handleEndBreak}
               >
-                End Break
+                {isBreakOverTime() ? 'Stop Overdue Break' : 'End Break'}
               </Button>
             </div>
           ) : (
@@ -197,36 +316,51 @@ const BreakTracking = ({ student, breakSettings, breakHistory, refetchTrigger })
                 const today = new Date().toISOString().split('T')[0];
                 return breakDate === today;
               })
-              .map((breakRecord, index) => (
-                <div key={index} style={{ 
-                  padding: '12px', 
-                  border: '1px solid #d9d9d9', 
-                  borderRadius: '6px', 
-                  marginBottom: '8px',
-                  backgroundColor: breakRecord.endTime ? '#f6ffed' : '#fff7e6'
-                }}>
-                  <Space direction="vertical" size="small">
-                    <Text>
-                      <strong>Start:</strong> {new Date(breakRecord.startTime).toLocaleTimeString()}
-                    </Text>
-                    {breakRecord.endTime && (
-                      <>
-                        <Text>
-                          <strong>End:</strong> {new Date(breakRecord.endTime).toLocaleTimeString()}
-                        </Text>
-                        <Text>
-                          <strong>Duration:</strong> {breakRecord.duration ? `${breakRecord.duration.toFixed(1)} minutes` : 'Unknown'}
-                        </Text>
-                      </>
-                    )}
-                    {!breakRecord.endTime && (
-                      <Text style={{ color: '#faad14' }}>
-                        <strong>Status:</strong> Active
+              .map((breakRecord, index) => {
+                const breakStartTime = new Date(breakRecord.startTime);
+                const breakEndTime = breakRecord.endTime ? new Date(breakRecord.endTime) : null;
+                const breakDurationInSeconds = breakRecord.duration ? breakRecord.duration * 60 : 0;
+                const configuredDurationInSeconds = (breakSettings?.duration || 5) * 60;
+                const isOverTime = breakEndTime && breakDurationInSeconds > configuredDurationInSeconds;
+                
+                return (
+                  <div key={index} style={{ 
+                    padding: '12px', 
+                    border: '1px solid #d9d9d9', 
+                    borderRadius: '6px', 
+                    marginBottom: '8px',
+                    backgroundColor: breakRecord.endTime 
+                      ? (isOverTime ? '#fff2f0' : '#f6ffed') 
+                      : '#fff7e6'
+                  }}>
+                    <Space direction="vertical" size="small">
+                      <Text>
+                        <strong>Start:</strong> {breakStartTime.toLocaleTimeString()}
                       </Text>
-                    )}
-                  </Space>
-                </div>
-              ))}
+                      {breakEndTime && (
+                        <>
+                          <Text>
+                            <strong>End:</strong> {breakEndTime.toLocaleTimeString()}
+                          </Text>
+                          <Text style={{ color: isOverTime ? '#ff4d4f' : 'inherit' }}>
+                            <strong>Duration:</strong> {breakRecord.duration ? `${breakRecord.duration.toFixed(1)} minutes` : 'Unknown'}
+                            {isOverTime && (
+                              <span style={{ color: '#ff4d4f', marginLeft: '8px' }}>
+                                ⚠️ Over time limit
+                              </span>
+                            )}
+                          </Text>
+                        </>
+                      )}
+                      {!breakEndTime && (
+                        <Text style={{ color: '#faad14' }}>
+                          <strong>Status:</strong> Active
+                        </Text>
+                      )}
+                    </Space>
+                  </div>
+                );
+              })}
           </div>
         ) : (
           <Text type="secondary">No breaks taken today</Text>

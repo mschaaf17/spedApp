@@ -83,6 +83,11 @@ const client = new ApolloClient({
             merge(existing = [], incoming) {
               return incoming;
             }
+          },
+          breakHistory: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
           }
         }
       },

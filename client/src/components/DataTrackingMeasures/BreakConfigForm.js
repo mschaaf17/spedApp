@@ -55,6 +55,15 @@ const BreakConfigForm = ({
           />
         </Form.Item>
       )}
+      <Form.Item label="If the student goes over the break time, what should happen?">
+        <Radio.Group
+          value={breakSettings.overtimePolicy || 'countAsOne'}
+          onChange={e => setBreakSettings(prev => ({ ...prev, overtimePolicy: e.target.value }))}
+        >
+          <Radio value="countAsOne">Only count as one break (default)</Radio>
+          <Radio value="takeNextBreak">Take away the next break as a penalty</Radio>
+        </Radio.Group>
+      </Form.Item>
       <Form.Item>
         <Button type="primary" onClick={handleSaveBreakSettings}>
           Save Break Settings

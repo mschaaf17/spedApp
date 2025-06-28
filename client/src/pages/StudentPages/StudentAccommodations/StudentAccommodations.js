@@ -34,7 +34,12 @@ const StudentAccommodations = ({
   const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig && !propBreakSettings;
   const query = userParam ? QUERY_USER : QUERY_ME;
   const variables = userParam ? { identifier: userParam, isUsername: true } : {};
-  const { loading, data, error, refetch } = useQuery(query, { variables, skip: !shouldFetch });
+  const { loading, data, error, refetch } = useQuery(query, { 
+    variables, 
+    skip: !shouldFetch,
+    pollInterval: 3000, // Poll every 3 seconds for real-time updates
+    notifyOnNetworkStatusChange: true
+  });
 
   const [takeBreak, { error: takeBreakError }] = useMutation(TAKE_BREAK);
   const [endBreak, { error: endBreakError }] = useMutation(END_BREAK);
@@ -60,6 +65,35 @@ const StudentAccommodations = ({
   const studentViewConfig = propConfig ?? user.studentViewConfig ?? {};
   const breakSettings = propBreakSettings ?? user.breakSettings ?? {};
   const breakHistory = propBreakHistory ?? user.breakHistory ?? [];
+
+  // Check for active break and set break timer
+  useEffect(() => {
+    if (breakHistory && breakHistory.length > 0) {
+      const latestBreak = breakHistory[breakHistory.length - 1];
+      if (latestBreak && !latestBreak.endTime) {
+        // There's an active break - show the timer
+        setIsBreakTime(true);
+        // Calculate how much time has elapsed since the break started
+        const startTime = new Date(latestBreak.startTime);
+        const now = new Date();
+        const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        const configuredDuration = breakSettings.duration * 60; // convert to seconds
+        
+        // If the break has gone over time, show 0 remaining time
+        // If not, show the remaining time
+        const remainingTime = Math.max(0, configuredDuration - elapsedSeconds);
+        setBreakDuration(remainingTime);
+      } else {
+        // No active break
+        setIsBreakTime(false);
+        setBreakDuration(0);
+      }
+    } else {
+      // No break history
+      setIsBreakTime(false);
+      setBreakDuration(0);
+    }
+  }, [breakHistory, breakSettings.duration]);
 
   // Calculate break count and remaining breaks
   const calculateBreakInfo = () => {
@@ -380,6 +414,23 @@ const StudentAccommodations = ({
 
   return (
     <div className={`student-dashboard-container ${previewMode ? 'preview-mode' : ''}`}>
+      {/* Real-time update indicator */}
+      {shouldFetch && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          fontSize: '12px', 
+          color: '#666', 
+          zIndex: 1000,
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          padding: '4px 8px',
+          borderRadius: '4px'
+        }}>
+          🔄 Live updates enabled
+        </div>
+      )}
+      
       {isBreakTime ? (
         <BreakTimer duration={breakDuration} onFinish={handleEndBreak} />
       ) : (
@@ -483,4 +534,4 @@ const StudentAccommodations = ({
   );
 };
 
-export default StudentAccommodations; 
+export default StudentAccommodations;
