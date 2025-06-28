@@ -75,16 +75,21 @@ const ContractTracking = ({ student, contracts, refetchTrigger }) => {
   const renderContractTable = (contract) => {
     const today = new Date().toISOString().split('T')[0];
     const dayEntry = contract.chart.find(day => day.date === today);
-    
+
+    // For weekly contracts, filter out the time from columns
+    const columnTimes = contract.type === 'weekly' 
+      ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+      : contract.times.filter(Boolean);
+
     const columns = [
       {
         title: 'Behavior',
-        dataIndex: 'row',
-        key: 'row',
-        width: 200,
-        render: (text) => <Text strong>{text}</Text>
+        key: 'behavior',
+        dataIndex: 'behavior',
+        width: 150,
+        fixed: 'left',
       },
-      ...contract.times.filter(Boolean).map(time => ({
+      ...columnTimes.map(time => ({
         title: time,
         key: time,
         dataIndex: time,
@@ -135,25 +140,58 @@ const ContractTracking = ({ student, contracts, refetchTrigger }) => {
                 </Select>
               )}
               {timeEntry?.note && (
-                <div style={{ fontSize: '12px', color: '#1890ff', marginTop: '4px' }}>
-                  📝
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  📝 {timeEntry.note}
                 </div>
               )}
             </div>
           );
-        }
-      }))
+        },
+      })),
     ];
+
+    const dataSource = contract.rows.map(row => ({
+      key: row,
+      behavior: row,
+      ...Object.fromEntries(
+        columnTimes.map(time => [
+          time,
+          {
+            time,
+            value: dayEntry?.entries.find(entry => entry.time === time)?.value || '',
+            note: dayEntry?.entries.find(entry => entry.time === time)?.note || '',
+          }
+        ])
+      ),
+    }));
 
     return (
       <Table
         columns={columns}
-        dataSource={contract.rows.map(row => ({ row, key: row }))}
+        dataSource={dataSource}
         pagination={false}
         size="small"
-        bordered
+        scroll={{ x: 'max-content' }}
       />
     );
+  };
+
+  // Helper function to format check-in times display
+  const formatCheckInTimes = (contract) => {
+    if (contract.type === 'weekly') {
+      const days = contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+      const time = contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+      
+      if (days.length > 0 && time) {
+        return `${days.join(', ')} at ${time}`;
+      } else if (days.length > 0) {
+        return days.join(', ');
+      } else {
+        return contract.times.filter(Boolean).join(', ');
+      }
+    } else {
+      return contract.times.filter(Boolean).join(', ');
+    }
   };
 
   if (activeContracts.length === 0) {
@@ -205,40 +243,9 @@ const ContractTracking = ({ student, contracts, refetchTrigger }) => {
             <Space direction="vertical" size="small">
               <Text><strong>Type:</strong> {selectedContract.type}</Text>
               <Text><strong>Measure Type:</strong> {selectedContract.measureType}</Text>
-              <Text><strong>Check-in Times:</strong> {selectedContract.times.filter(Boolean).join(', ')}</Text>
+              <Text><strong>Check-in Times:</strong> {formatCheckInTimes(selectedContract)}</Text>
             </Space>
           </div>
-
-          {/* Check-in Times Display */}
-          {selectedContract.type === 'daily' && selectedContract.times.length > 0 && (
-            <div style={{ 
-              background: '#e3f2fd', 
-              border: '1px solid #2196f3', 
-              borderRadius: 6, 
-              padding: 12,
-              marginBottom: 16,
-              textAlign: 'center'
-            }}>
-              <Text strong style={{ color: '#1976d2' }}>
-                📅 Check-in Times - Students must check in at these times:
-              </Text>
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                {selectedContract.times.filter(Boolean).map((time, index) => (
-                  <span key={index} style={{ 
-                    padding: '4px 8px', 
-                    background: 'white', 
-                    border: '1px solid #2196f3', 
-                    borderRadius: 4,
-                    fontWeight: 500,
-                    color: '#1976d2',
-                    fontSize: '13px'
-                  }}>
-                    {time}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Contract Table */}
           {renderContractTable(selectedContract)}

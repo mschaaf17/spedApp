@@ -168,6 +168,24 @@ const Contracts = () => {
     return value || '';
   };
 
+  const formatCheckInTimes = (contract) => {
+    if (contract.type === 'daily') {
+      return contract.times.filter(Boolean).join(', ');
+    } else if (contract.type === 'weekly') {
+      const days = contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+      const time = contract.times.find(time => time.includes(':') && !['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time));
+      
+      if (days.length > 0 && time) {
+        return `${days.join(', ')} at ${time}`;
+      } else if (days.length > 0) {
+        return days.join(', ');
+      } else {
+        return contract.times.filter(Boolean).join(', ');
+      }
+    }
+    return '';
+  };
+
   return (
     <div className="contracts-container">
       <div className="contracts-header-main">
@@ -540,7 +558,7 @@ const Contracts = () => {
                 <div className="contract-info">
                   <p><strong>Type:</strong> {contract.type}</p>
                   <p><strong>Measure Type:</strong> {contract.measureType}</p>
-                  <p><strong>Times:</strong> {contract.times.filter(Boolean).join(', ')}</p>
+                  <p><strong>Times:</strong> {formatCheckInTimes(contract)}</p>
                 </div>
 
                 {/* Contract Preview */}
@@ -628,7 +646,11 @@ const Contracts = () => {
                     <thead>
                       <tr>
                         <th style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>Behavior</th>
-                        {contract.times.filter(Boolean).map((time) => (
+                        {/* For weekly contracts, only show days as columns, not the time */}
+                        {(contract.type === 'weekly' 
+                          ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+                          : contract.times.filter(Boolean)
+                        ).map((time) => (
                           <th key={time} style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa' }}>{time}</th>
                         ))}
                       </tr>
@@ -637,7 +659,11 @@ const Contracts = () => {
                       {contract.rows.map((row) => (
                         <tr key={row}>
                           <td style={{ border: '1px solid #ccc', padding: 6, background: '#f8f9fa', fontWeight: 500 }}>{row}</td>
-                          {contract.times.filter(Boolean).map((time) => (
+                          {/* For weekly contracts, only show days as columns, not the time */}
+                          {(contract.type === 'weekly' 
+                            ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+                            : contract.times.filter(Boolean)
+                          ).map((time) => (
                             <td key={time} style={{ border: '1px solid #ccc', padding: 6, textAlign: 'center' }}>
                               {contract.measureType === 'smileys' ? (
                                 <span style={{ fontSize: 22 }}>
@@ -666,7 +692,11 @@ const Contracts = () => {
                     <thead>
                       <tr>
                         <th>Behavior</th>
-                        {contract.times.filter(Boolean).map((time) => (
+                        {/* For weekly contracts, only show days as columns, not the time */}
+                        {(contract.type === 'weekly' 
+                          ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+                          : contract.times.filter(Boolean)
+                        ).map((time) => (
                           <th key={time}>{time}</th>
                         ))}
                       </tr>
@@ -675,7 +705,11 @@ const Contracts = () => {
                       {contract.rows.map((row) => (
                         <tr key={row}>
                           <td>{row}</td>
-                          {contract.times.filter(Boolean).map((time) => {
+                          {/* For weekly contracts, only show days as columns, not the time */}
+                          {(contract.type === 'weekly' 
+                            ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+                            : contract.times.filter(Boolean)
+                          ).map((time) => {
                             const today = new Date().toISOString().split('T')[0];
                             const dayEntry = contract.chart.find(day => day.date === today);
                             const timeEntry = dayEntry?.entries.find(entry => entry.time === time);

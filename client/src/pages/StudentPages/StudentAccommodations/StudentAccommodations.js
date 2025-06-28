@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { Select, Button, message } from 'antd';
@@ -29,6 +29,8 @@ const StudentAccommodations = ({
   const [selectedChart, setSelectedChart] = useState(null);
   const [isBreakTime, setIsBreakTime] = useState(false);
   const [breakDuration, setBreakDuration] = useState(0);
+  const [breakStartTime, setBreakStartTime] = useState(null);
+  const breakTimerRef = useRef(null);
 
   // Only fetch if not in preview mode and no props provided
   const shouldFetch = !previewMode && !propAccommodations && !propFrequencies && !propDurations && !propConfig && !propBreakSettings;
@@ -37,7 +39,7 @@ const StudentAccommodations = ({
   const { loading, data, error, refetch } = useQuery(query, { 
     variables, 
     skip: !shouldFetch,
-    pollInterval: 3000, // Poll every 3 seconds for real-time updates
+    pollInterval: 5000, // Poll every 5 seconds for real-time updates
     notifyOnNetworkStatusChange: true
   });
 
@@ -66,34 +68,54 @@ const StudentAccommodations = ({
   const breakSettings = propBreakSettings ?? user.breakSettings ?? {};
   const breakHistory = propBreakHistory ?? user.breakHistory ?? [];
 
-  // Check for active break and set break timer
+  // Check for active break and set break timer - only when break status changes
   useEffect(() => {
     if (breakHistory && breakHistory.length > 0) {
       const latestBreak = breakHistory[breakHistory.length - 1];
       if (latestBreak && !latestBreak.endTime) {
-        // There's an active break - show the timer
-        setIsBreakTime(true);
-        // Calculate how much time has elapsed since the break started
+        // There's an active break
         const startTime = new Date(latestBreak.startTime);
-        const now = new Date();
-        const elapsedSeconds = Math.floor((now - startTime) / 1000);
-        const configuredDuration = breakSettings.duration * 60; // convert to seconds
         
-        // If the break has gone over time, show 0 remaining time
-        // If not, show the remaining time
-        const remainingTime = Math.max(0, configuredDuration - elapsedSeconds);
-        setBreakDuration(remainingTime);
+        // Only update if this is a completely new break (different start time)
+        if (!breakStartTime || breakStartTime.getTime() !== startTime.getTime()) {
+          setBreakStartTime(startTime);
+          setIsBreakTime(true);
+          
+          // Calculate initial remaining time only once when break starts
+          const now = new Date();
+          const elapsedSeconds = Math.floor((now - startTime) / 1000);
+          const configuredDuration = breakSettings.duration * 60; // convert to seconds
+          const remainingTime = Math.max(0, configuredDuration - elapsedSeconds);
+          setBreakDuration(remainingTime);
+        }
+        // If break is already active with same start time, don't recalculate duration
       } else {
-        // No active break
-        setIsBreakTime(false);
-        setBreakDuration(0);
+        // No active break - clear everything
+        if (isBreakTime) {
+          setIsBreakTime(false);
+          setBreakDuration(0);
+          setBreakStartTime(null);
+        }
       }
     } else {
-      // No break history
-      setIsBreakTime(false);
-      setBreakDuration(0);
+      // No break history - clear everything
+      if (isBreakTime) {
+        setIsBreakTime(false);
+        setBreakDuration(0);
+        setBreakStartTime(null);
+      }
     }
-  }, [breakHistory, breakSettings.duration]);
+  }, [breakHistory]); // Remove breakSettings.duration, isBreakTime, breakStartTime from dependencies
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clear any timers or refs when component unmounts
+      if (breakTimerRef.current) {
+        clearTimeout(breakTimerRef.current);
+      }
+    };
+  }, []);
 
   // Calculate break count and remaining breaks
   const calculateBreakInfo = () => {
@@ -200,8 +222,13 @@ const StudentAccommodations = ({
           }
         }
       });
-      setBreakDuration(breakSettings.duration * 60); // convert minutes to seconds
+      
+      // Set break state immediately to prevent glitching
+      const now = new Date();
+      setBreakStartTime(now);
       setIsBreakTime(true);
+      setBreakDuration(breakSettings.duration * 60); // convert minutes to seconds
+      
       // Refetch data to ensure break count is updated
       if (shouldFetch) {
         refetch();
@@ -270,7 +297,11 @@ const StudentAccommodations = ({
         }
       });
       
+      // Clear break state immediately to prevent glitching
       setIsBreakTime(false);
+      setBreakDuration(0);
+      setBreakStartTime(null);
+      
       // Refetch data to ensure break count is updated
       if (shouldFetch) {
         refetch();
