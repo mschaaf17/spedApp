@@ -170,7 +170,7 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     
-    console.log('formatDate input:', dateString, 'type:', typeof dateString);
+    //console.log('formatDate input:', dateString, 'type:', typeof dateString);
     
     let date;
     if (typeof dateString === 'string' && /^\d+$/.test(dateString)) {
@@ -180,7 +180,7 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
       date = new Date(dateString);
     }
     
-    console.log('formatDate parsed date:', date, 'isValid:', !isNaN(date.getTime()));
+    //console.log('formatDate parsed date:', date, 'isValid:', !isNaN(date.getTime()));
     
     if (isNaN(date.getTime())) {
       console.warn('Invalid date:', dateString);

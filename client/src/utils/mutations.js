@@ -772,3 +772,23 @@ export const UPDATE_CONTRACT_TIMES = gql`
     }
   }
 `;
+
+export const UPDATE_ACCOMMODATION_LAST_OFFERED = gql`
+  mutation UpdateAccommodationLastOffered($accommodationId: ID!, $studentId: ID!) {
+    updateAccommodationLastOffered(accommodationId: $accommodationId, studentId: $studentId) {
+      _id
+      title
+      lastOffered
+    }
+  }
+`;
+
+export const REVERT_ACCOMMODATION_LAST_OFFERED = gql`
+  mutation RevertAccommodationLastOffered($accommodationId: ID!, $studentId: ID!, $previousLastOffered: String) {
+    revertAccommodationLastOffered(accommodationId: $accommodationId, studentId: $studentId, previousLastOffered: $previousLastOffered) {
+      _id
+      title
+      lastOffered
+    }
+  }
+`;

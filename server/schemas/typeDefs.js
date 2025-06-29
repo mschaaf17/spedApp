@@ -70,6 +70,7 @@ const typeDefs = gql`
     isActive: Boolean!
     createdAt: String
     templateId: AccommodationList
+    lastOffered: String
     updateStudentViewConfig(
       studentId: ID!
       showAccommodations: Boolean!
@@ -79,7 +80,7 @@ const typeDefs = gql`
   }
   type DailyCounts {
     date: String!
-    count: Int!    
+    count: Int!
   }
 
   type Frequency {
@@ -100,7 +101,6 @@ const typeDefs = gql`
     isTemplate: Boolean
     templateId: ID
     isActive: Boolean
-   
   }
 
   type LogEntry {
@@ -218,14 +218,26 @@ const typeDefs = gql`
     user(identifier: String!, isUsername: Boolean!): User
     admins: [User]
     students: [User]
-    accommodationList(isTemplate: Boolean, isActive: Boolean): [AccommodationList]
+    accommodationList(
+      isTemplate: Boolean
+      isActive: Boolean
+    ): [AccommodationList]
     frequency(studentId: ID, isTemplate: Boolean): [Frequency]
     duration(studentId: ID, isTemplate: Boolean): [Duration]
     timersForDuration(durationId: ID!, studentId: ID!): Duration
     getRunningTimers(studentId: ID!, behaviorTitle: String!): [Timer!]!
     interventionList(isTemplate: Boolean, isActive: Boolean): [InterventionList]
-    interventionListForStudent(studentId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
-    interventionListForStudentByBehavior(studentId: ID, behaviorId: ID, isTemplate: Boolean, isActive: Boolean): [InterventionList]
+    interventionListForStudent(
+      studentId: ID
+      isTemplate: Boolean
+      isActive: Boolean
+    ): [InterventionList]
+    interventionListForStudentByBehavior(
+      studentId: ID
+      behaviorId: ID
+      isTemplate: Boolean
+      isActive: Boolean
+    ): [InterventionList]
     contractMeasures(category: String, isActive: Boolean): [ContractMeasure!]!
     contracts(studentId: ID, isActive: Boolean): [Contract!]!
     contract(contractId: ID!): Contract
@@ -259,24 +271,17 @@ const typeDefs = gql`
       behaviorTitle: String!
       operationalDefinition: String!
     ): Frequency
-    removeFrequencyTitleFromList(
-      _id: ID!
-    ): Frequency
+    removeFrequencyTitleFromList(_id: ID!): Frequency
 
     addDurationTitleToList(
       behaviorTitle: String!
       operationalDefinition: String!
     ): Duration
-    removeDurationTitleFromList(
-      _id: ID!
-    ): Duration
+    removeDurationTitleFromList(_id: ID!): Duration
 
     addAccommodationForStudent(accommodationId: ID!, studentId: ID!): User
-    removeAccommodationFromStudent(
-      accommodationId: ID!
-      studentId: ID!
-    ): User
-    
+    removeAccommodationFromStudent(accommodationId: ID!, studentId: ID!): User
+
     removeFrequencyBeingTrackedForStudent(
       frequencyId: ID!
       studentId: ID!
@@ -284,12 +289,13 @@ const typeDefs = gql`
 
     removeDurationBeingTrackedForStudent(durationId: ID!, studentId: ID!): User
 
-    addDataMeasureToStudent(
-      dataMeasureId: ID!
+    addDataMeasureToStudent(dataMeasureId: ID!, studentId: ID!): User
+
+    incrementFrequency(
+      frequencyId: ID!
       studentId: ID!
-    ): User
-    
-    incrementFrequency(frequencyId: ID!, studentId: ID!, date: String!): Frequency
+      date: String!
+    ): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
     startDurationTimer(durationId: ID!, studentId: ID!): Timer
@@ -314,7 +320,7 @@ const typeDefs = gql`
       behaviorId: ID
     ): InterventionList
     removeInterventionForStudent(interventionId: ID!, studentId: ID!): User
-    
+
     updateStudentViewConfig(
       studentId: ID!
       showAccommodations: Boolean!
@@ -330,12 +336,27 @@ const typeDefs = gql`
     addContractToStudent(contractId: ID!, studentId: ID!): User
     addContractMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
     toggleContractsForStudent(studentId: ID!, enabled: Boolean!): User
-    addContractMeasure(name: String!, description: String!, category: String): ContractMeasure
+    addContractMeasure(
+      name: String!
+      description: String!
+      category: String
+    ): ContractMeasure
     deleteContractMeasure(contractMeasureId: ID!): ContractMeasure
-    addContractDataMeasureToStudent(contractMeasureId: ID!, studentId: ID!): User
-    removeContractDataMeasureFromStudent(contractMeasureId: ID!, studentId: ID!): User
+    addContractDataMeasureToStudent(
+      contractMeasureId: ID!
+      studentId: ID!
+    ): User
+    removeContractDataMeasureFromStudent(
+      contractMeasureId: ID!
+      studentId: ID!
+    ): User
     updateContractActiveStatus(contractId: ID!, isActive: Boolean!): Contract
     updateContractTimes(contractId: ID!, times: [String!]!): Contract
+    updateAccommodationLastOffered(
+      accommodationId: ID!
+      studentId: ID!
+    ): AccommodationList
+    revertAccommodationLastOffered(accommodationId: ID!, studentId: ID!, previousLastOffered: String): AccommodationList
   }
 
   input SelectedChartInput {

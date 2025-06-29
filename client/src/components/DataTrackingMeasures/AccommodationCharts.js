@@ -13,20 +13,35 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
   const processAccommodationData = () => {
     if (!accommodations || accommodations.length === 0) return [];
 
-    // Group accommodations by assignment date
-    const assignmentData = {};
+    // Group accommodations by assignment date and last offered date
+    const assignmentData = [];
+    const lastOfferedData = [];
     
     accommodations.forEach(accommodation => {
-      const date = new Date(accommodation.createdAt).toLocaleDateString();
-      if (!assignmentData[date]) {
-        assignmentData[date] = 0;
+      // Assignment data
+      if (accommodation.createdAt) {
+        const date = new Date(accommodation.createdAt).toLocaleDateString();
+        const existing = assignmentData.find(item => item.date === date);
+        if (existing) {
+          existing.count++;
+        } else {
+          assignmentData.push({ date, count: 1 });
+        }
       }
-      assignmentData[date]++;
+      
+      // Last offered data
+      if (accommodation.lastOffered) {
+        const date = new Date(accommodation.lastOffered).toLocaleDateString();
+        const existing = lastOfferedData.find(item => item.date === date);
+        if (existing) {
+          existing.count++;
+        } else {
+          lastOfferedData.push({ date, count: 1 });
+        }
+      }
     });
 
-    return Object.entries(assignmentData)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    return { assignmentData, lastOfferedData };
   };
 
   // Process accommodation distribution data
@@ -48,42 +63,82 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
       .sort((a, b) => b.count - a.count);
   };
 
-  // Calculate accommodation statistics
+  // Calculate statistics
   const calculateStats = () => {
-    if (!accommodations || accommodations.length === 0) {
-      return {
-        totalAccommodations: 0,
-        uniqueAccommodations: 0,
-        averageDuration: 0
-      };
-    }
-
     const totalAccommodations = accommodations.length;
-    const uniqueAccommodations = new Set(accommodations.map(a => a.title)).size;
-    
-    // Calculate average duration (days since assignment)
-    const now = new Date();
-    const totalDuration = accommodations.reduce((sum, accommodation) => {
-      const assignmentDate = new Date(accommodation.createdAt);
-      const daysSinceAssignment = Math.floor((now - assignmentDate) / (1000 * 60 * 60 * 24));
-      return sum + daysSinceAssignment;
-    }, 0);
-    
-    const averageDuration = Math.round(totalDuration / totalAccommodations);
+    const uniqueAccommodations = [...new Set(accommodations.map(acc => acc.title))].length;
+    const accommodationsWithLastOffered = accommodations.filter(acc => acc.lastOffered).length;
+    const averageDaysSinceLastOffered = accommodationsWithLastOffered > 0 
+      ? accommodations.reduce((sum, acc) => {
+          if (acc.lastOffered) {
+            const daysSince = Math.floor((new Date() - new Date(acc.lastOffered)) / (1000 * 60 * 60 * 24));
+            return sum + daysSince;
+          }
+          return sum;
+        }, 0) / accommodationsWithLastOffered
+      : 0;
 
     return {
       totalAccommodations,
       uniqueAccommodations,
-      averageDuration
+      accommodationsWithLastOffered,
+      averageDaysSinceLastOffered
     };
   };
 
-  const assignmentData = processAccommodationData();
+  const { assignmentData, lastOfferedData } = processAccommodationData();
   const distributionData = processDistributionData();
   const stats = calculateStats();
 
   // Color palette for charts
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#00ff00', '#0000ff'];
+
+  const renderChart = () => {
+    if (chartType === 'assignment') {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={assignmentData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="count" stroke="#8884d8" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    } else if (chartType === 'lastOffered') {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={lastOfferedData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    } else if (chartType === 'distribution') {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={distributionData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="title" angle={-45} textAnchor="end" height={80} />
+            <YAxis />
+            <Tooltip 
+              formatter={(value, name) => [value, 'Times Assigned']}
+              labelFormatter={(label) => `Accommodation: ${label}`}
+            />
+            <Legend />
+            <Bar dataKey="count" fill="#82ca9d" name="Times Assigned" />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+    return null;
+  };
 
   if (!accommodations || accommodations.length === 0) {
     return (
@@ -100,130 +155,93 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
   }
 
   return (
-    <Card>
-      <div style={{ marginBottom: 16 }}>
-        <Title level={4}>Accommodation Analytics</Title>
-        
-        {/* Statistics Row */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={8}>
-            <Statistic
-              title="Total Assignments"
-              value={stats.totalAccommodations}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Col>
-          <Col span={8}>
-            <Statistic
-              title="Unique Accommodations"
-              value={stats.uniqueAccommodations}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Col>
-          <Col span={8}>
-            <Statistic
-              title="Avg. Days Assigned"
-              value={stats.averageDuration}
-              prefix={<CalendarOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-              suffix="days"
-            />
-          </Col>
-        </Row>
-        
-        <Space style={{ marginBottom: 16 }}>
-          <Select
-            value={chartType}
-            onChange={setChartType}
-            style={{ width: 200 }}
-          >
-            <Option value="assignment">Assignment Trends</Option>
-            <Option value="distribution">Accommodation Distribution</Option>
-          </Select>
-        </Space>
-      </div>
-
-      {chartType === 'assignment' && assignmentData.length > 0 && (
-        <div>
-          <Title level={5}>Accommodation Assignment Trends</Title>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={assignmentData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip 
-                formatter={(value, name) => [value, 'Accommodations Assigned']}
-                labelFormatter={(label) => `Date: ${label}`}
+    <div>
+      <Card>
+        <div style={{ marginBottom: 16 }}>
+          <Title level={4}>Accommodation Analytics</Title>
+          
+          {/* Statistics Row */}
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={6}>
+              <Statistic
+                title="Total Accommodations"
+                value={stats.totalAccommodations}
+                prefix={<UserOutlined />}
               />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#8884d8"
-                strokeWidth={2}
-                dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}
-                name="Accommodations Assigned"
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Unique Types"
+                value={stats.uniqueAccommodations}
+                prefix={<CheckCircleOutlined />}
               />
-            </LineChart>
-          </ResponsiveContainer>
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Recently Offered"
+                value={stats.accommodationsWithLastOffered}
+                prefix={<CalendarOutlined />}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Avg Days Since Offered"
+                value={Math.round(stats.averageDaysSinceLastOffered)}
+                suffix="days"
+              />
+            </Col>
+          </Row>
+          
+          <div style={{ marginBottom: 16 }}>
+            <Select
+              value={chartType}
+              onChange={setChartType}
+              style={{ width: 200 }}
+            >
+              <Option value="assignment">Assignment Trends</Option>
+              <Option value="lastOffered">Last Offered Trends</Option>
+              <Option value="distribution">Distribution</Option>
+            </Select>
+          </div>
         </div>
-      )}
 
-      {chartType === 'distribution' && distributionData.length > 0 && (
-        <div>
-          <Title level={5}>Accommodation Distribution</Title>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={distributionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="title" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip 
-                formatter={(value, name) => [value, 'Times Assigned']}
-                labelFormatter={(label) => `Accommodation: ${label}`}
-              />
-              <Legend />
-              <Bar dataKey="count" fill="#82ca9d" name="Times Assigned" />
-            </BarChart>
-          </ResponsiveContainer>
+        {renderChart()}
+
+        {chartType === 'distribution' && distributionData.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <Title level={5}>Accommodation Distribution (Pie Chart)</Title>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={distributionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ title, percent }) => `${title} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {distributionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value, name) => [value, 'Times Assigned']}
+                  labelFormatter={(label) => `Accommodation: ${label}`}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        <div style={{ marginTop: 16 }}>
+          <Text type="secondary">
+            📊 Charts show accommodation assignment patterns and usage distribution
+          </Text>
         </div>
-      )}
-
-      {chartType === 'distribution' && distributionData.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <Title level={5}>Accommodation Distribution (Pie Chart)</Title>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={distributionData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ title, percent }) => `${title} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="count"
-              >
-                {distributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                ))}
-              </Pie>
-              <Tooltip 
-                formatter={(value, name) => [value, 'Times Assigned']}
-                labelFormatter={(label) => `Accommodation: ${label}`}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      <div style={{ marginTop: 16 }}>
-        <Text type="secondary">
-          📊 Charts show accommodation assignment patterns and usage distribution
-        </Text>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

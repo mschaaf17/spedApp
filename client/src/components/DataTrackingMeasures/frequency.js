@@ -65,7 +65,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   function getTodayCount(dailyCounts) {
     const today = new Date();
     const todayString = today.toLocaleDateString();
-    console.log('Today (local):', todayString);
+    
 
     return (dailyCounts || [])
       .filter(dc => {
@@ -82,9 +82,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
         }
         if (!d || isNaN(d.getTime())) return false;
         const dString = d.toLocaleDateString();
-        if (dString === todayString) {
-          console.log('Matched date:', dString, 'Count:', dc.count);
-        }
+       
         return dString === todayString;
       })
       .reduce((sum, dc) => sum + dc.count, 0);
@@ -248,9 +246,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
 
   const activeFrequencies = (frequencyData?.frequency || []).filter(b => b.isActive && !b.isTemplate);
 
-  console.log('user:', user);
-  console.log('activeFrequencies:', activeFrequencies);
-  console.log('availableTemplates:', availableTemplates);
 
   return (
     <>

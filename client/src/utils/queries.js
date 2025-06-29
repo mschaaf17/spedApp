@@ -25,6 +25,7 @@ query Me {
   title
   image
   description
+  lastOffered
   templateId {
     _id
     title
@@ -194,6 +195,7 @@ query Me {
   title
   image
   description
+  lastOffered
   templateId {
     _id
     title
@@ -376,6 +378,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
   title
   image
   description
+  lastOffered
   templateId {
     _id
     title
@@ -531,6 +534,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
   title
   image
   description
+  lastOffered
   templateId {
     _id
     title
