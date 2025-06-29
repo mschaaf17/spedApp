@@ -1515,6 +1515,63 @@ const Dashboard = () => {
                     </TabPane>
                   )}
                 </Tabs>
+
+                {/* Charts Section - Only show if student has data measures */}
+                {getBehaviors().length > 0 && (
+                  <div id="charts-section" className="charts-section" style={{ marginTop: 24 }}>
+                    <div className="charts-header">
+                      <h3>Data Charts</h3>
+                      <div className="behavior-selector">
+                        <Select 
+                          mode="multiple"
+                          placeholder="Select behaviors to view charts" 
+                          style={{ width: 300 }}
+                          onChange={handleBehaviorChange}
+                          value={selectedBehavior ? selectedBehavior.map(b => {
+                            // Handle break charts which don't follow the type-id format
+                            if (b.type === 'break-frequency') {
+                              return 'break-frequency';
+                            } else if (b.type === 'break-duration') {
+                              return 'break-duration';
+                            } else {
+                              return `${b.type}-${b.id}`;
+                            }
+                          }) : undefined}
+                          allowClear
+                        >
+                          {getBehaviors().map(behavior => (
+                            <Select.Option 
+                              key={`${behavior.type}-${behavior.id}`} 
+                              value={behavior.type === 'break-frequency' || behavior.type === 'break-duration' 
+                                ? behavior.type 
+                                : `${behavior.type}-${behavior.id}`}
+                            >
+                              {behavior.title} ({behavior.type})
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {selectedBehavior && selectedBehavior.length > 0 && (
+                      <div className="charts-display" style={{ marginTop: 16 }}>
+                        {renderBehaviorChart()}
+                      </div>
+                    )}
+                    
+                    {(!selectedBehavior || selectedBehavior.length === 0) && (
+                      <div className="charts-placeholder" style={{ 
+                        textAlign: 'center', 
+                        padding: 40, 
+                        color: '#666',
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 8
+                      }}>
+                        <p>Select behaviors from the dropdown above to view their charts</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
