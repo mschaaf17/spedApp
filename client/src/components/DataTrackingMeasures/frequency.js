@@ -255,9 +255,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   return (
     <>
     <div className='centerBody'>
-    <div className='titleSection'>
-  <h1 className ="title"> Logging for {usernameFromUrl}</h1>
-  </div>
+   
     <div>
       {user.behaviorFrequencies.length === 0 ? (
         <>
@@ -304,65 +302,35 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
         <div>
           <div className='container'>
             <div className='tooltip'>
-              <AddIcon danger className='icons' onClick={handleClickForAddingDataMeasure} />
-              <span className='tooltipText'>Add Data Measure</span>
-            </div>
-            {showSelect && (
-              <>
-                {templatesLoading ? <div>Loading templates...</div> : (
-                  <Select
-                    mode='multiple'
-                    style={{ width: '100%' }}
-                    placeholder='Select behavior titles'
-                    onChange={handleSelectChange}
-                  >
-                    {availableTemplates?.map((template) => (
-                      <Select.Option key={template._id} value={template._id}>
-                        {template.behaviorTitle}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                )}
-                <Button
-                  type='primary'
-                  onClick={async () => {
-                    // Add all selected behaviors
-                    await Promise.all(
-                      selectedBehaviorTitles.map((dataMeasureId) =>
-                        handleAdd(dataMeasureId)
-                      )
-                    );
-                    setShowSelect(false);
-                    setSelectedBehaviorTitles([]);
-                  }}
-                  disabled={selectedBehaviorTitles.length === 0}
-                >
-                  Save
-                </Button>
-              </>
-            )}
-            
-            <div className='tooltip'>
               <DeleteForeverIcon danger className='deleteIcon' onClick={handleDeleteIconClick} />
               <span className='tooltipText'>Remove Data Measure</span>
             </div>
           </div>
 
           <h2 className='secondHeading'>Click button as behavior occurs</h2>
-          <div className='dataContainer'>
-
-            
-
-         
+          <div className='dataContainer' style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: 24 }}>
             {activeFrequencies.map((behavior) => {
-              
-              console.log(behavior, "full behavior object");
-              console.log(behavior.dailyCounts ? behavior.dailyCounts : "no dailyCounts", "behavior.dailyCounts");
-              console.log(behavior.todayTotal ? behavior.todayTotal : "no todayTotal", "behavior.todayTotal");
               return (
-                <div key={behavior._id} style={{ position: 'relative' }}>
+                <div key={behavior._id} style={{ position: 'relative', marginBottom: 12 }}>
                   <Button
-                    className={`buttonContent frequencyButtons ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
+                    className={`frequency-pill-btn ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
+                    style={{
+                      borderRadius: 32,
+                      boxShadow: '0 2px 8px rgba(24,144,255,0.08)',
+                      background: '#f0f7ff',
+                      color: '#1890ff',
+                      fontWeight: 600,
+                      fontSize: 18,
+                      padding: '18px 32px',
+                      minWidth: 180,
+                      minHeight: 56,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #ff4d4f' : 'none',
+                      transition: 'all 0.2s',
+                    }}
                     onClick={() => {
                       if (deleteMode) {
                         handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
@@ -371,12 +339,33 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                       }
                     }}
                   >
-                    {behavior.behaviorTitle} : ({getTodayCount(behavior.dailyCounts || [])})
+                    <span style={{ fontWeight: 700, fontSize: 20, color: '#0050b3', marginRight: 8 }}>{behavior.behaviorTitle}</span>
+                    <span style={{ fontWeight: 700, fontSize: 20, color: '#13c2c2' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
                     {showRedXIcons && (
-                      <span className='deleteIcon' onClick={e => {
-                        e.stopPropagation(); // Prevents triggering the main button click
-                        handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                      }}>
+                      <span
+                        className='delete-badge'
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          background: '#ff4d4f',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: 24,
+                          height: 24,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
+                          zIndex: 2
+                        }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
+                        }}
+                      >
                         &times;
                       </span>
                     )}

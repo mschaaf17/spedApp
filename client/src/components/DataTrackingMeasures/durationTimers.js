@@ -148,25 +148,52 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
   };
 
   return (
-    <div className="timer-card">
-      <div className="timer-display">
+    <div className="timer-card" style={{
+      background: '#f8f9fa',
+      borderRadius: 16,
+      boxShadow: '0 2px 12px rgba(24,144,255,0.08)',
+      padding: 32,
+      margin: '24px 0',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      border: '1px solid #e6f7ff',
+      minWidth: 320,
+      maxWidth: 480,
+      width: '100%'
+    }}>
+      <div className="timer-display" style={{
+        fontFamily: 'Roboto Mono, monospace',
+        fontSize: 48,
+        color: '#1890ff',
+        background: '#e6f7ff',
+        borderRadius: 12,
+        padding: '16px 32px',
+        marginBottom: 24,
+        fontWeight: 700,
+        letterSpacing: 2,
+        textAlign: 'center',
+        boxShadow: '0 1px 4px rgba(24,144,255,0.06)'
+      }}>
         {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
         {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
         {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
       </div>
-      {!timerState.timerOn && timerState.time === 0 && (
-        <Button className="green time-btn" onClick={handleStart}>Start</Button>
-      )}
-      {timerState.timerOn && (
-        <Button className="red time-btn" onClick={handleStop}>Stop</Button>
-      )}
-      {!timerState.timerOn && timerState.time !== 0 && (
-        <>
-          <Button className="green time-btn" onClick={handleResume}>Resume</Button>
-          <Button className="yellow time-btn" onClick={handleReset}>Reset/Save</Button>
-        </>
-      )}
-      <Button danger icon={<DeleteForeverIcon />} onClick={() => onRemoveDuration(durationId)} style={{ marginLeft: 8 }}>Remove</Button>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {!timerState.timerOn && timerState.time === 0 && (
+          <Button type="primary" size="large" style={{ borderRadius: 24, minWidth: 100 }} onClick={handleStart}>Start</Button>
+        )}
+        {timerState.timerOn && (
+          <Button danger size="large" style={{ borderRadius: 24, minWidth: 100 }} onClick={handleStop}>Stop</Button>
+        )}
+        {!timerState.timerOn && timerState.time !== 0 && (
+          <>
+            <Button type="primary" size="large" style={{ borderRadius: 24, minWidth: 100, background: '#52c41a', borderColor: '#52c41a' }} onClick={handleResume}>Resume</Button>
+            <Button size="large" style={{ borderRadius: 24, minWidth: 120, background: '#fffbe6', color: '#faad14', borderColor: '#ffe58f' }} onClick={handleReset}>Reset/Save</Button>
+          </>
+        )}
+        <Button danger icon={<DeleteForeverIcon />} size="large" style={{ borderRadius: 24, minWidth: 120 }} onClick={() => onRemoveDuration(durationId)}>Remove</Button>
+      </div>
     </div>
   );
 };
@@ -241,54 +268,26 @@ export default function DurationTimers({ studentId, refetchTrigger }) {
   if (durationLoading || templateLoading) return <div>Loading...</div>;
 
   return (
-    <div className="data-logging-container">
-      <h2>Duration Data</h2>
+    <div className="data-logging-container" style={{ width: '100%' }}>
+      <h2 style={{ fontWeight: 700, color: '#262626', marginBottom: 16 }}>Duration Data</h2>
       <div>
-        <h2>Duration Behaviors</h2>
+        <h2 style={{ fontWeight: 600, color: '#52c41a', marginBottom: 16 }}>Duration Behaviors</h2>
         {durations.length === 0 && <div>No durations found for this student.</div>}
-        <ul>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32 }}>
           {durations.map(duration => (
-            <li key={duration._id}>
-              <b>{duration.behaviorTitle}</b>
+            <div key={duration._id} style={{ flex: '1 1 350px', minWidth: 350, maxWidth: 500 }}>
+              <div style={{ fontWeight: 500, fontSize: 18, marginBottom: 8 }}>{duration.behaviorTitle}</div>
               <TimerControls 
                 duration={duration} 
                 studentId={studentId}
                 onRemoveDuration={handleRemoveDuration}
                 onRefetch={durationRefetch}
               />
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
-      <div style={{ margin: '16px 0' }}>
-        <Button icon={<AddIcon />} onClick={() => setShowSelect(!showSelect)}>
-          Add Data Measure
-        </Button>
-        {showSelect && (
-          <>
-            <Select
-              showSearch
-              style={{ width: 300, marginLeft: 8 }}
-              placeholder="Select duration behavior"
-              optionFilterProp="children"
-              value={selectedTemplateId}
-              onChange={setSelectedTemplateId}
-              filterOption={(input, option) =>
-                option?.children.toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {availableTemplates.map(template => (
-                <Select.Option key={template._id} value={template._id}>
-                  {template.behaviorTitle}
-                </Select.Option>
-              ))}
-            </Select>
-            <Button type="primary" onClick={handleAddDuration} disabled={!selectedTemplateId} style={{ marginLeft: 8 }}>
-              Save
-            </Button>
-          </>
-        )}
-      </div>
+  
     </div>
   )
 }

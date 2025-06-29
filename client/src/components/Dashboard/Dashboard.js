@@ -1134,13 +1134,8 @@ const Dashboard = () => {
                   setActiveSection('track');
                   // Auto-select appropriate tab based on what's available
                   const studentData = selectedStudentData?.user || selectedStudent;
-                  if (studentHasBreaksFeature) {
-                    setActiveTrackingTab('breaks');
-                  } else if (studentData?.contracts?.some(contract => contract.isActive)) {
-                    setActiveTrackingTab('contracts');
-                  } else {
-                    setActiveTrackingTab('frequencyDuration');
-                  }
+                  // Always default to frequency & duration first
+                  setActiveTrackingTab('frequencyDuration');
                 }}
               >
                 Track Data
@@ -1521,6 +1516,11 @@ const Dashboard = () => {
                 <Tabs activeKey={activeTrackingTab} onChange={setActiveTrackingTab} size="large">
                   <TabPane tab="Frequency & Duration" key="frequencyDuration">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                        <Button type="primary" onClick={() => setShowAddDataMeasure(true)}>
+                          Add Data Measure
+                        </Button>
+                      </div>
                       <div>
                         <h4>Frequency Tracking</h4>
                         <Frequency 
