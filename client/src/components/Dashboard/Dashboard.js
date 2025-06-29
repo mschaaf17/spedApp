@@ -28,6 +28,12 @@ import BreakDurationCharts from '../DataTrackingMeasures/breakDurationCharts';
 // Import contract charts component
 import ContractCharts from '../DataTrackingMeasures/ContractCharts';
 
+// Import accommodation charts component
+import AccommodationCharts from '../DataTrackingMeasures/AccommodationCharts';
+
+// Import intervention charts component
+import InterventionCharts from '../DataTrackingMeasures/InterventionCharts';
+
 // Import new tracking components
 import BreakTracking from '../DataTrackingMeasures/BreakTracking';
 import ContractTracking from '../DataTrackingMeasures/ContractTracking';
@@ -1243,6 +1249,16 @@ const Dashboard = () => {
                           )
                         }}
                       />
+                      
+                      {/* Accommodation Charts */}
+                      {getStudentAccommodations().length > 0 && (
+                        <div style={{ marginTop: 32 }}>
+                          <AccommodationCharts 
+                            accommodations={getStudentAccommodations()}
+                            studentData={selectedStudentData?.user || selectedStudent}
+                          />
+                        </div>
+                      )}
                     </div>
                   </TabPane>
 
@@ -1342,6 +1358,16 @@ const Dashboard = () => {
                           )
                         }}
                       />
+                      
+                      {/* Intervention Charts */}
+                      {getStudentInterventions().length > 0 && (
+                        <div style={{ marginTop: 32 }}>
+                          <InterventionCharts 
+                            interventions={getStudentInterventions()}
+                            studentData={selectedStudentData?.user || selectedStudent}
+                          />
+                        </div>
+                      )}
                     </div>
                   </TabPane>
 

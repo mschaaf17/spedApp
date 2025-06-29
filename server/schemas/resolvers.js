@@ -240,13 +240,13 @@ const resolvers = {
       if (context.user) {
         console.log('Context user found:', context.user);
         try {
-          const userData = await User.findOne({ _id: context.user._id })
-            .select("-__v -password")
-            .populate("students")
-            .populate("accommodations")
-            .populate("behaviorFrequencies")
-            .populate("behaviorDurations")
-            .populate("interventions");
+        const userData = await User.findOne({ _id: context.user._id })
+          .select("-__v -password")
+          .populate("students")
+          .populate("accommodations")
+          .populate("behaviorFrequencies")
+          .populate("behaviorDurations")
+          .populate("interventions");
 
           if (!userData) {
             console.error('No user found in DB for _id from context:', context.user._id);
@@ -261,7 +261,7 @@ const resolvers = {
             firstName: userData.firstName,
             lastName: userData.lastName
           });
-          return userData;
+        return userData;
 
         } catch (err) {
           console.error('Error fetching user data in ME resolver:', err);
@@ -575,7 +575,7 @@ const resolvers = {
       }
     },
     addFrequencyTitleToList: async (_, { behaviorTitle, operationalDefinition }, context) => {
-      if (!context.user || !context.user.isAdmin) {
+        if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You must be logged in as an administrator!");
       }
       const frequency = await Frequency.create({
@@ -589,8 +589,8 @@ const resolvers = {
         dailyCounts: [],
         log: [],
       });
-      return frequency;
-    },
+        return frequency;
+      },
       removeFrequencyTitleFromList: async (parent, args, context) => {
         if (!context.user || !context.user.isAdmin) {
           throw new AuthenticationError("You need to be logged in as an admin")
@@ -678,7 +678,7 @@ const resolvers = {
           );
 
           return updatedUser;
-        } catch (error) {
+      } catch (error) {
           console.error('Error in addAccommodationForStudent:', error);
           throw new Error('Failed to add accommodation for student');
         }
@@ -834,7 +834,7 @@ const resolvers = {
             console.error('Error finding duration:', durationError);
             throw new Error("Data measure not found or does not exist");
           }
-        }
+          }
         
     
         // Proceed based on whether frequency or duration was found
@@ -1221,7 +1221,7 @@ const resolvers = {
         const index = user.interventions.indexOf(interventionId);
         if (index !== -1) {
           user.interventions.splice(index, 1);
-          await user.save();
+        await user.save();
         }
 
         // 2. SOFT DELETE: Set isActive to false
