@@ -3,6 +3,7 @@ import { Button, Card, message, Space, Typography, Table, Select, Modal, Form, I
 import { useMutation } from '@apollo/client';
 import { UPDATE_CONTRACT_ENTRY } from '../../utils/mutations';
 import { FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import ContractCharts from './ContractCharts';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -237,19 +238,22 @@ const ContractTracking = ({ student, contracts, refetchTrigger }) => {
 
       {/* Contract Display */}
       {selectedContract && (
-        <Card>
-          <div style={{ marginBottom: 16 }}>
-            <Title level={4}>{selectedContract.title}</Title>
-            <Space direction="vertical" size="small">
-              <Text><strong>Type:</strong> {selectedContract.type}</Text>
-              <Text><strong>Measure Type:</strong> {selectedContract.measureType}</Text>
-              <Text><strong>Check-in Times:</strong> {formatCheckInTimes(selectedContract)}</Text>
-            </Space>
-          </div>
+        <>
+          <Card>
+            <div style={{ marginBottom: 16 }}>
+              <Title level={4}>{selectedContract.title}</Title>
+              <Space direction="vertical" size="small">
+                <Text><strong>Type:</strong> {selectedContract.type}</Text>
+                <Text><strong>Measure Type:</strong> {selectedContract.measureType}</Text>
+                <Text><strong>Check-in Times:</strong> {formatCheckInTimes(selectedContract)}</Text>
+              </Space>
+            </div>
 
-          {/* Contract Table */}
-          {renderContractTable(selectedContract)}
-        </Card>
+            {/* Contract Table */}
+            {renderContractTable(selectedContract)}
+          </Card>
+          <ContractCharts contract={selectedContract} />
+        </>
       )}
 
       {/* Note Modal */}

@@ -12,7 +12,8 @@
     "install": "cd server && npm i && cd ../client && npm i",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cd client && npm run build",
-    "seed": "node server/seeders/seeds.js"
+    "seed": "node server/seeders/seeds.js",
+    "prettier": "prettier --write \"client/src/**/*.{js,jsx,ts,tsx,json,css,md}\""
   },
   "author": "",
   "license": "ISC",
