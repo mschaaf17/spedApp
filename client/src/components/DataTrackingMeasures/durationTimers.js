@@ -148,53 +148,130 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
   };
 
   return (
-    <div style={{
-      background: '#eaf7ff',
-      borderRadius: 16,
-      padding: 18,
-      marginBottom: 0,
-      boxShadow: '0 2px 8px #e0e0e0',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      maxWidth: 400,
-      margin: '0 auto'
-    }}>
-      <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
-        {duration.behaviorTitle}
+    <div
+      style={{
+        // padding: '18px 24px',
+        // background: '#fff',
+        // marginBottom: 16,
+        // boxShadow: '0 2px 8px #e0e0e0',
+        maxWidth: 400,
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ width: 8, height: 24, background: '#52c41a', borderRadius: 4, marginRight: 8 }} />
+        <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Duration Tracking</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{
-          fontFamily: 'Roboto Mono, monospace',
-          fontSize: 44,
-          color: '#1890ff',
-          background: '#fff',
-          borderRadius: 10,
-          padding: '8px 24px',
-          fontWeight: 700,
-          letterSpacing: 2,
-          marginBottom: 12,
-          boxShadow: '0 1px 4px #e0e0e0'
-        }}>
+   
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
+      >
+        
+        <div
+          style={{
+            fontFamily: 'Roboto Mono, monospace',
+            fontSize: 44,
+            color: '#52c41a',
+            background: '#eaffea',
+            borderRadius: 10,
+            padding: '8px 24px',
+            fontWeight: 700,
+            letterSpacing: 2,
+            marginBottom: 12,
+            boxShadow: '0 1px 4px #e0e0e0'
+          }}
+        >
+             <span style={{ width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center', fontWeight: 600, fontSize: 18, color: '#222', marginBottom: 8 }}>
+        {duration.behaviorTitle}
+      </span>
           {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
           {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
           {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
-        </div>
-        {/* Timer buttons */}
-        <div style={{ display: 'flex', gap: 12 }}>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          
           {!timerState.timerOn && timerState.time === 0 && (
-            <Button type="primary" style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40 }} onClick={handleStart}>Start</Button>
+            <Button
+              type="primary"
+              style={{
+                borderRadius: 8,
+                fontWeight: 500,
+                fontSize: 18,
+                width: 120,
+                height: 40,
+                background: '#52c41a',
+                borderColor: '#52c41a'
+              }}
+              onClick={handleStart}
+            >
+              Start
+            </Button>
           )}
           {timerState.timerOn && (
-            <Button danger style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40 }} onClick={handleStop}>Stop</Button>
+            <Button
+              danger
+              style={{
+                borderRadius: 8,
+                fontWeight: 500,
+                fontSize: 18,
+                width: 120,
+                height: 40
+              }}
+              onClick={handleStop}
+            >
+              Stop
+            </Button>
           )}
           {!timerState.timerOn && timerState.time !== 0 && (
             <>
-              <Button type="primary" style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40, background: '#52c41a', borderColor: '#52c41a' }} onClick={handleResume}>Resume</Button>
-              <Button style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40, background: '#fffbe6', color: '#faad14', borderColor: '#ffe58f' }} onClick={handleReset}>Reset/Save</Button>
+              <Button
+                type="primary"
+                style={{
+                  borderRadius: 8,
+                  fontWeight: 500,
+                  fontSize: 18,
+                  width: 120,
+                  height: 40,
+                  background: '#52c41a',
+                  borderColor: '#52c41a'
+                }}
+                onClick={handleResume}
+              >
+                Resume
+              </Button>
+              <Button
+                style={{
+                  borderRadius: 8,
+                  fontWeight: 500,
+                  fontSize: 18,
+                  width: 120,
+                  height: 40,
+                  background: '#fffbe6',
+                  color: '#faad14',
+                  borderColor: '#ffe58f'
+                }}
+                onClick={handleReset}
+              >
+                Reset
+              </Button>
             </>
           )}
         </div>
+
+
+        </div>
+     
       </div>
     </div>
   );
@@ -270,10 +347,8 @@ export default function DurationTimers({ studentId, refetchTrigger }) {
   if (durationLoading || templateLoading) return <div>Loading...</div>;
 
   return (
-    <div className="data-logging-container" style={{ width: '100%' }}>
-      <h2 style={{ fontWeight: 700, color: '#262626', marginBottom: 16 }}>Duration Data</h2>
+    <div style={{ width: '100%' }}>
       <div>
-        <h2 style={{ fontWeight: 600, color: '#52c41a', marginBottom: 16 }}>Duration Behaviors</h2>
         {durations.length === 0 && <div>No durations found for this student.</div>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32 }}>
           {durations.map(duration => (

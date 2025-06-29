@@ -1522,7 +1522,7 @@ const Dashboard = () => {
                         </Button>
                       </div>
                       <div>
-                        <h4>Frequency Tracking</h4>
+                        {/* <h4>Frequency Tracking</h4> */}
                         <Frequency 
                           studentId={selectedStudent._id} 
                           key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
@@ -1530,7 +1530,7 @@ const Dashboard = () => {
                         />
                       </div>
                       <div>
-                        <h4>Duration Tracking</h4>
+                        {/* <h4>Duration Tracking</h4> */}
                         <DurationTimers 
                           studentId={selectedStudent._id}
                           key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}

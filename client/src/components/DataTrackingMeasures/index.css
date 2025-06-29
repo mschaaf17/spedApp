@@ -25,11 +25,7 @@
 
 
 /* use for each data component in dataTracking */
-.data-logging-container {
-    border: solid 1px black;
-    padding: 15px 15px 30px 15px;
 
-}
 .red-button {
     background-color: red;
 }
