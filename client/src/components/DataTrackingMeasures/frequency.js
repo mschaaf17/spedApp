@@ -306,84 +306,66 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
               <span className='tooltipText'>Remove Data Measure</span>
             </div>
           </div>
-
-          <h2 className='secondHeading'>Click button as behavior occurs</h2>
-          <div className='dataContainer' style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: 24 }}>
-            {activeFrequencies.map((behavior) => {
-              return (
-                <div key={behavior._id} style={{ position: 'relative', marginBottom: 12 }}>
-                  <Button
-                    className={`frequency-pill-btn ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
-                    style={{
-                      borderRadius: 32,
-                      boxShadow: '0 2px 8px rgba(24,144,255,0.08)',
-                      background: '#f0f7ff',
-                      color: '#1890ff',
-                      fontWeight: 600,
-                      fontSize: 18,
-                      padding: '18px 32px',
-                      minWidth: 180,
-                      minHeight: 56,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative',
-                      border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #ff4d4f' : 'none',
-                      transition: 'all 0.2s',
-                    }}
-                    onClick={() => {
-                      if (deleteMode) {
+          <div style={{ maxWidth: 400, margin: '0 auto' }}>
+            {/* Section Title */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ width: 8, height: 24, background: '#1890ff', borderRadius: 4, marginRight: 8 }} />
+              <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Frequency Tracking</span>
+            </div>
+            {/* Behaviors */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {activeFrequencies.map((behavior) => (
+                <div key={behavior._id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  border: '2px solid #bbb', borderRadius: 12, padding: '10px 18px', background: '#fff',
+                  fontSize: 18, fontWeight: 500, marginBottom: 0, position: 'relative'
+                }}>
+                  <span style={{ fontWeight: 600, fontSize: 18, color: '#222' }}>
+                    {behavior.behaviorTitle}: <span style={{ color: '#1890ff' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Button shape="circle" size="large" style={{ fontSize: 22, width: 40, height: 40, padding: 0, background: '#f5f5f5', border: '1px solid #bbb' }}>-</Button>
+                    <Button
+                      shape="circle"
+                      size="large"
+                      style={{ fontSize: 22, width: 40, height: 40, padding: 0, background: '#f5f5f5', border: '1px solid #bbb' }}
+                      onClick={() => handleIncrementFrequency(behavior._id)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  {/* Red X delete badge (keep your logic here) */}
+                  {showRedXIcons && (
+                    <span
+                      className='delete-badge'
+                      style={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        background: '#ff4d4f',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: 24,
+                        height: 24,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 16,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
+                        zIndex: 2
+                      }}
+                      onClick={e => {
+                        e.stopPropagation();
                         handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                      } else {
-                        handleIncrementFrequency(behavior._id);
-                      }
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, fontSize: 20, color: '#0050b3', marginRight: 8 }}>{behavior.behaviorTitle}</span>
-                    <span style={{ fontWeight: 700, fontSize: 20, color: '#13c2c2' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
-                    {showRedXIcons && (
-                      <span
-                        className='delete-badge'
-                        style={{
-                          position: 'absolute',
-                          top: 6,
-                          right: 6,
-                          background: '#ff4d4f',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: 24,
-                          height: 24,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 16,
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
-                          zIndex: 2
-                        }}
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                        }}
-                      >
-                        &times;
-                      </span>
-                    )}
-                  </Button>
+                      }}
+                    >
+                      &times;
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-
-            {showSaveCancel && (
-              <>
-                <Button type='primary' onClick={handleSaveClickForDeletingFrequency} disabled={selectedBehaviorIds.length === 0}>
-                  Save
-                </Button>
-                <Button onClick={handleCancelClickForExitingDeleteMode} disabled={!showSaveCancel}>
-                  Cancel
-                </Button>
-              </>
-            )}
+              ))}
+            </div>
           </div>
 
           <Modal

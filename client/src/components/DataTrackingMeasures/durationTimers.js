@@ -148,51 +148,53 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
   };
 
   return (
-    <div className="timer-card" style={{
-      background: '#f8f9fa',
+    <div style={{
+      background: '#eaf7ff',
       borderRadius: 16,
-      boxShadow: '0 2px 12px rgba(24,144,255,0.08)',
-      padding: 32,
-      margin: '24px 0',
+      padding: 18,
+      marginBottom: 0,
+      boxShadow: '0 2px 8px #e0e0e0',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      border: '1px solid #e6f7ff',
-      minWidth: 320,
-      maxWidth: 480,
-      width: '100%'
+      maxWidth: 400,
+      margin: '0 auto'
     }}>
-      <div className="timer-display" style={{
-        fontFamily: 'Roboto Mono, monospace',
-        fontSize: 48,
-        color: '#1890ff',
-        background: '#e6f7ff',
-        borderRadius: 12,
-        padding: '16px 32px',
-        marginBottom: 24,
-        fontWeight: 700,
-        letterSpacing: 2,
-        textAlign: 'center',
-        boxShadow: '0 1px 4px rgba(24,144,255,0.06)'
-      }}>
-        {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
-        {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
-        {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
+      <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
+        {duration.behaviorTitle}
       </div>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {!timerState.timerOn && timerState.time === 0 && (
-          <Button type="primary" size="large" style={{ borderRadius: 24, minWidth: 100 }} onClick={handleStart}>Start</Button>
-        )}
-        {timerState.timerOn && (
-          <Button danger size="large" style={{ borderRadius: 24, minWidth: 100 }} onClick={handleStop}>Stop</Button>
-        )}
-        {!timerState.timerOn && timerState.time !== 0 && (
-          <>
-            <Button type="primary" size="large" style={{ borderRadius: 24, minWidth: 100, background: '#52c41a', borderColor: '#52c41a' }} onClick={handleResume}>Resume</Button>
-            <Button size="large" style={{ borderRadius: 24, minWidth: 120, background: '#fffbe6', color: '#faad14', borderColor: '#ffe58f' }} onClick={handleReset}>Reset/Save</Button>
-          </>
-        )}
-        <Button danger icon={<DeleteForeverIcon />} size="large" style={{ borderRadius: 24, minWidth: 120 }} onClick={() => onRemoveDuration(durationId)}>Remove</Button>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{
+          fontFamily: 'Roboto Mono, monospace',
+          fontSize: 44,
+          color: '#1890ff',
+          background: '#fff',
+          borderRadius: 10,
+          padding: '8px 24px',
+          fontWeight: 700,
+          letterSpacing: 2,
+          marginBottom: 12,
+          boxShadow: '0 1px 4px #e0e0e0'
+        }}>
+          {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
+          {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
+          {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
+        </div>
+        {/* Timer buttons */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          {!timerState.timerOn && timerState.time === 0 && (
+            <Button type="primary" style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40 }} onClick={handleStart}>Start</Button>
+          )}
+          {timerState.timerOn && (
+            <Button danger style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40 }} onClick={handleStop}>Stop</Button>
+          )}
+          {!timerState.timerOn && timerState.time !== 0 && (
+            <>
+              <Button type="primary" style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40, background: '#52c41a', borderColor: '#52c41a' }} onClick={handleResume}>Resume</Button>
+              <Button style={{ borderRadius: 8, fontWeight: 500, fontSize: 18, width: 120, height: 40, background: '#fffbe6', color: '#faad14', borderColor: '#ffe58f' }} onClick={handleReset}>Reset/Save</Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -276,7 +278,6 @@ export default function DurationTimers({ studentId, refetchTrigger }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32 }}>
           {durations.map(duration => (
             <div key={duration._id} style={{ flex: '1 1 350px', minWidth: 350, maxWidth: 500 }}>
-              <div style={{ fontWeight: 500, fontSize: 18, marginBottom: 8 }}>{duration.behaviorTitle}</div>
               <TimerControls 
                 duration={duration} 
                 studentId={studentId}
