@@ -2209,8 +2209,17 @@ const resolvers = {
       if (!accommodation) {
         throw new UserInputError("Accommodation not found for this student");
       }
-      accommodation.lastOffered = new Date();
+      
+      const now = new Date();
+      console.log('🕐 BACKEND: Current time when offering accommodation:', now);
+      console.log('🕐 BACKEND: Current timestamp:', now.getTime());
+      
+      accommodation.lastOffered = now;
       await accommodation.save();
+      
+      console.log('🕐 BACKEND: Saved lastOffered as:', accommodation.lastOffered);
+      console.log('🕐 BACKEND: Saved lastOffered timestamp:', accommodation.lastOffered.getTime());
+      
       return accommodation;
     },
     revertAccommodationLastOffered: async (

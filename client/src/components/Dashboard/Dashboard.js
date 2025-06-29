@@ -118,7 +118,7 @@ const Dashboard = () => {
   const { loading: selectedStudentLoading, data: selectedStudentData, refetch: refetchSelectedStudent } = useQuery(QUERY_USER, {
     variables: { identifier: selectedStudent?.username || '', isUsername: true },
     skip: !selectedStudent?.username,
-    pollInterval: 5000, // Poll every 5 seconds to keep duration data fresh
+    pollInterval: 0, // Temporarily disable polling completely
     notifyOnNetworkStatusChange: true
   });
 
@@ -199,6 +199,14 @@ const Dashboard = () => {
 
   // Clean up expired undo options
   useEffect(() => {
+    // Disable cleanup interval in development to prevent constant re-rendering
+    if (process.env.NODE_ENV === 'development') {
+      // In development, clear all undo options when component unmounts or user navigates away
+      return () => {
+        setRecentlyOffered({});
+      };
+    }
+    
     const interval = setInterval(() => {
       const now = Date.now();
       setRecentlyOffered(prev => {
@@ -274,6 +282,9 @@ const Dashboard = () => {
     
     // Reset tracking tab to default
     setActiveTrackingTab('frequencyDuration');
+    
+    // Clear any pending undo options when switching students
+    setRecentlyOffered({});
     
     // Load student view configuration
     if (student?.studentViewConfig) {
@@ -1254,6 +1265,8 @@ const Dashboard = () => {
                 style={{ flex: 1, height: '60px', fontSize: '16px' }}
                 onClick={() => {
                   setActiveSection('analyze');
+                  // Clear any pending undo options when switching sections
+                  setRecentlyOffered({});
                   // Refresh student data when switching to analyze section
                   if (selectedStudent?.username) {
                     setTimeout(() => {
@@ -1270,6 +1283,8 @@ const Dashboard = () => {
                 style={{ flex: 1, height: '60px', fontSize: '16px' }}
                 onClick={() => {
                   setActiveSection('track');
+                  // Clear any pending undo options when switching sections
+                  setRecentlyOffered({});
                   // Auto-select appropriate tab based on what's available
                   const studentData = selectedStudentData?.user || selectedStudent;
                   // Always default to frequency & duration first
@@ -1282,7 +1297,11 @@ const Dashboard = () => {
                 type={activeSection === 'studentView' ? 'primary' : 'default'}
                 size="large"
                 style={{ flex: 1, height: '60px', fontSize: '16px' }}
-                onClick={() => setActiveSection('studentView')}
+                onClick={() => {
+                  setActiveSection('studentView');
+                  // Clear any pending undo options when switching sections
+                  setRecentlyOffered({});
+                }}
               >
                 Student View
               </Button>
