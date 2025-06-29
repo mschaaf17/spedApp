@@ -1523,6 +1523,10 @@ const Dashboard = () => {
                       </div>
                       <div>
                         {/* <h4>Frequency Tracking</h4> */}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ width: 8, height: 24, background: '#1890ff', borderRadius: 4, marginRight: 8 }} />
+              <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Frequency Tracking</span>
+            </div>
                         <Frequency 
                           studentId={selectedStudent._id} 
                           key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
@@ -1531,6 +1535,10 @@ const Dashboard = () => {
                       </div>
                       <div>
                         {/* <h4>Duration Tracking</h4> */}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ width: 8, height: 24, background: '#52c41a', borderRadius: 4, marginRight: 8 }} />
+        <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Duration Tracking</span>
+      </div>
                         <DurationTimers 
                           studentId={selectedStudent._id}
                           key={`duration-${selectedStudent._id}-${selectedStudentData?.user?.behaviorDurations?.length || 0}`}

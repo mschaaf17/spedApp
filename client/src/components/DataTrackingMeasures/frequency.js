@@ -308,10 +308,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
           </div>
           <div style={{ maxWidth: 400, margin: '0 auto' }}>
             {/* Section Title */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ width: 8, height: 24, background: '#1890ff', borderRadius: 4, marginRight: 8 }} />
-              <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Frequency Tracking</span>
-            </div>
+           
             {/* Behaviors */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {activeFrequencies.map((behavior) => (

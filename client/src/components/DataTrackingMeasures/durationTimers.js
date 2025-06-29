@@ -161,10 +161,7 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
         alignItems: 'flex-start'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ width: 8, height: 24, background: '#52c41a', borderRadius: 4, marginRight: 8 }} />
-        <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Duration Tracking</span>
-      </div>
+    
    
       <div
         style={{
@@ -192,14 +189,14 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
              <span style={{ width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', fontWeight: 600, fontSize: 18, color: '#222', marginBottom: 8 }}>
+          alignItems: 'center', fontWeight: 600, fontSize: 18, color: '#222' }}>
         {duration.behaviorTitle}
       </span>
           {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
           {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
           {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'center'}}>
           
           {!timerState.timerOn && timerState.time === 0 && (
             <Button
