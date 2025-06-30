@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Typography, Select, Space, Statistic, Row, Col } from 'antd';
+import { Card, Typography, Select, Space, Statistic, Row, Col, Table } from 'antd';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { CalendarOutlined, UserOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
@@ -97,19 +97,64 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
   const processDistributionData = () => {
     if (!accommodations || accommodations.length === 0) return [];
 
-    const distribution = {};
+    const dailyUtilization = {};
     
     accommodations.forEach(accommodation => {
       const title = accommodation.title;
-      if (!distribution[title]) {
-        distribution[title] = 0;
+      
+      if (!dailyUtilization[title]) {
+        dailyUtilization[title] = {
+          totalOffers: 0,
+          uniqueDays: new Set(),
+          lastOffered: null
+        };
       }
-      distribution[title]++;
+      
+      // Count total offers
+      if (accommodation.lastOffered) {
+        dailyUtilization[title].totalOffers++;
+        
+        try {
+          let date;
+          if (typeof accommodation.lastOffered === 'string') {
+            if (/^\d+$/.test(accommodation.lastOffered)) {
+              const timestamp = parseInt(accommodation.lastOffered);
+              date = new Date(timestamp);
+            } else {
+              date = new Date(accommodation.lastOffered);
+            }
+          } else if (typeof accommodation.lastOffered === 'number') {
+            date = new Date(accommodation.lastOffered);
+          } else {
+            date = new Date(accommodation.lastOffered);
+          }
+          
+          if (!isNaN(date.getTime())) {
+            // Add to unique days set
+            const dayString = date.toLocaleDateString();
+            dailyUtilization[title].uniqueDays.add(dayString);
+            
+            // Track most recent offer
+            if (!dailyUtilization[title].lastOffered || date > dailyUtilization[title].lastOffered) {
+              dailyUtilization[title].lastOffered = date;
+            }
+          }
+        } catch (error) {
+          console.log('Error parsing lastOffered date for distribution:', accommodation.lastOffered, error);
+        }
+      }
     });
 
-    return Object.entries(distribution)
-      .map(([title, count]) => ({ title, count }))
-      .sort((a, b) => b.count - a.count);
+    // Convert to chart data format
+    return Object.entries(dailyUtilization)
+      .map(([title, data]) => ({
+        title,
+        totalOffers: data.totalOffers,
+        uniqueDays: data.uniqueDays.size,
+        avgOffersPerDay: data.uniqueDays.size > 0 ? (data.totalOffers / data.uniqueDays.size).toFixed(1) : 0,
+        lastOffered: data.lastOffered ? data.lastOffered.toLocaleDateString() : 'Never'
+      }))
+      .sort((a, b) => parseFloat(b.avgOffersPerDay) - parseFloat(a.avgOffersPerDay));
   };
 
   // Process time distribution data
@@ -325,11 +370,16 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
             <XAxis dataKey="title" angle={-45} textAnchor="end" height={80} />
             <YAxis />
             <Tooltip 
-              formatter={(value, name) => [value, 'Times Assigned']}
+              formatter={(value, name) => {
+                if (name === 'avgOffersPerDay') return [value, 'Avg Offers/Day'];
+                if (name === 'totalOffers') return [value, 'Total Offers'];
+                if (name === 'uniqueDays') return [value, 'Days Used'];
+                return [value, name];
+              }}
               labelFormatter={(label) => `Accommodation: ${label}`}
             />
             <Legend />
-            <Bar dataKey="count" fill="#82ca9d" name="Times Assigned" />
+            <Bar dataKey="avgOffersPerDay" fill="#82ca9d" name="Avg Offers/Day" />
           </BarChart>
         </ResponsiveContainer>
       );
@@ -377,13 +427,6 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
                 title="Total Accommodations"
                 value={stats.totalAccommodations}
                 prefix={<UserOutlined />}
-              />
-            </Col>
-            <Col span={4}>
-              <Statistic
-                title="Unique Types"
-                value={stats.uniqueAccommodations}
-                prefix={<CheckCircleOutlined />}
               />
             </Col>
             <Col span={4}>
@@ -445,7 +488,7 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
 
         {chartType === 'distribution' && distributionData.length > 0 && (
           <div style={{ marginTop: 24 }}>
-            <Title level={5}>Accommodation Distribution (Pie Chart)</Title>
+            <Title level={5}>Daily Utilization Distribution (Pie Chart)</Title>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -453,21 +496,64 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ title, percent }) => `${title} ${(percent * 100).toFixed(0)}%`}
+                  label={({ title, avgOffersPerDay, percent }) => `${title} ${avgOffersPerDay}/day`}
                   outerRadius={80}
                   fill="#8884d8"
-                  dataKey="count"
+                  dataKey="avgOffersPerDay"
                 >
                   {distributionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value, name) => [value, 'Times Assigned']}
+                  formatter={(value, name) => [value, 'Avg Offers/Day']}
                   labelFormatter={(label) => `Accommodation: ${label}`}
                 />
               </PieChart>
             </ResponsiveContainer>
+            
+            {/* Detailed Utilization Table */}
+            <div style={{ marginTop: 24 }}>
+              <Title level={5}>Detailed Utilization Data</Title>
+              <Table
+                dataSource={distributionData}
+                columns={[
+                  {
+                    title: 'Accommodation',
+                    dataIndex: 'title',
+                    key: 'title',
+                    render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span>
+                  },
+                  {
+                    title: 'Total Offers',
+                    dataIndex: 'totalOffers',
+                    key: 'totalOffers',
+                    render: value => <span style={{ color: '#1890ff', fontWeight: 600 }}>{value}</span>
+                  },
+                  {
+                    title: 'Days Used',
+                    dataIndex: 'uniqueDays',
+                    key: 'uniqueDays',
+                    render: value => <span style={{ color: '#52c41a' }}>{value}</span>
+                  },
+                  {
+                    title: 'Avg Offers/Day',
+                    dataIndex: 'avgOffersPerDay',
+                    key: 'avgOffersPerDay',
+                    render: value => <span style={{ color: '#722ed1', fontWeight: 600 }}>{value}</span>
+                  },
+                  {
+                    title: 'Last Offered',
+                    dataIndex: 'lastOffered',
+                    key: 'lastOffered',
+                    render: value => <span style={{ color: '#666' }}>{value}</span>
+                  }
+                ]}
+                pagination={false}
+                size="small"
+                style={{ marginTop: 16 }}
+              />
+            </div>
           </div>
         )}
 

@@ -17,11 +17,33 @@ const InterventionCharts = ({ interventions = [], studentData }) => {
     const assignmentData = {};
     
     interventions.forEach(intervention => {
-      const date = new Date(intervention.createdAt).toLocaleDateString();
-      if (!assignmentData[date]) {
-        assignmentData[date] = 0;
+      if (intervention.createdAt) {
+        try {
+          let date;
+          if (typeof intervention.createdAt === 'string') {
+            if (/^\d+$/.test(intervention.createdAt)) {
+              const timestamp = parseInt(intervention.createdAt);
+              date = new Date(timestamp);
+            } else {
+              date = new Date(intervention.createdAt);
+            }
+          } else if (typeof intervention.createdAt === 'number') {
+            date = new Date(intervention.createdAt);
+          } else {
+            date = new Date(intervention.createdAt);
+          }
+          
+          if (!isNaN(date.getTime())) {
+            const dateString = date.toLocaleDateString();
+            if (!assignmentData[dateString]) {
+              assignmentData[dateString] = 0;
+            }
+            assignmentData[dateString]++;
+          }
+        } catch (error) {
+          console.log('Error parsing createdAt date for chart:', intervention.createdAt, error);
+        }
       }
-      assignmentData[date]++;
     });
 
     return Object.entries(assignmentData)
@@ -81,15 +103,47 @@ const InterventionCharts = ({ interventions = [], studentData }) => {
     const totalInterventions = interventions.length;
     const uniqueBehaviors = new Set(interventions.map(i => i.behaviorTitle || i.behaviorId?.behaviorTitle)).size;
     
-    // Calculate average duration (days since assignment)
+    // Calculate average duration (days since assignment) with proper date parsing
     const now = new Date();
-    const totalDuration = interventions.reduce((sum, intervention) => {
-      const assignmentDate = new Date(intervention.createdAt);
-      const daysSinceAssignment = Math.floor((now - assignmentDate) / (1000 * 60 * 60 * 24));
-      return sum + daysSinceAssignment;
-    }, 0);
+    let totalDuration = 0;
+    let validInterventions = 0;
     
-    const averageDuration = Math.round(totalDuration / totalInterventions);
+    interventions.forEach(intervention => {
+      if (intervention.createdAt) {
+        try {
+          let assignmentDate;
+          // Handle different date formats
+          if (typeof intervention.createdAt === 'string') {
+            // If it's a timestamp string, convert to number first
+            if (/^\d+$/.test(intervention.createdAt)) {
+              const timestamp = parseInt(intervention.createdAt);
+              assignmentDate = new Date(timestamp);
+            } else {
+              assignmentDate = new Date(intervention.createdAt);
+            }
+          } else if (typeof intervention.createdAt === 'number') {
+            assignmentDate = new Date(intervention.createdAt);
+          } else {
+            assignmentDate = new Date(intervention.createdAt);
+          }
+          
+          if (!isNaN(assignmentDate.getTime())) {
+            const daysSinceAssignment = Math.floor((now - assignmentDate) / (1000 * 60 * 60 * 24));
+            // If the date is in the future, treat as 0 days
+            if (daysSinceAssignment < 0) {
+              totalDuration += 0;
+            } else {
+              totalDuration += daysSinceAssignment;
+            }
+            validInterventions++;
+          }
+        } catch (error) {
+          console.log('Error parsing createdAt date for intervention:', intervention.createdAt, error);
+        }
+      }
+    });
+    
+    const averageDuration = validInterventions > 0 ? Math.round(totalDuration / validInterventions) : 0;
     
     // Count active interventions (assuming all are active unless specified otherwise)
     const activeInterventions = interventions.length;
