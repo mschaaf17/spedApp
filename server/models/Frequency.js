@@ -11,6 +11,9 @@ const DailyCountSchema = new mongoose.Schema({
     type: Number, // Store the count for that date
     required: true,
   },
+  note: {
+    type: String, // Store optional notes for this count entry
+  },
 });
 
 // Frequency Model Schema

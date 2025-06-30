@@ -141,13 +141,14 @@ mutation RemoveDurationBeingTrackedForStudent($durationId: ID!, $studentId: ID!)
 `;
 
 export const INCREMENT_FREQUENCY = gql`
-mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!) {
-  incrementFrequency(frequencyId: $frequencyId, studentId: $studentId, date: $date) {
+mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!, $note: String) {
+  incrementFrequency(frequencyId: $frequencyId, studentId: $studentId, date: $date, note: $note) {
     studentId
     behaviorTitle
     dailyCounts {
       date
       count
+      note
     }
     _id
     log {
@@ -455,13 +456,14 @@ mutation ResetDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
 
 // Save a timer
 export const SAVE_DURATION_TIMER = gql`
-mutation SaveDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!) {
-  saveDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId) {
+mutation SaveDurationTimer($durationId: ID!, $timerId: ID!, $studentId: ID!, $note: String) {
+  saveDurationTimer(durationId: $durationId, timerId: $timerId, studentId: $studentId, note: $note) {
     timerId
     startTime
     endTime
     status
     isActive
+    note
   }
 }
 `;

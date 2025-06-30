@@ -995,7 +995,7 @@ const resolvers = {
     },
     incrementFrequency: async (
       _,
-      { frequencyId, studentId, date },
+      { frequencyId, studentId, date, note },
       { user },
     ) => {
       if (!user) {
@@ -1023,7 +1023,7 @@ const resolvers = {
       }
 
       frequency.updatedAt = dateToUse;
-      frequency.dailyCounts.push({ date: dateToUse, count: 1 });
+      frequency.dailyCounts.push({ date: dateToUse, count: 1, note: note || null });
 
       // Also add to log array for consistency
       frequency.log.push({ time: dateToUse });
@@ -1354,7 +1354,7 @@ const resolvers = {
 
     saveDurationTimer: async (
       parent,
-      { durationId, timerId, studentId },
+      { durationId, timerId, studentId, note },
       context,
     ) => {
       if (!context.user) throw new Error("User not logged in.");
@@ -1373,6 +1373,7 @@ const resolvers = {
       if (!timer) throw new UserInputError("Timer not found");
 
       timer.status = "saved";
+      timer.note = note || null;
       await duration.save();
 
       return timer;

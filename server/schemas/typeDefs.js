@@ -81,6 +81,7 @@ const typeDefs = gql`
   type DailyCounts {
     date: String!
     count: Int!
+    note: String
   }
 
   type Frequency {
@@ -154,6 +155,7 @@ const typeDefs = gql`
     status: String!
     createdBy: User!
     isActive: Boolean!
+    note: String
   }
 
   type SelectedChart {
@@ -295,6 +297,7 @@ const typeDefs = gql`
       frequencyId: ID!
       studentId: ID!
       date: String!
+      note: String
     ): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
@@ -302,7 +305,7 @@ const typeDefs = gql`
     endDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
     resumeDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
     resetDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
-    saveDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!): Timer
+    saveDurationTimer(durationId: ID!, timerId: ID!, studentId: ID!, note: String): Timer
     removeLastDurationTimer(studentId: ID!): User
 
     addInterventionTemplate(

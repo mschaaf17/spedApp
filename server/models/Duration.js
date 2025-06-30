@@ -10,6 +10,7 @@ const TimerSchema = new Schema({
   status: { type: String, enum: ['running', 'stopped', 'saved'], default: 'running' },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   isActive: { type: Boolean, default: true },
+  note: { type: String }, // Store optional notes for this timer entry
 });
 
 const DurationSchema = new Schema({
