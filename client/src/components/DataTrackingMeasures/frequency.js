@@ -125,6 +125,18 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
     }
   };
 
+  const handleNoteChange = (frequencyId, note) => {
+    console.log('Note changed:', frequencyId, note);
+  };
+
+  const handleSaveNote = (frequencyId, note) => {
+    console.log('Note saved:', frequencyId, note);
+  };
+
+  const handleClearNote = (frequencyId) => {
+    console.log('Note cleared:', frequencyId);
+  };
+
   const handleCancelClickForExitingDeleteMode = () => {
     setDeleteMode(false);
     setShowSaveCancel(false);
@@ -325,6 +337,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                     >
                       +
                     </Button>
+                   
                   </div>
                   {/* Red X delete badge (keep your logic here) */}
                   {showRedXIcons && (
@@ -355,6 +368,15 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                       &times;
                     </span>
                   )}
+                  <div>
+                   <textarea
+                      value={behavior.note}
+                      onChange={(e) => handleNoteChange(behavior._id, e.target.value)}
+                      style={{ width: 200, height: 30, marginLeft: 10 }}
+                    />
+                    <Button onClick={() => handleSaveNote(behavior._id, behavior.note)}>Save</Button>
+                    <Button onClick={() => handleClearNote(behavior._id)}>Clear</Button>
+                </div>
                 </div>
               ))}
             </div>
