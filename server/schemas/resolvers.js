@@ -1033,6 +1033,47 @@ const resolvers = {
       return frequency;
     },
 
+    updateFrequencyNote: async (
+      _,
+      { frequencyId, studentId, date, note },
+      { user },
+    ) => {
+      if (!user) {
+        throw new AuthenticationError("You must be logged in!");
+      }
+
+      const frequency = await Frequency.findOne({
+        _id: mongoose.Types.ObjectId(frequencyId),
+        studentId: mongoose.Types.ObjectId(studentId),
+      });
+
+      if (!frequency) {
+        throw new UserInputError(
+          "Frequency not found for the specified behavior and student",
+        );
+      }
+
+      // Parse the date to find the matching dailyCount entry
+      let dateToUse = date ? new Date(date) : new Date();
+      if (isNaN(dateToUse.getTime())) {
+        dateToUse = new Date();
+      }
+
+      // Find the dailyCount entry for this date and update its note
+      const dailyCountIndex = frequency.dailyCounts.findIndex(dc => {
+        const dcDate = new Date(dc.date);
+        return dcDate.toDateString() === dateToUse.toDateString();
+      });
+
+      if (dailyCountIndex !== -1) {
+        frequency.dailyCounts[dailyCountIndex].note = note || null;
+        frequency.updatedAt = new Date();
+        await frequency.save();
+      }
+
+      return frequency;
+    },
+
     removeFrequencyIncrement: async (parent, args, context) => {
       if (!context.user) {
         throw new AuthenticationError("You must be logged in!");

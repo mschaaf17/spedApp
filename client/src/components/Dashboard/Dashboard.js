@@ -10,6 +10,7 @@ import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle, BarChart, Bar } from 'recharts';
 import './Dashboard.css';
 import StudentAccommodations from '../../pages/StudentPages/StudentAccommodations/StudentAccommodations';
+import FrequencyWithNotes from '../DataTrackingMeasures/frequency_with_notes';
 
 // Import your existing components
 import InterventionsTable from '../Tables/StudentSpecificTables/interventionsTable';
@@ -1679,11 +1680,16 @@ const Dashboard = () => {
               <div style={{ width: 8, height: 24, background: '#1890ff', borderRadius: 4, marginRight: 8 }} />
               <span style={{ fontWeight: 700, fontSize: 20, color: '#222' }}>Frequency Tracking</span>
             </div>
-                        <Frequency 
+            <FrequencyWithNotes
                           studentId={selectedStudent._id} 
                           key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
                           refetchTrigger={refetchTrigger}
                         />
+                        {/* <Frequency
+                          studentId={selectedStudent._id} 
+                          key={`frequency-${selectedStudent._id}-${selectedStudentData?.user?.behaviorFrequencies?.length || 0}`}
+                          refetchTrigger={refetchTrigger}
+                        /> */}
                       </div>
                       <div>
                         {/* <h4>Duration Tracking</h4> */}

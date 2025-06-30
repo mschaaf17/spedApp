@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { Button, Select, message, Modal } from 'antd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AddIcon from '@mui/icons-material/Add';
-import { ADD_DATA_MEASURE_TO_STUDENT, REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, INCREMENT_FREQUENCY, UPDATE_FREQUENCY_NOTE } from '../../utils/mutations';
+import { ADD_DATA_MEASURE_TO_STUDENT, REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, INCREMENT_FREQUENCY } from '../../utils/mutations';
 import Auth from '../../utils/auth';
 
 const { confirm } = Modal;
@@ -31,7 +31,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   });
 
   const { loading: templatesLoading, data: templatesData, refetch: refetchTemplates } = useQuery(QUERY_FREQUENCY_TEMPLATES);
-  const [updateFrequencyNote] = useMutation(UPDATE_FREQUENCY_NOTE);
 
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [showRedXIcons, setShowRedXIcons] = useState(false);
@@ -47,8 +46,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   const [deleteIconBehaviorId, setDeleteIconBehaviorId] = useState(null); // State to track which behavior id's delete icon was clicked
   const [selectedBehaviorTitleForDelete, setSelectedBehaviorTitleForDelete] = useState('');
   const [behaviorCounts, setBehaviorCounts] = useState({});
-  const [noteStates, setNoteStates] = useState({});
-  
 
   const [addDataMeasureToStudent, { loading: addLoading }] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   const [removeDataMeasureFromStudent, { loading: removeLoading }] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
@@ -130,19 +127,14 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
 
   const handleNoteChange = (frequencyId, note) => {
     console.log('Note changed:', frequencyId, note);
-    setNoteStates(prev => ({ ...prev, [frequencyId]: note }));
   };
 
   const handleSaveNote = (frequencyId, note) => {
     console.log('Note saved:', frequencyId, note);
-    updateFrequencyNote({
-      variables: { frequencyId, note },
-    });
   };
 
   const handleClearNote = (frequencyId) => {
     console.log('Note cleared:', frequencyId);
-    setNoteStates(prev => ({ ...prev, [frequencyId]: '' }));
   };
 
   const handleCancelClickForExitingDeleteMode = () => {
@@ -326,67 +318,72 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
            
             {/* Behaviors */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {activeFrequencies.map((behavior) => (
-                <div key={behavior._id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  border: '2px solid #bbb', borderRadius: 12, padding: '10px 18px', background: '#fff',
-                  fontSize: 18, fontWeight: 500, marginBottom: 0, position: 'relative'
-                }}>
-                  <span style={{ fontWeight: 600, fontSize: 18, color: '#222' }}>
-                    {behavior.behaviorTitle}: <span style={{ color: '#1890ff' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Button shape="circle" size="large" style={{ fontSize: 22, width: 40, height: 40, padding: 0, background: '#f5f5f5', border: '1px solid #bbb' }}>-</Button>
-                    <Button
-                      shape="circle"
-                      size="large"
-                      style={{ fontSize: 22, width: 40, height: 40, padding: 0, background: '#f5f5f5', border: '1px solid #bbb' }}
-                      onClick={() => handleIncrementFrequency(behavior._id)}
-                    >
-                      +
-                    </Button>
-                   
-                  </div>
-                  {/* Red X delete badge (keep your logic here) */}
-                  {showRedXIcons && (
-                    <span
-                      className='delete-badge'
-                      style={{
-                        position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        background: '#ff4d4f',
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: 24,
-                        height: 24,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 16,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
-                        zIndex: 2
-                      }}
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                      }}
-                    >
-                      &times;
-                    </span>
-                  )}
-                  <div>
-                   <textarea
-                      value={behavior.note}
-                      onChange={(e) => handleNoteChange(behavior._id, e.target.value)}
-                      style={{ width: 200, height: 30, marginLeft: 10 }}
-                    />
-                    <Button onClick={() => handleSaveNote(behavior._id, behavior.note)}>Save</Button>
-                    <Button onClick={() => handleClearNote(behavior._id)}>Clear</Button>
-                </div>
-                </div>
-              ))}
+              <div className='dataContainer' style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: 24 }}>
+                {activeFrequencies.map((behavior) => {
+                  return (
+                    <div key={behavior._id} style={{ position: 'relative', marginBottom: 12 }}>
+                      <Button
+                        className={`frequency-pill-btn ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
+                        style={{
+                          borderRadius: 32,
+                          boxShadow: '0 2px 8px rgba(24,144,255,0.08)',
+                          background: '#f0f7ff',
+                          color: '#1890ff',
+                          fontWeight: 600,
+                          fontSize: 18,
+                          padding: '18px 32px',
+                          minWidth: 180,
+                          minHeight: 56,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #ff4d4f' : 'none',
+                          transition: 'all 0.2s',
+                        }}
+                        onClick={() => {
+                          if (deleteMode) {
+                            handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
+                          } else {
+                            handleIncrementFrequency(behavior._id);
+                          }
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: 20, color: '#0050b3', marginRight: 8 }}>{behavior.behaviorTitle}</span>
+                        <span style={{ fontWeight: 700, fontSize: 20, color: '#13c2c2' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
+                        {showRedXIcons && (
+                          <span
+                            className='delete-badge'
+                            style={{
+                              position: 'absolute',
+                              top: 6,
+                              right: 6,
+                              background: '#ff4d4f',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: 24,
+                              height: 24,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 16,
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
+                              zIndex: 2
+                            }}
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
+                            }}
+                          >
+                            &times;
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

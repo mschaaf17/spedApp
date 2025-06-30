@@ -299,6 +299,12 @@ const typeDefs = gql`
       date: String!
       note: String
     ): Frequency
+    updateFrequencyNote(
+      frequencyId: ID!
+      studentId: ID!
+      date: String!
+      note: String
+    ): Frequency
     removeFrequencyIncrement(frequencyId: ID!, studentId: ID!): Frequency
 
     startDurationTimer(durationId: ID!, studentId: ID!): Timer

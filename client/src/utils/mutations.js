@@ -171,6 +171,37 @@ mutation IncrementFrequency($frequencyId: ID!, $studentId: ID!, $date: String!, 
 }
 `;
 
+export const UPDATE_FREQUENCY_NOTE = gql`
+mutation UpdateFrequencyNote($frequencyId: ID!, $studentId: ID!, $date: String!, $note: String) {
+  updateFrequencyNote(frequencyId: $frequencyId, studentId: $studentId, date: $date, note: $note) {
+    studentId
+    behaviorTitle
+    dailyCounts {
+      date
+      count
+      note
+    }
+    _id
+    log {
+      time
+    }
+    count
+    createdFor {
+      username
+      _id
+      firstName
+      lastName
+    }
+    createdBy {
+      _id
+      firstName
+      lastName
+    }
+    todayTotal
+  }
+}
+`;
+
 
 
 
