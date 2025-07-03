@@ -18,7 +18,7 @@ const modalStyle = {
   p: 4,
 };
 
-export default function Dashboard() {
+export default function DashboardAI() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState({});

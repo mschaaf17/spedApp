@@ -34,7 +34,7 @@ import AddAccommodationsForStudent from "./pages/TeacherPages/Accommodations/Add
 import StudentProfile from "./pages/StudentPages/StudentProfile";
 import StudentGraph from "./pages/StudentViewableGraphs";
 import AdditionalStudentInfo from "./pages/TeacherPages/AdditionalStudentInfo";
-import Dashboard from "./pages/Dashboard";
+import DashboardAI from "./pages/Dashboard";
 
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem("id_token");
@@ -71,7 +71,7 @@ function App() {
           <Route path="/dataMeasures" element={<DataMeasuresList />} />
           <Route path="/interventions" element={<Interventions />} />
           <Route path="/accommodations" element={<AccommodationList />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboardAI" element={<DashboardAI />} />
 
           {/* teacher pages: student specific pages */}
           <Route
