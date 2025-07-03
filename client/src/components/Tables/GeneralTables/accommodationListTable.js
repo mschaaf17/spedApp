@@ -230,6 +230,7 @@ const AccommodationListTable = ({
       
       </Space>
       <Table 
+        className="accent-table accent-table-blue"
         columns={columns} 
         dataSource={accommodationList} 
         loading={userLoading || accommodationsLoading} 

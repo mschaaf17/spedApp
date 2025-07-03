@@ -1388,6 +1388,7 @@ const Dashboard = () => {
                       </div>
                       
                       <Table
+                        className="accent-table accent-table-blue"
                         columns={[
                           {
                             title: 'Title',
@@ -1450,6 +1451,7 @@ const Dashboard = () => {
                       </div>
                       
                       <Table
+                        className="accent-table accent-table-purple"
                         columns={[
                           {
                             title: 'Title',
@@ -1638,6 +1640,7 @@ const Dashboard = () => {
                         {(selectedStudentData?.user?.contracts && selectedStudentData.user.contracts.length > 0) ? (
                           <div>
                             <Table
+                              className="accent-table accent-table-green"
                               columns={[
                                 { title: 'Contract Title', dataIndex: 'title', key: 'title' },
                                 { title: 'Contract Type', dataIndex: 'type', key: 'type' },

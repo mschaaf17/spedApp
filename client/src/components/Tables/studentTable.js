@@ -251,14 +251,17 @@ useEffect(()=> {
       >
       
       </Space>
-      <Table 
-        columns={columns} 
-        dataSource={getMyStudentList || []}
-        loading = {loading} 
-        onChange={handleChange}
-        rowClassName={getRowClassName}
-        rowKey="_id"
-        />
+      <div className="accent-table-wrapper">
+        <Table 
+          className="accent-table accent-table-teal"
+          columns={columns} 
+          dataSource={getMyStudentList || []}
+          loading = {loading} 
+          onChange={handleChange}
+          rowClassName={getRowClassName}
+          rowKey="_id"
+          />
+      </div>
     </>
   );
 };

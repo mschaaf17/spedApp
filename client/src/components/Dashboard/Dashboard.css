@@ -306,4 +306,130 @@
 .ant-modal-footer {
   border-top: 1px solid #f0f0f0;
   padding: 16px 24px;
+}
+
+/* Accent Table: Clean, Card-like Rows */
+.accent-table .ant-table-thead > tr > th,
+.accent-table .ant-table-tbody > tr > td {
+  border: none !important;
+}
+
+.accent-table .ant-table-tbody > tr > td {
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-left-color: inherit; /* Set by accent-table-xxx */
+  background: #fff;           /* Always white rows */
+  box-shadow: none;
+  transition: box-shadow 0.18s, background 0.18s;
+}
+
+.accent-table .ant-table-tbody > tr {
+  box-shadow: 0 1px 6px 0 rgba(0,0,0,0.04);
+  border-radius: 8px;
+  background: #fff;
+  transition: box-shadow 0.18s, background 0.18s;
+}
+
+.accent-table .ant-table-tbody > tr:hover {
+  box-shadow: 0 4px 16px 0 rgba(24,144,255,0.10);
+  background: #fafcff !important; /* Slightly off-white on hover */
+  z-index: 2;
+}
+
+.accent-table .ant-table-tbody > tr > td:last-child {
+  border-left: none;
+}
+
+.accent-table .ant-table-thead > tr > th {
+  border-bottom: none !important;
+  background: #f5faff; /* very light blue for header */
+  color: #1890ff;
+}
+
+/* Blue (Accommodations) */
+.accent-table-blue .ant-table-thead > tr > th {
+  background: #e6f7ff;
+  border-bottom: 2px solid #1890ff;
+  color: #1890ff;
+}
+.accent-table-blue .ant-table-tbody > tr > td {
+  border-left-color: #1890ff;
+  background: #f0f5ff;
+}
+
+/* Purple (Interventions) */
+.accent-table-purple .ant-table-thead > tr > th {
+  background: #f9f0ff;
+  border-bottom: 2px solid #722ed1;
+  color: #722ed1;
+}
+.accent-table-purple .ant-table-tbody > tr > td {
+  border-left-color: #722ed1;
+  background: #f6f0fa;
+}
+
+/* Yellow (Data Measures) */
+.accent-table-yellow .ant-table-thead > tr > th {
+  background: #fffbe6;
+  border-bottom: 2px solid #faad14;
+  color: #faad14;
+}
+.accent-table-yellow .ant-table-tbody > tr > td {
+  border-left-color: #faad14;
+  background: #fffef6;
+}
+
+/* Green (Contracts) */
+.accent-table-green .ant-table-thead > tr > th {
+  background: #f6ffed;
+  border-bottom: 2px solid #52c41a;
+  color: #52c41a;
+}
+.accent-table-green .ant-table-tbody > tr > td {
+  border-left-color: #52c41a;
+  background: #f9fff6;
+}
+
+/* Remove left border for last column */
+.accent-table .ant-table-tbody > tr > td:last-child {
+  border-left: none;
+}
+
+/* Force white background for all table rows and cells, but keep accent border */
+.accent-table .ant-table-tbody > tr,
+.accent-table .ant-table-tbody > tr > td {
+  background: #fff !important;
+}
+
+/* Optionally, make header even lighter for contrast */
+.accent-table .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  color: #1890ff;
+  border-bottom: none !important;
+}
+
+/* Keep the accent border on the left */
+.accent-table-blue .ant-table-tbody > tr > td {
+  border-left-color: #1890ff;
+}
+.accent-table-purple .ant-table-tbody > tr > td {
+  border-left-color: #722ed1;
+}
+.accent-table-yellow .ant-table-tbody > tr > td {
+  border-left-color: #faad14;
+}
+.accent-table-green .ant-table-tbody > tr > td {
+  border-left-color: #52c41a;
+}
+
+/* Subtle shadow for each row */
+.accent-table .ant-table-tbody > tr {
+  box-shadow: 0 2px 8px 0 rgba(24, 144, 255, 0.06);
+  border-radius: 8px;
+  transition: box-shadow 0.18s, background 0.18s;
+}
+.accent-table .ant-table-tbody > tr:hover {
+  box-shadow: 0 6px 18px 0 rgba(24, 144, 255, 0.12);
+  background: #f6faff !important;
+  z-index: 2;
 } 

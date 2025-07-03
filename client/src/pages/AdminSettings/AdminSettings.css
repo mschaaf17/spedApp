@@ -68,13 +68,14 @@
 
 .ant-tabs-tab {
   font-size: 16px !important;
-  font-weight: 500 !important;
+  font-weight: 100 !important;
+  color: #278d8b !important;
 }
 
 .ant-tabs-tab-active {
   font-weight: 600 !important;
 }
-
+/* 
 .ant-table-wrapper {
   background: #fff;
   border-radius: 8px;
@@ -88,7 +89,7 @@
   background: #fafafa;
   font-weight: 600;
   color: #262626;
-}
+} */
 
 .ant-table-tbody > tr:nth-child(even) {
   background-color: #f9f9f9;
@@ -153,63 +154,11 @@
   }
 }
 
-/* Search section styling */
-.search {
-  margin-bottom: 24px;
-}
 
-.searchInputs {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
 
-.searchInputs label {
-  font-weight: 500;
-  color: #262626;
-  white-space: nowrap;
-}
 
-.searchInputs input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  font-size: 14px;
-}
 
-.searchInputs input:focus {
-  outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
 
-.searchResults {
-  background: white;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.searchResultItem {
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.searchResultItem:last-child {
-  border-bottom: none;
-}
-
-.searchResultItem:hover {
-  background: #f5f5f5;
-}
 
 /* Table action buttons */
 .ant-table-tbody .ant-btn {
@@ -268,4 +217,108 @@
 .tooltip:hover .tooltipText {
   visibility: visible;
   opacity: 1;
+}
+
+/* Modern Accent Table Styles */
+/* .accent-table .ant-table-thead > tr > th,
+.accent-table .ant-table-tbody > tr > td {
+  border: none !important;
+}
+
+.accent-table .ant-table-tbody > tr > td {
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-left-color: inherit; 
+  background: inherit;       
+  box-shadow: none;
+  transition: box-shadow 0.18s, background 0.18s;
+}
+
+.accent-table .ant-table-tbody > tr {
+  box-shadow: 0 1px 6px 0 rgba(0,0,0,0.04);
+  border-radius: 8px;
+  background: inherit;
+  transition: box-shadow 0.18s, background 0.18s;
+}
+
+.accent-table .ant-table-tbody > tr:hover {
+  box-shadow: 0 4px 16px 0 rgba(24,144,255,0.10);
+  background: #fff !important;
+  z-index: 2;
+}
+
+.accent-table .ant-table-tbody > tr > td:last-child {
+  border-left: none;
+}
+
+.accent-table .ant-table-thead > tr > th {
+  border-bottom: none !important;
+} */
+
+
+/* Card-like outline for accent tables */
+.accent-table-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f9f3f3;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.03);
+  padding: 16px 0;
+  margin-bottom: 32px;
+}
+
+/* Teal (Students) */
+.accent-table-teal .ant-table-thead > tr > th {
+  background: #e6fffb;
+  border-bottom: 2px solid #13c2c2;
+  color: #13c2c2;
+}
+.accent-table-teal .ant-table-tbody > tr > td {
+  border-left-color: #13c2c2;
+  border: 10px solid #361919;
+}
+
+
+
+/* Blue (Accommodations) */
+.accent-table-blue .ant-table-thead > tr > th {
+  background: #e6f7ff;
+  border-bottom: 2px solid #1890ff;
+  color: #1890ff;
+}
+.accent-table-blue .ant-table-tbody > tr > td {
+  border-left-color: #1890ff;
+  background: #f0f5ff;
+}
+
+/* Purple (Interventions) */
+.accent-table-purple .ant-table-thead > tr > th {
+  background: #f9f0ff;
+  border-bottom: 2px solid #722ed1;
+  color: #722ed1;
+}
+.accent-table-purple .ant-table-tbody > tr > td {
+  border-left-color: #722ed1;
+  background: #f6f0fa;
+}
+
+/* Yellow (Data Measures) */
+.accent-table-yellow .ant-table-thead > tr > th {
+  background: #fffbe6;
+  border-bottom: 2px solid #faad14;
+  color: #faad14;
+}
+.accent-table-yellow .ant-table-tbody > tr > td {
+  border-left-color: #faad14;
+  background: #fffef6;
+}
+
+/* Green (Contracts) */
+.accent-table-green .ant-table-thead > tr > th {
+  background: #f6ffed;
+  border-bottom: 2px solid #52c41a;
+  color: #52c41a;
+}
+.accent-table-green .ant-table-tbody > tr > td {
+  border-left-color: #52c41a;
+  background: #f9fff6;
 } 

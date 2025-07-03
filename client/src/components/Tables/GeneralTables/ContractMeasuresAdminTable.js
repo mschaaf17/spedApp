@@ -64,7 +64,13 @@ const ContractMeasuresAdminTable = ({ contractMeasures = [], refetchContractMeas
 
   return (
     <div>
-      <Table columns={columns} dataSource={contractMeasures} rowKey="_id" pagination={{ pageSize: 10 }} />
+      <Table
+        className="accent-table accent-table-green"
+        columns={columns}
+        dataSource={contractMeasures}
+        rowKey="_id"
+        pagination={{ pageSize: 10 }}
+      />
     </div>
   );
 };

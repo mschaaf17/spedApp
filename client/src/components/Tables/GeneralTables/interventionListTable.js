@@ -214,6 +214,7 @@ const InterventionDataTable = ({
 
   return (
     <Table
+      className="accent-table accent-table-purple"
       columns={columns}
       dataSource={interventionList}
       rowKey="_id"

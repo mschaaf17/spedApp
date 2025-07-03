@@ -375,6 +375,7 @@ const displaySelect = (rowId) => {
       
       </Space>
       <Table 
+        className="accent-table accent-table-yellow"
         columns={columns} 
         dataSource={mergedData || []}
         loading = {loading} 
