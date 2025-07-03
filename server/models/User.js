@@ -1,5 +1,5 @@
 const { Schema, model } = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const moment = require("moment");
 const dateFormat = require("../utils/dateFormat");
 
