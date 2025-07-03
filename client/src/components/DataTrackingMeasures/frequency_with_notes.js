@@ -53,6 +53,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [currentBehavior, setCurrentBehavior] = useState(null);
   const [noteText, setNoteText] = useState('');
+  const [selectedBehaviorForNote, setSelectedBehaviorForNote] = useState(null);
 
   const [addDataMeasureToStudent, { loading: addLoading }] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   const [removeDataMeasureFromStudent, { loading: removeLoading }] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);

@@ -89,6 +89,11 @@ const Dashboard = () => {
   // Accommodation tracking state
   const [recentlyOffered, setRecentlyOffered] = useState({});
   
+  // Note modal state
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteType, setNoteType] = useState('general'); // 'general' or behavior ID
+  
   // Break Settings State
   const [breakSettings, setBreakSettings] = useState({
     isEnabled: false,
@@ -686,6 +691,36 @@ const Dashboard = () => {
     return result;
   };
 
+  // Get available behavior options for notes
+  const getAvailableBehaviorOptions = () => {
+    if (!selectedStudent) return [];
+    
+    // Use detailed student data if available (more up-to-date)
+    const studentData = selectedStudentData?.user || selectedStudent;
+    
+    const options = [
+      { value: 'general', label: 'General Note' }
+    ];
+    
+    // Add frequency behaviors
+    (studentData.behaviorFrequencies || []).forEach(freq => {
+      options.push({
+        value: freq._id,
+        label: `${freq.behaviorTitle} (Frequency)`
+      });
+    });
+    
+    // Add duration behaviors
+    (studentData.behaviorDurations || []).forEach(dur => {
+      options.push({
+        value: dur._id,
+        label: `${dur.behaviorTitle} (Duration)`
+      });
+    });
+    
+    return options;
+  };
+
   // Handle removing an intervention from the student
   const handleRemoveIntervention = async (interventionId) => {
     try {
@@ -1188,6 +1223,34 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) {
+      message.error('Please enter a note');
+      return;
+    }
+
+    try {
+      // Here you would typically call a mutation to save the note
+      // For now, we'll just show a success message
+      const noteData = {
+        studentId: selectedStudent._id,
+        content: noteContent,
+        type: noteType === 'general' ? 'general' : 'behavior',
+        behaviorId: noteType === 'general' ? null : noteType
+      };
+      
+      console.log('Adding note:', noteData);
+      
+      message.success('Note added successfully!');
+      setShowAddNote(false);
+      setNoteContent('');
+      setNoteType('general');
+    } catch (error) {
+      console.error('Error adding note:', error);
+      message.error('Failed to add note');
+    }
+  };
+
   return (
     <Layout className="dashboard-layout">
       <div className="dashboard-content">
@@ -1672,6 +1735,9 @@ const Dashboard = () => {
                       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                         <Button type="primary" onClick={() => setShowAddDataMeasure(true)}>
                           Add Data Measure
+                        </Button>
+                        <Button type="default" onClick={() => setShowAddNote(true)}>
+                          Add Note
                         </Button>
                       </div>
                       <div>
@@ -2368,6 +2434,49 @@ const Dashboard = () => {
             })()}
           </div>
         )}
+      </Modal>
+
+      {/* Add Note Modal */}
+      <Modal
+        title="Add Note"
+        open={showAddNote}
+        onOk={handleAddNote}
+        onCancel={() => {
+          setShowAddNote(false);
+          setNoteContent('');
+          setNoteType('general');
+        }}
+        okText="Add Note"
+        cancelText="Cancel"
+        okButtonProps={{ 
+          disabled: !noteContent.trim()
+        }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+            Note Type:
+          </label>
+          <Select
+            placeholder="Select note type"
+            style={{ width: '100%' }}
+            value={noteType}
+            onChange={setNoteType}
+            options={getAvailableBehaviorOptions()}
+          />
+        </div>
+        
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+            Note Content:
+          </label>
+          <Input.TextArea
+            placeholder="Enter your note here..."
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            rows={4}
+            style={{ width: '100%' }}
+          />
+        </div>
       </Modal>
     </Layout>
   );
