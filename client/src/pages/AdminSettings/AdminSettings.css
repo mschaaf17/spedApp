@@ -69,7 +69,6 @@
 .ant-tabs-tab {
   font-size: 16px !important;
   font-weight: 100 !important;
-  color: #278d8b !important;
 }
 
 .ant-tabs-tab-active {
@@ -304,8 +303,8 @@
 /* Yellow (Data Measures) */
 .accent-table-yellow .ant-table-thead > tr > th {
   background: #fffbe6;
-  border-bottom: 2px solid #faad14;
-  color: #faad14;
+  border-bottom: 2px solid #d58813;
+  color: #eeb94e;
 }
 .accent-table-yellow .ant-table-tbody > tr > td {
   border-left-color: #faad14;

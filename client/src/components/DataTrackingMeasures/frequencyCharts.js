@@ -1,13 +1,13 @@
- import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect} from 'react'
 // import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar';
- import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 // import Duration from '../../../components/DataTrackingMeasures/duration'
 // import ABC from '../../../components/DataTrackingMeasures/ABC'
 // import Frequency from '../../../components/DataTrackingMeasures/frequency'
 // import Observation from '../../../components/DataTrackingMeasures/observation'
 // import Contracts from '../../../components/DataTrackingMeasures/Contracts'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle } from 'recharts';
-import { Select, Alert } from 'antd';
+import { Select, Alert, Button } from 'antd';
 
 const data = [
   { name: 'Date', uv: 4000, pv: 2400, amt: 2400 },
@@ -40,7 +40,7 @@ function getInterventionColor(intervention) {
 }
 
 // Student Charts for frequency, duration?? eloping/aggression/other?, observation form, abc data   
-const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
+const FrequencyCharts = ({ frequencies = [], interventions = [], aimline, onShowAISuggestions }) => {
   const { username: userParam } = useParams();
 
   // Defensive: if frequencies is undefined or not an array, treat as empty array
@@ -338,8 +338,13 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline }) => {
                 <b>Most frequent time:</b> {formatHour(mostFrequentHour[0])} ({mostFrequentHour[1]} times)
       </div>
             )}
-            {notification && (
-              <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon />
+             {true && (
+              <>
+                <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+                <Button type="primary" onClick={onShowAISuggestions}>
+                  Get AI Intervention Suggestions
+                </Button>
+              </>
             )}
             <LineChart width={600} height={300} data={finalChartData}>
               <XAxis dataKey="date" />

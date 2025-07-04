@@ -40,6 +40,9 @@ import BreakTracking from '../DataTrackingMeasures/BreakTracking';
 import ContractTracking from '../DataTrackingMeasures/ContractTracking';
 import BreakConfigForm from '../DataTrackingMeasures/BreakConfigForm';
 
+// Import AI component
+import DashboardAI from '../../pages/Dashboard/index';
+
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
 
@@ -523,8 +526,9 @@ const Dashboard = () => {
         return (
           <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
             <FrequencyCharts 
-              frequencies={[behaviorData.data]}
+              frequencies={[behavior.data]}
               interventions={behaviorInterventions}
+              onShowAISuggestions={() => setShowAIModal(true)}
             />
           </div>
         );
@@ -532,8 +536,9 @@ const Dashboard = () => {
         return (
           <div key={`${behavior.type}-${behavior.id}`} style={{ marginBottom: 24 }}>
             <DurationCharts 
-              durations={[behaviorData.data]}
+              durations={[behavior.data]}
               interventions={behaviorInterventions}
+              onShowAISuggestions={() => setShowAIModal(true)}
             />
           </div>
         );
@@ -1251,6 +1256,28 @@ const Dashboard = () => {
     }
   };
 
+  const [showAIModal, setShowAIModal] = useState(false);
+
+  // Helper: get available behaviors for selected intervention
+  const getAvailableBehaviorsForIntervention = (interventionId) => {
+    if (!selectedStudent || !interventionId) return [];
+    const studentData = selectedStudentData?.user || selectedStudent;
+    const studentInterventions = getStudentInterventions();
+    // Only include behaviors that do NOT already have this intervention
+    const assignedBehaviorIds = new Set(
+      studentInterventions
+        .filter(i => i._id === interventionId)
+        .map(i => i.behaviorId?._id)
+    );
+    const frequencies = (studentData.behaviorFrequencies || [])
+      .filter(f => !assignedBehaviorIds.has(f._id))
+      .map(f => ({ value: f._id, label: `${f.behaviorTitle} (Frequency)` }));
+    const durations = (studentData.behaviorDurations || [])
+      .filter(d => !assignedBehaviorIds.has(d._id))
+      .map(d => ({ value: d._id, label: `${d.behaviorTitle} (Duration)` }));
+    return [...frequencies, ...durations];
+  };
+
   return (
     <Layout className="dashboard-layout">
       <div className="dashboard-content">
@@ -1604,6 +1631,7 @@ const Dashboard = () => {
                                     <FrequencyCharts 
                                       frequencies={[behavior.data]}
                                       interventions={behaviorInterventions}
+                                      onShowAISuggestions={() => setShowAIModal(true)}
                                     />
                                   </div>
                                 );
@@ -1613,6 +1641,7 @@ const Dashboard = () => {
                                     <DurationCharts 
                                       durations={[behavior.data]}
                                       interventions={behaviorInterventions}
+                                      onShowAISuggestions={() => setShowAIModal(true)}
                                     />
                                   </div>
                                 );
@@ -2159,92 +2188,39 @@ const Dashboard = () => {
         okText="Add Intervention to Selected Behaviors"
         cancelText="Cancel"
         okButtonProps={{ 
-          disabled: !selectedBehaviorForIntervention.length || !selectedIntervention || getAvailableBehaviors().length === 0 || getAvailableInterventions().length === 0
+          disabled: !selectedIntervention || !selectedBehaviorForIntervention.length || getAvailableBehaviorsForIntervention(selectedIntervention).length === 0
         }}
       >
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-            Select Behaviors:
+            Select Intervention:
           </label>
-          {getAvailableBehaviors().length > 0 ? (
+          <Select
+            placeholder="Select an intervention"
+            style={{ width: '100%' }}
+            value={selectedIntervention}
+            onChange={value => {
+              setSelectedIntervention(value);
+              setSelectedBehaviorForIntervention([]);
+            }}
+            options={getAvailableInterventions()}
+          />
+        </div>
+        {selectedIntervention && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              Select Behaviors:
+            </label>
             <Select
               mode="multiple"
               placeholder="Select behaviors"
               style={{ width: '100%' }}
               value={selectedBehaviorForIntervention}
               onChange={setSelectedBehaviorForIntervention}
-              options={getAvailableBehaviors()}
+              options={getAvailableBehaviorsForIntervention(selectedIntervention)}
             />
-          ) : (
-            <div style={{ 
-              padding: 16, 
-              backgroundColor: '#f5f5f5', 
-              borderRadius: 6,
-              textAlign: 'center',
-              border: '1px dashed #d9d9d9'
-            }}>
-              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
-                No behaviors available for this student.
-              </p>
-              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
-                Please add data measures first, then you can assign interventions.
-              </p>
-              <Button 
-                type="primary" 
-                onClick={() => {
-                  setShowAddIntervention(false); // Close the intervention modal
-                  setActiveSection('analyze'); // Switch to analyze section (which contains the tabs)
-                  setActiveTab('dataMeasures'); // Switch to Data Measures tab
-                  // Use setTimeout to ensure the tab switch happens before opening the modal
-                  setTimeout(() => {
-                    setShowAddDataMeasure(true); // Open the data measure modal
-                  }, 100);
-                }}
-                style={{ marginRight: 8 }}
-              >
-                Go to Data Measures
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-            Select Intervention:
-          </label>
-          {getAvailableInterventions().length > 0 ? (
-            <Select
-              placeholder="Select an intervention"
-              style={{ width: '100%' }}
-              value={selectedIntervention}
-              onChange={setSelectedIntervention}
-              disabled={!selectedBehaviorForIntervention}
-              options={getAvailableInterventions()}
-            />
-          ) : (
-            <div style={{ 
-              padding: 16, 
-              backgroundColor: '#f5f5f5', 
-              borderRadius: 6,
-              textAlign: 'center',
-              border: '1px dashed #d9d9d9'
-            }}>
-              <p style={{ margin: '0 0 12px 0', color: '#666' }}>
-                No more intervention templates available for this student.
-              </p>
-              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#999' }}>
-                All intervention templates have been assigned to this student.
-              </p>
-              <Button 
-                type="primary" 
-                onClick={() => navigate('/admin-settings')}
-              >
-                Go to Admin Settings
-              </Button>
-            </div>
-          )}
-        </div>
-        
+          </div>
+        )}
         {selectedIntervention && (
           <div style={{ 
             padding: 12, 
@@ -2480,6 +2456,16 @@ const Dashboard = () => {
             style={{ width: '100%' }}
           />
         </div>
+      </Modal>
+
+      {/* AI Modal */}
+      <Modal
+        open={showAIModal}
+        onCancel={() => setShowAIModal(false)}
+        footer={null}
+        width={600}
+      >
+        <DashboardAI student={selectedStudent} />
       </Modal>
     </Layout>
   );

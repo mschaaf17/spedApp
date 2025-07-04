@@ -287,6 +287,7 @@ const StudentDataMeasuresTable = ({ student, onViewChart, onRemoveDataMeasure })
   return (
     <div className="student-data-measures-table">
       <Table
+      className="accent-table accent-table-yellow"
         columns={columns}
         dataSource={dataMeasures}
         rowKey="_id"

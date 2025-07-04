@@ -1,150 +1,119 @@
-import express from "express";
-import cors from "cors";
-import puppeteer from "puppeteer";
-
 const express = require("express");
+const cors = require("cors");
 const puppeteer = require("puppeteer");
-const multer = require('multer');
+const multer = require("multer");
 const path = require("path");
-const fs = require('fs');
+const fs = require("fs");
+const dotenv = require("dotenv");
 
-// Configure multer for file uploads
+dotenv.config();
+
+const mongoose = require("mongoose");
+const { ApolloServer } = require("apollo-server-express");
+const { typeDefs, resolvers } = require("./schemas");
+const { authMiddleware } = require("./utils/auth");
+const db = require("./config/connection");
+
+const OpenAI = require("openai");
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const PORT = process.env.PORT || 3001;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/inclusion-student-app';
+
+const app = express();
+
+// CORS
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://studio.apollographql.com",
+      "https://app.satismeter.com",
+      "https://apollo.unthread.io",
+    ],
+    credentials: true,
+  })
+);
+
+// Body parsing
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
+// File uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'uploads');
-    // Create directory if it doesn't exist
+    const uploadDir = path.join(__dirname, "uploads");
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Create a safe filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, uniqueSuffix + ext);
-  }
+  },
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
-    // Accept images only
     if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-      return cb(new Error('Only image files are allowed!'), false);
+      return cb(new Error("Only image files are allowed!"), false);
     }
     cb(null, true);
-  }
+  },
 });
 
-// add instant messaging
-// const io = require('socket.io')(3000)
-// io.on('connection', socket => {
-//     socket.emit('chat-message', 'Hello World')
-// })
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// import ApolloServer
-const { ApolloServer } = require("apollo-server-express");
-
-// import our typeDefs and resolvers
-const { typeDefs, resolvers } = require("./schemas");
-const { authMiddleware } = require("./utils/auth");
-const db = require("./config/connection");
-
-const PORT = process.env.PORT || 3001;
-// create a new apollo server and pass in our schema data
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: authMiddleware,
-});
-
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const app = express();
-
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// File upload endpoint with enhanced error handling
-app.post('/upload', upload.single('file'), (req, res) => {
+app.post("/upload", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
-      console.error('No file received in request');
-      return res.status(400).json({ 
-        error: 'No file uploaded',
-        details: 'No file was received in the request'
-      });
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    console.log('File received:', {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      path: req.file.path
-    });
-
-    // Return the relative path for the client to use
-    const relativePath = path.join('uploads', req.file.filename);
-    
+    const relativePath = path.join("uploads", req.file.filename);
     res.json({
       filename: req.file.filename,
       path: relativePath,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ 
-      error: 'Upload failed',
-      details: error.message
-    });
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "Upload failed", details: error.message });
   }
 });
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../client/build")));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/build/index.html"));
-  });
-}
-
+// OpenAI intervention generation
 app.post("/interventions", async (req, res) => {
+  if (!openai) {
+    return res
+      .status(503)
+      .json({ error: "AI features are not available. Set OPENAI_API_KEY." });
+  }
+
   try {
     const prompt =
       req.body.prompt || "Write a one-sentence bedtime story about a unicorn.";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
     });
 
-    const result = response.choices[0].message.content;
-    res.json({ result });
+    res.json({ result: response.choices[0].message.content });
   } catch (error) {
-    console.error(error);
+    console.error("OpenAI error:", error);
     res.status(500).json({ error: "Something went wrong." });
   }
 });
 
+// PDF generation route
 app.get("/generate-pdf", async (req, res) => {
   const { url } = req.query;
 
@@ -162,27 +131,37 @@ app.get("/generate-pdf", async (req, res) => {
 
     res.send(pdfBuffer);
   } catch (error) {
-    console.error("Error generating PDF:", error);
+    console.error("PDF generation error:", error);
     res.status(500).send("Error generating PDF");
   }
 });
 
-// create a new instance of an Apollo server with the GraphQl schema
-const startApolloServer = async (typeDefs, resolvers) => {
-  await server.start();
-  // integrate our Apollo server witht he express application as middleware
-  server.applyMiddleware({ app });
+// Serve React in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
+  app.get("*", (req, res) =>
+    res.sendFile(path.join(__dirname, "../client/build/index.html"))
+  );
+}
 
-  db.once("open", () => {
-    app.listen(PORT, () => {
-      console.log(`API server running on port ${PORT}!`);
-      // log where we cna go to test our GQL API
-      console.log(
-        `Use GraphQl at http://localhost:${PORT}${server.graphqlPath}`
-      );
-    });
+// Start Apollo Server and Express App
+async function startServer() {
+  await mongoose.connect(MONGODB_URI);
+  console.log("🟢 Connected to MongoDB");
+
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: authMiddleware,
+    introspection: true,
   });
-};
 
-// call the async function to start the server
-startApolloServer(typeDefs, resolvers);
+  await server.start();
+  server.applyMiddleware({ app, cors: false });
+
+  app.listen(PORT, () => {
+    console.log(`✅ API server running at http://localhost:${PORT}${server.graphqlPath}`);
+  });
+}
+
+startServer();

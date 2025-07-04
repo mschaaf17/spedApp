@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Scatter, Circle, BarChart, Bar, PieChart, Pie, Cell, ComposedChart } from 'recharts';
-import { Select, Alert } from 'antd';
+import { Select, Alert, Button } from 'antd';
 
 // Color palette for charts
 const chartColors = [
@@ -19,7 +19,7 @@ function getInterventionColor(intervention) {
   return chartColors[Math.abs(hash) % chartColors.length];
 }
 
-const DurationCharts = ({ durations = [], interventions = [] }) => {
+const DurationCharts = ({ durations = [], interventions = [], onShowAISuggestions }) => {
   const { username: userParam } = useParams();
 
   // Defensive: if durations is undefined or not an array, treat as empty array
@@ -379,7 +379,12 @@ const DurationCharts = ({ durations = [], interventions = [] }) => {
 
             {/* Intervention Alert */}
             {notification && (
-              <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+              <>
+                <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+                <Button type="primary" onClick={onShowAISuggestions}>
+                  Get AI Intervention Suggestions
+                </Button>
+              </>
             )}
 
             {/* Daily Duration Bar Chart with Aimline */}

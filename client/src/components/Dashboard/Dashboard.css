@@ -160,6 +160,12 @@
   margin-bottom: 24px !important;
 }
 
+.ant-tabs-tab.ant-tabs-tab-active {
+  color: rgb(7, 154, 162)!important;
+  border-bottom: 2px solid rgb(7, 154, 162) !important;
+  font-weight: 600 !important;
+}
+
 .ant-select-selector {
   height: 40px !important;
 }
@@ -344,6 +350,19 @@
   border-bottom: none !important;
   background: #f5faff; /* very light blue for header */
   color: #1890ff;
+}
+
+/* Accent Table Styles */
+.accent-table .ant-table-thead > tr > th {
+  font-weight: 600;
+}
+.accent-table .ant-table-tbody > tr > td {
+  border-left-width: 4px;
+  border-left-style: solid;
+  transition: background 0.2s;
+}
+.accent-table .ant-table-tbody > tr:hover > td {
+  filter: brightness(0.98);
 }
 
 /* Blue (Accommodations) */

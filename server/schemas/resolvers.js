@@ -1235,16 +1235,12 @@ const resolvers = {
       }
 
       try {
-        console.log("Finding intervention template:", interventionId);
-        const interventionTemplate =
-          await InterventionList.findById(interventionId);
-        console.log("Found template:", interventionTemplate);
-
+        const interventionTemplate = await InterventionList.findById(interventionId);
         if (!interventionTemplate || !interventionTemplate.isTemplate) {
           throw new Error("Intervention template not found");
         }
 
-        console.log("Checking for existing assignment...");
+        // Only block if this intervention is already assigned to this student for this behavior
         const existing = await InterventionList.findOne({
           studentId,
           title: interventionTemplate.title,
@@ -1252,21 +1248,17 @@ const resolvers = {
           isTemplate: false,
           isActive: true,
         });
-        console.log("Existing assignment:", existing);
-
         if (existing) {
-          // Optionally, restore if it was soft-deleted
           if (!existing.isActive) {
             existing.isActive = true;
             await existing.save();
             return existing;
           }
           throw new UserInputError(
-            "Student already has this intervention assigned.",
+            "Student already has this intervention assigned to this behavior.",
           );
         }
 
-        console.log("Creating new intervention for student...");
         // Try to find behavior in Frequency first, then Duration
         let behavior = await Frequency.findById(behaviorId);
         if (!behavior) {
@@ -1285,7 +1277,6 @@ const resolvers = {
           isActive: true,
         });
 
-        // Add the new intervention to the user's interventions array
         await User.findByIdAndUpdate(studentId, {
           $addToSet: { interventions: newIntervention._id },
         });
