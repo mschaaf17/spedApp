@@ -396,7 +396,7 @@ const Dashboard = () => {
       const promises = selectedBehaviorForIntervention.map(behaviorId => 
         addInterventionForStudent({
           variables: {
-            interventionId: selectedIntervention,
+            interventionId: selectedIntervention._id,
             studentId: selectedStudent._id,
             behaviorId: behaviorId
           },
@@ -607,13 +607,13 @@ const Dashboard = () => {
   const getAvailableInterventions = () => {
     if (!selectedStudent || !interventionTemplates) return [];
     
-    const studentInterventions = getStudentInterventions();
-    const assignedInterventionTitles = new Set(
-      studentInterventions.map(i => i.title)
-    );
+    // const studentInterventions = getStudentInterventions();
+    // const assignedInterventionTitles = new Set(
+    //   studentInterventions.map(i => i.title)
+    // );
     
     return interventionTemplates
-      .filter(intervention => !assignedInterventionTitles.has(intervention.title))
+    //  .filter(intervention => !assignedInterventionTitles.has(intervention.title))
       .map(intervention => ({
         value: intervention._id,
         label: intervention.title
@@ -1259,23 +1259,38 @@ const Dashboard = () => {
   const [showAIModal, setShowAIModal] = useState(false);
 
   // Helper: get available behaviors for selected intervention
-  const getAvailableBehaviorsForIntervention = (interventionId) => {
-    if (!selectedStudent || !interventionId) return [];
+  const getAvailableBehaviorsForIntervention = (selectedIntervention) => {
+    if (!selectedStudent || !selectedIntervention) return [];
     const studentData = selectedStudentData?.user || selectedStudent;
-    const studentInterventions = getStudentInterventions();
-    // Only include behaviors that do NOT already have this intervention
-    const assignedBehaviorIds = new Set(
-      studentInterventions
-        .filter(i => i._id === interventionId)
-        .map(i => i.behaviorId?._id)
+
+    // Find all behaviors (frequency and duration)
+    const allBehaviors = [
+      ...(studentData.behaviorFrequencies || []).map(f => ({
+        ...f,
+        type: 'Frequency',
+      })),
+      ...(studentData.behaviorDurations || []).map(d => ({
+        ...d,
+        type: 'Duration',
+      })),
+    ];
+
+    // Find all interventions for this student with the same title
+    const assignedInterventions = getStudentInterventions().filter(
+      i => i.title === selectedIntervention.title
     );
-    const frequencies = (studentData.behaviorFrequencies || [])
-      .filter(f => !assignedBehaviorIds.has(f._id))
-      .map(f => ({ value: f._id, label: `${f.behaviorTitle} (Frequency)` }));
-    const durations = (studentData.behaviorDurations || [])
-      .filter(d => !assignedBehaviorIds.has(d._id))
-      .map(d => ({ value: d._id, label: `${d.behaviorTitle} (Duration)` }));
-    return [...frequencies, ...durations];
+    // Get the set of behavior IDs that already have this intervention
+    const assignedBehaviorIds = new Set(
+      assignedInterventions.map(i => i.behaviorId?._id)
+    );
+
+    // Only include behaviors that do NOT already have this intervention
+    return allBehaviors
+      .filter(b => !assignedBehaviorIds.has(b._id))
+      .map(b => ({
+        value: b._id,
+        label: `${b.behaviorTitle} (${b.type})`,
+      }));
   };
 
   return (
@@ -2198,12 +2213,16 @@ const Dashboard = () => {
           <Select
             placeholder="Select an intervention"
             style={{ width: '100%' }}
-            value={selectedIntervention}
-            onChange={value => {
-              setSelectedIntervention(value);
+            value={selectedIntervention?._id}
+            onChange={id => {
+              const interventionObj = interventionTemplates.find(i => i._id === id);
+              setSelectedIntervention(interventionObj);
               setSelectedBehaviorForIntervention([]);
             }}
-            options={getAvailableInterventions()}
+            options={interventionTemplates.map(i => ({
+              value: i._id,
+              label: i.title
+            }))}
           />
         </div>
         {selectedIntervention && (

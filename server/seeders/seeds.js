@@ -131,15 +131,6 @@ async function seed() {
     createdAt: new Date('2025-06-07T00:00:00.000Z')
   });
 
-  const interventionTemplate2 = await InterventionList.create({
-    title: 'Contracts',
-    summary: 'Student will use behavior contracts to track and improve specific behaviors',
-    function: 'Attention',
-    createdBy: admin._id,
-    isTemplate: true,
-    isActive: true,
-    createdAt: new Date('2025-06-07T00:00:00.000Z')
-  });
 
   // Assign intervention to student for a behavior
   const assignedIntervention = await InterventionList.create({

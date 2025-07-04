@@ -29,7 +29,7 @@ const InterventionDataTable = ({
   
   const [visibleSelectRowId, setVisibleSelectRowId] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedBehavior, setSelectedBehavior] = useState(null);
+  const [selectedBehaviors, setSelectedBehaviors] = useState([]);
 
   // Helper function to check if an intervention is a core intervention
   const isCoreIntervention = (title) => {
@@ -37,23 +37,31 @@ const InterventionDataTable = ({
     return lowerTitle.includes('break') || lowerTitle.includes('contract');
   };
 
-  const handleAddIntervention = async (interventionId, studentId, behaviorId) => {
+  const handleAddIntervention = async (interventionId, studentId, behaviorIds) => {
     try {
       if (submitInterventionForStudent) {
-        await submitInterventionForStudent(interventionId, studentId, behaviorId);
+        await Promise.all(
+          behaviorIds.map(behaviorId =>
+            submitInterventionForStudent(interventionId, studentId, behaviorId)
+          )
+        );
       } else {
-        await addInterventionForStudent({
-          variables: {
-            interventionId,
-            studentId,
-            behaviorId,
-          },
-          refetchQueries: [{ query: QUERY_ME }]
-        });
+        await Promise.all(
+          behaviorIds.map(behaviorId =>
+            addInterventionForStudent({
+              variables: {
+                interventionId,
+                studentId,
+                behaviorId,
+              },
+              refetchQueries: [{ query: QUERY_ME }]
+            })
+          )
+        );
       }
       setVisibleSelectRowId(null);
       setSelectedStudent(null);
-      setSelectedBehavior(null);
+      setSelectedBehaviors([]);
     } catch (error) {
       console.error('Error adding intervention:', error);
     }
@@ -140,54 +148,63 @@ const InterventionDataTable = ({
                   value={selectedStudent}
                   onChange={value => {
                     setSelectedStudent(value);
-                    setSelectedBehavior(null);
+                    setSelectedBehaviors([]);
                   }}
-                  options={students
-                    .filter(s => {
-                      // Filter out students who already have this intervention assigned
-                      return !assignedInterventions.some(ai =>
-                        ai.studentId?._id === s._id &&
-                        ai.title === record.title
-                      );
-                    })
-                    .map(s => ({
-                      value: s._id,
-                      label: `${s.lastName}, ${s.firstName} (${s.studentSchoolId})`
-                    }))
-                  }
+                  options={students.map(s => ({
+                    value: s._id,
+                    label: `${s.lastName}, ${s.firstName} (${s.studentSchoolId})`
+                  }))}
                 />
                 {selectedStudent && (
                   <Select
-                    placeholder="Select behavior"
-                    style={{ width: 180 }}
-                    value={selectedBehavior}
-                    onChange={setSelectedBehavior}
-                    options={
-                      students.find(s => s._id === selectedStudent)?.behaviorFrequencies
-                        // Only show behaviors NOT already assigned this intervention
-                        .filter(b => !assignedInterventions.some(ai =>
-                          ai.studentId?._id === selectedStudent &&
-                          ai.title === record.title &&
-                          ai.behaviorId?._id === b._id
-                        ))
+                    mode="multiple"
+                    placeholder="Select behaviors"
+                    style={{ width: 220 }}
+                    value={selectedBehaviors}
+                    onChange={setSelectedBehaviors}
+                    options={(() => {
+                      const studentObj = students.find(s => s._id === selectedStudent);
+                      if (!studentObj) return [];
+                      // Combine frequency and duration behaviors
+                      const allBehaviors = [
+                        ...(studentObj.behaviorFrequencies || []).map(b => ({
+                          ...b,
+                          type: 'Frequency',
+                        })),
+                        ...(studentObj.behaviorDurations || []).map(b => ({
+                          ...b,
+                          type: 'Duration',
+                        })),
+                      ];
+                      // Find all assigned interventions for this student and intervention
+                      const assignedForStudent = assignedInterventions.filter(ai =>
+                        ai.studentId?._id === selectedStudent &&
+                        ai.title === record.title
+                      );
+                      const assignedBehaviorIds = new Set(
+                        assignedForStudent.map(ai => ai.behaviorId?._id)
+                      );
+                      // Only show behaviors NOT already assigned this intervention
+                      return allBehaviors
+                        .filter(b => !assignedBehaviorIds.has(b._id))
                         .map(b => ({
                           value: b._id,
-                          label: b.behaviorTitle
-                        })) || []
-                    }
+                          label: `${b.behaviorTitle} (${b.type})`
+                        }));
+                    })()}
                   />
                 )}
                 <Button
                   type="primary"
-                  disabled={!selectedStudent || !selectedBehavior}
-                  onClick={() => handleAddIntervention(record._id, selectedStudent, selectedBehavior)}
+                  disabled={!selectedStudent || selectedBehaviors.length === 0}
+                  onClick={() => handleAddIntervention(record._id, selectedStudent, selectedBehaviors)}
                 >
                   Confirm
                 </Button>
                 <Button onClick={() => {
                   setVisibleSelectRowId(null);
                   setSelectedStudent(null);
-                  setSelectedBehavior(null);
+                  setSelectedBehaviors([]);
                 }}>
                   Cancel
                 </Button>

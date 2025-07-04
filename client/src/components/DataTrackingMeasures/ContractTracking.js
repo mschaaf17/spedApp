@@ -9,7 +9,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-const ContractTracking = ({ student, contracts, refetchTrigger }) => {
+const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => {
   const [selectedContract, setSelectedContract] = useState(null);
   const [noteModal, setNoteModal] = useState({ visible: false, contractId: null, date: null, time: null, value: null });
   const [noteForm] = Form.useForm();
@@ -33,6 +33,7 @@ const ContractTracking = ({ student, contracts, refetchTrigger }) => {
         }
       });
       message.success('Contract entry updated successfully');
+      if (onRefetch) onRefetch();
     } catch (error) {
       console.error('Error updating contract entry:', error);
       message.error('Failed to update contract entry');
