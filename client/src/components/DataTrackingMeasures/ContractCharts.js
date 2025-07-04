@@ -5,67 +5,88 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+const smileyToNumber = (value) => {
+  if (!value) return 0;
+  const v = value.trim().toLowerCase();
+  if (v === 'smiley' || v === '😊') return 3;
+  if (v === 'neutral' || v === '😐') return 2;
+  if (v === 'sad' || v === '😞') return 1;
+  // fallback for numbers or other values
+  const num = parseInt(v);
+  return isNaN(num) ? 0 : num;
+};
+
 const ContractCharts = ({ contract }) => {
   const [selectedBehavior, setSelectedBehavior] = React.useState(null);
   const [chartType, setChartType] = React.useState('line');
 
-  // Process contract data for charting
-  const processChartData = () => {
-    if (!contract || !contract.chart) return [];
-
-    // Get all unique dates from the contract chart
-    const dates = [...new Set(contract.chart.map(day => day.date))].sort();
-    
-    return dates.map(date => {
-      const dayEntry = contract.chart.find(day => day.date === date);
-      const dataPoint = { date: new Date(date).toLocaleDateString() };
-      
-      // For contracts, we need to handle the data differently
-      // Each entry has a 'time' field (like "Monday", "Tuesday") and a 'value'
-      // We'll create a data point for each time slot
-      if (dayEntry?.entries) {
-        dayEntry.entries.forEach(entry => {
-          const timeKey = entry.time;
-          if (timeKey && entry.value) {
-            dataPoint[timeKey] = parseInt(entry.value) || 0;
-            // Add note data for tooltip
-            if (entry.note) {
-              dataPoint[`${timeKey}_note`] = entry.note;
-            }
-          }
-        });
-      }
-      
-      return dataPoint;
-    });
-  };
-
-  const chartData = processChartData();
-
-  // Get all unique time slots from the data for charting
-  const getTimeSlots = () => {
-    const timeSlots = new Set();
-    if (contract?.chart) {
+  // Get all unique behaviors
+  const getBehaviors = () => {
+    const behaviors = new Set();
+    if (contract?.rows) {
+      contract.rows.forEach(row => behaviors.add(row));
+    } else if (contract?.chart) {
       contract.chart.forEach(day => {
         day.entries?.forEach(entry => {
-          if (entry.time) {
-            timeSlots.add(entry.time);
-          }
+          if (entry.row) behaviors.add(entry.row);
+        });
+      });
+    }
+    return Array.from(behaviors);
+  };
+  const behaviors = getBehaviors();
+
+  // Get all unique time slots
+  const getTimeSlots = () => {
+    const timeSlots = new Set();
+    if (contract?.times) {
+      contract.times.forEach(time => timeSlots.add(time));
+    } else if (contract?.chart) {
+      contract.chart.forEach(day => {
+        day.entries?.forEach(entry => {
+          if (entry.time) timeSlots.add(entry.time);
         });
       });
     }
     return Array.from(timeSlots).sort();
   };
-
   const timeSlots = getTimeSlots();
 
-  // Get color for each time slot
-  const getTimeSlotColor = (index) => {
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000'];
+  // Process chart data for all behaviors (sum across all time slots per date)
+  const processChartData = () => {
+    if (!contract || !contract.chart) return [];
+    const dates = [...new Set(contract.chart.map(day => day.date))].sort();
+    return dates.map(date => {
+      const dayEntry = contract.chart.find(day => day.date === date);
+      const dataPoint = { date: new Date(date).toLocaleDateString() };
+      if (dayEntry?.entries) {
+        behaviors.forEach(behavior => {
+          const entries = dayEntry.entries.filter(e => e.row === behavior);
+          entries.forEach(e => {
+            console.log('Behavior:', behavior, 'Raw value:', e.value);
+          });
+          const sum = entries.reduce((acc, e) => acc + smileyToNumber(e.value), 0);
+          dataPoint[behavior] = sum;
+          // If any entry for this behavior has a note, add it
+          const noteEntry = dayEntry.entries.find(e => e.row === behavior && e.note);
+          if (noteEntry) {
+            dataPoint[`${behavior}_note`] = noteEntry.note;
+          }
+        });
+      }
+      return dataPoint;
+    });
+  };
+  const chartData = processChartData();
+  console.log('Contract chartData:', chartData);
+
+  // Get color for each behavior/time combination
+  const getSeriesColor = (index) => {
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#1890ff', '#fa8c16', '#b37feb'];
     return colors[index % colors.length];
   };
 
-  // Custom tooltip component to show notes
+  // Custom tooltip for behaviors
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -78,22 +99,21 @@ const ContractCharts = ({ contract }) => {
         }}>
           <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>{`Date: ${label}`}</p>
           {payload.map((entry, index) => {
-            const timeSlot = entry.dataKey;
-            const note = chartData.find(data => data.date === label)?.[`${timeSlot}_note`];
-            
+            const behavior = entry.dataKey;
+            const note = chartData.find(data => data.date === label)?.[`${behavior}_note`];
             return (
               <div key={index} style={{ marginBottom: '4px' }}>
-                <p style={{ 
-                  margin: '0', 
+                <p style={{
+                  margin: '0',
                   color: entry.color,
                   fontWeight: 'bold'
                 }}>
-                  {`${timeSlot}: ${entry.value}`}
+                  {`${behavior}: ${entry.value}`}
                 </p>
                 {note && (
-                  <p style={{ 
-                    margin: '4px 0 0 0', 
-                    fontSize: '12px', 
+                  <p style={{
+                    margin: '4px 0 0 0',
+                    fontSize: '12px',
                     color: '#666',
                     fontStyle: 'italic',
                     maxWidth: '200px',
@@ -126,7 +146,7 @@ const ContractCharts = ({ contract }) => {
       const dayEntry = contract.chart.find(day => day.date === date);
       if (dayEntry?.entries && dayEntry.entries.length > 0) {
         const dayPoints = dayEntry.entries.reduce((sum, entry) => {
-          return sum + (parseInt(entry.value) || 0);
+          return sum + smileyToNumber(entry.value);
         }, 0);
         
         totalPoints += dayPoints;
@@ -266,15 +286,15 @@ const ContractCharts = ({ contract }) => {
         
         <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
           <Select
-            placeholder="Select time slot to highlight"
-            style={{ width: 200 }}
+            placeholder="Highlight behavior (optional)"
+            style={{ width: 220 }}
             allowClear
             value={selectedBehavior}
             onChange={setSelectedBehavior}
           >
-            {timeSlots.map(timeSlot => (
-              <Option key={timeSlot} value={timeSlot}>
-                {timeSlot}
+            {behaviors.map(behavior => (
+              <Option key={behavior} value={behavior}>
+                {behavior}
               </Option>
             ))}
           </Select>
@@ -289,30 +309,29 @@ const ContractCharts = ({ contract }) => {
         </div>
       </div>
 
-      {chartData.length > 0 && timeSlots.length > 0 ? (
+      {chartData.length > 0 && behaviors.length > 0 ? (
         <ResponsiveContainer width="100%" height={400}>
           {chartType === 'line' ? (
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis domain={[0, contract.measureType === 'smileys' ? 3 : 5]} />
+              <YAxis domain={[0, contract.measureType === 'smileys' ? 3 : 5 * timeSlots.length]} />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend />
-              {timeSlots.map((timeSlot, index) => (
+              {behaviors.map((behavior, idx) => (
                 <Line
-                  key={timeSlot}
+                  key={behavior}
                   type="monotone"
-                  dataKey={timeSlot}
-                  stroke={getTimeSlotColor(index)}
-                  strokeWidth={selectedBehavior === timeSlot ? 3 : 2}
-                  opacity={selectedBehavior && selectedBehavior !== timeSlot ? 0.3 : 1}
+                  dataKey={behavior}
+                  stroke={getSeriesColor(idx)}
+                  strokeWidth={selectedBehavior === behavior ? 3 : 2}
+                  opacity={selectedBehavior && selectedBehavior !== behavior ? 0.3 : 1}
                   connectNulls={false}
                   dot={{
-                    fill: getTimeSlotColor(index),
+                    fill: getSeriesColor(idx),
                     strokeWidth: 2,
                     r: 4,
-                    // Add note indicator to dots
-                    ...(chartData.some(data => data[`${timeSlot}_note`]) && {
+                    ...(chartData.some(data => data[`${behavior}_note`]) && {
                       fill: '#ff6b6b',
                       r: 6,
                       stroke: '#fff',
@@ -326,15 +345,15 @@ const ContractCharts = ({ contract }) => {
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis domain={[0, contract.measureType === 'smileys' ? 3 : 5]} />
+              <YAxis domain={[0, contract.measureType === 'smileys' ? 3 : 5 * timeSlots.length]} />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend />
-              {timeSlots.map((timeSlot, index) => (
+              {behaviors.map((behavior, idx) => (
                 <Bar
-                  key={timeSlot}
-                  dataKey={timeSlot}
-                  fill={getTimeSlotColor(index)}
-                  opacity={selectedBehavior && selectedBehavior !== timeSlot ? 0.3 : 1}
+                  key={behavior}
+                  dataKey={behavior}
+                  fill={getSeriesColor(idx)}
+                  opacity={selectedBehavior && selectedBehavior !== behavior ? 0.3 : 1}
                 />
               ))}
             </BarChart>

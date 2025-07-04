@@ -21,7 +21,7 @@ const StudentContracts = () => {
   const contracts = contractsData?.contracts || [];
   const student = userData?.me;
 
-  const handleUpdateEntry = async (contractId, date, time, value, note = '') => {
+  const handleUpdateEntry = async (contractId, date, time, value, note = '', row) => {
     try {
       await updateContractEntry({
         variables: {
@@ -30,7 +30,8 @@ const StudentContracts = () => {
             date,
             time,
             value,
-            note
+            note,
+            row
           }
         }
       });
@@ -40,13 +41,13 @@ const StudentContracts = () => {
     }
   };
 
-  const handleScoreSelect = (contract, time, value) => {
+  const handleScoreSelect = (contract, time, value, row) => {
     if (value !== 'smiley' && value !== '5') {
-      setCurrentEntry({ contract, time, value });
+      setCurrentEntry({ contract, time, value, row });
       setShowNoteModal(true);
     } else {
       const today = new Date().toISOString().split('T')[0];
-      handleUpdateEntry(contract._id, today, time, value);
+      handleUpdateEntry(contract._id, today, time, value, '', row);
     }
   };
 
@@ -54,7 +55,7 @@ const StudentContracts = () => {
     if (currentEntry) {
       const note = document.getElementById('note-input').value;
       const today = new Date().toISOString().split('T')[0];
-      handleUpdateEntry(currentEntry.contract._id, today, currentEntry.time, currentEntry.value, note);
+      handleUpdateEntry(currentEntry.contract._id, today, currentEntry.time, currentEntry.value, note, currentEntry.row);
       setShowNoteModal(false);
       setCurrentEntry(null);
     }
@@ -188,7 +189,7 @@ const StudentContracts = () => {
                         {contract.times.map((time) => {
                           const today = new Date().toISOString().split('T')[0];
                           const dayEntry = contract.chart.find(day => day.date === today);
-                          const timeEntry = dayEntry?.entries.find(entry => entry.time === time);
+                          const timeEntry = dayEntry?.entries.find(entry => entry.time === time && entry.row === row);
                           
                           return (
                             <td key={time} className="score-cell">
@@ -196,19 +197,19 @@ const StudentContracts = () => {
                                 <div className="smiley-selector">
                                   <button
                                     className={`smiley-btn ${timeEntry?.value === 'smiley' ? 'selected' : ''}`}
-                                    onClick={() => handleScoreSelect(contract, time, 'smiley')}
+                                    onClick={() => handleScoreSelect(contract, time, 'smiley', row)}
                                   >
                                     😊
                                   </button>
                                   <button
                                     className={`smiley-btn ${timeEntry?.value === 'neutral' ? 'selected' : ''}`}
-                                    onClick={() => handleScoreSelect(contract, time, 'neutral')}
+                                    onClick={() => handleScoreSelect(contract, time, 'neutral', row)}
                                   >
                                     😐
                                   </button>
                                   <button
                                     className={`smiley-btn ${timeEntry?.value === 'sad' ? 'selected' : ''}`}
-                                    onClick={() => handleScoreSelect(contract, time, 'sad')}
+                                    onClick={() => handleScoreSelect(contract, time, 'sad', row)}
                                   >
                                     😞
                                   </button>
@@ -219,7 +220,7 @@ const StudentContracts = () => {
                                     <button
                                       key={num}
                                       className={`number-btn ${timeEntry?.value === num.toString() ? 'selected' : ''}`}
-                                      onClick={() => handleScoreSelect(contract, time, num.toString())}
+                                      onClick={() => handleScoreSelect(contract, time, num.toString(), row)}
                                     >
                                       {num}
                                     </button>

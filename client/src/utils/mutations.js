@@ -591,6 +591,7 @@ export const CREATE_CONTRACT = gql`
           time
           value
           note
+          row
         }
       }
       notes
@@ -612,6 +613,7 @@ export const UPDATE_CONTRACT_ENTRY = gql`
           time
           value
           note
+          row
         }
       }
     }
@@ -648,6 +650,7 @@ export const UPDATE_CONTRACT_ACTIVE_STATUS = gql`
           time
           value
           note
+          row
         }
       }
       notes

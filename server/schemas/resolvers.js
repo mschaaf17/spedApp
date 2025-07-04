@@ -1754,21 +1754,22 @@ const resolvers = {
           contract.chart.push(dayEntry);
         }
 
-        // Find or create the time entry
-        let timeEntry = dayEntry.entries.find(
-          (entry) => entry.time === input.time,
+        // Find or create the entry for the specific row and time
+        let entry = dayEntry.entries.find(
+          (e) => e.time === input.time && e.row === input.row
         );
-        if (!timeEntry) {
-          timeEntry = {
+        if (!entry) {
+          entry = {
             time: input.time,
             value: input.value,
             note: input.note || "",
+            row: input.row
           };
-          dayEntry.entries.push(timeEntry);
+          dayEntry.entries.push(entry);
         } else {
           // Update existing entry
-          timeEntry.value = input.value;
-          timeEntry.note = input.note || "";
+          entry.value = input.value;
+          entry.note = input.note || "";
         }
 
         await contract.save();

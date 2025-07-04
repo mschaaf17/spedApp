@@ -35,6 +35,7 @@ const typeDefs = gql`
     time: String!
     value: String!
     note: String
+    row: String
   }
 
   type ContractChartDay {
@@ -189,6 +190,7 @@ const typeDefs = gql`
     time: String!
     value: String!
     note: String
+    row: String
   }
 
   input ContractChartDayInput {
@@ -212,6 +214,7 @@ const typeDefs = gql`
     time: String!
     value: String!
     note: String
+    row: String
   }
 
   type Query {

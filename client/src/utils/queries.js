@@ -169,6 +169,7 @@ query Me {
           time
           value
           note
+          row
         }
       }
       notes
@@ -327,6 +328,7 @@ query Me {
           time
           value
           note
+          row
         }
       }
       notes
@@ -524,6 +526,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
             time
             value
             note
+            row
           }
         }
         notes
@@ -672,6 +675,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
           time
           value
           note
+          row
         }
       }
       notes
@@ -998,6 +1002,7 @@ export const QUERY_CONTRACTS = gql`
           time
           value
           note
+          row
         }
       }
       notes
@@ -1039,6 +1044,7 @@ export const QUERY_CONTRACT = gql`
           time
           value
           note
+          row
         }
       }
       notes

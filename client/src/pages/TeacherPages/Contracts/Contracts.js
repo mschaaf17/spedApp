@@ -111,7 +111,7 @@ const Contracts = () => {
     }
   };
 
-  const handleUpdateEntry = async (contractId, date, time, value, note = '') => {
+  const handleUpdateEntry = async (contractId, date, time, value, note = '', row) => {
     try {
       await updateContractEntry({
         variables: {
@@ -120,7 +120,8 @@ const Contracts = () => {
             date,
             time,
             value,
-            note
+            note,
+            row
           }
         }
       });
@@ -712,7 +713,7 @@ const Contracts = () => {
                           ).map((time) => {
                             const today = new Date().toISOString().split('T')[0];
                             const dayEntry = contract.chart.find(day => day.date === today);
-                            const timeEntry = dayEntry?.entries.find(entry => entry.time === time);
+                            const timeEntry = dayEntry?.entries.find(entry => entry.time === time && entry.row === row);
                             
                             return (
                               <td key={time}>
@@ -722,7 +723,7 @@ const Contracts = () => {
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       const note = value !== 'smiley' ? prompt('Please provide a note for this score:') : '';
-                                      handleUpdateEntry(contract._id, today, time, value, note);
+                                      handleUpdateEntry(contract._id, today, time, value, note, row);
                                     }}
                                   >
                                     <option value="">-</option>
@@ -736,7 +737,7 @@ const Contracts = () => {
                                     onChange={(e) => {
                                       const value = e.target.value;
                                       const note = value !== '5' ? prompt('Please provide a note for this score:') : '';
-                                      handleUpdateEntry(contract._id, today, time, value, note);
+                                      handleUpdateEntry(contract._id, today, time, value, note, row);
                                     }}
                                   >
                                     <option value="">-</option>

@@ -20,7 +20,8 @@ export default function LoadingPage() {
     if (!data?.me) return;
 
     if (data.me.isAdmin) {
-      window.location.href = `/studentList/${data.me.username}`;
+      // window.location.href = `/studentList/${data.me.username}`;
+      window.location.href = `/dashboard`;
     } else {
       window.location.href = "/studentAccommodations";
     }

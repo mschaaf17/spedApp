@@ -3,7 +3,8 @@ const { Schema, model } = require("mongoose");
 const ContractEntrySchema = new Schema({
   time: String, // e.g., '9:00am' or 'Mon'
   value: String, // 'smiley', 'neutral', 'sad', or a number
-  note: String
+  note: String,
+  row: String // behavior name
 }, { _id: false });
 
 const ContractChartDaySchema = new Schema({

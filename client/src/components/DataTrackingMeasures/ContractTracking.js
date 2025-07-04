@@ -11,7 +11,7 @@ const { TextArea } = Input;
 
 const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => {
   const [selectedContract, setSelectedContract] = useState(null);
-  const [noteModal, setNoteModal] = useState({ visible: false, contractId: null, date: null, time: null, value: null });
+  const [noteModal, setNoteModal] = useState({ visible: false, contractId: null, date: null, time: null, value: null, row: null });
   const [noteForm] = Form.useForm();
 
   const [updateContractEntry] = useMutation(UPDATE_CONTRACT_ENTRY);
@@ -19,7 +19,7 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
   // Filter active contracts
   const activeContracts = contracts?.filter(contract => contract.isActive) || [];
 
-  const handleUpdateEntry = async (contractId, date, time, value, note = '') => {
+  const handleUpdateEntry = async (contractId, date, time, value, note = '', row) => {
     try {
       await updateContractEntry({
         variables: {
@@ -28,7 +28,8 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
             date,
             time,
             value,
-            note
+            note,
+            row
           }
         }
       });
@@ -53,8 +54,8 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
     return value || '';
   };
 
-  const openNoteModal = (contractId, date, time, value) => {
-    setNoteModal({ visible: true, contractId, date, time, value });
+  const openNoteModal = (contractId, date, time, value, row) => {
+    setNoteModal({ visible: true, contractId, date, time, value, row });
     noteForm.resetFields();
   };
 
@@ -66,9 +67,10 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
         noteModal.date, 
         noteModal.time, 
         noteModal.value, 
-        values.note
+        values.note,
+        noteModal.row
       );
-      setNoteModal({ visible: false, contractId: null, date: null, time: null, value: null });
+      setNoteModal({ visible: false, contractId: null, date: null, time: null, value: null, row: null });
     } catch (error) {
       console.error('Error submitting note:', error);
     }
@@ -97,7 +99,7 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
         dataIndex: time,
         width: 120,
         render: (_, record) => {
-          const timeEntry = dayEntry?.entries.find(entry => entry.time === time);
+          const timeEntry = dayEntry?.entries.find(entry => entry.time === time && entry.row === record.behavior);
           const value = timeEntry?.value || '';
           
           return (
@@ -107,9 +109,9 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
                   value={value}
                   onChange={(newValue) => {
                     if (newValue !== 'smiley') {
-                      openNoteModal(contract._id, today, time, newValue);
+                      openNoteModal(contract._id, today, time, newValue, record.behavior);
                     } else {
-                      handleUpdateEntry(contract._id, today, time, newValue);
+                      handleUpdateEntry(contract._id, today, time, newValue, '', record.behavior);
                     }
                   }}
                   style={{ width: '100%' }}
@@ -125,9 +127,9 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
                   value={value}
                   onChange={(newValue) => {
                     if (newValue !== '5') {
-                      openNoteModal(contract._id, today, time, newValue);
+                      openNoteModal(contract._id, today, time, newValue, record.behavior);
                     } else {
-                      handleUpdateEntry(contract._id, today, time, newValue);
+                      handleUpdateEntry(contract._id, today, time, newValue, '', record.behavior);
                     }
                   }}
                   style={{ width: '100%' }}
@@ -160,8 +162,8 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
           time,
           {
             time,
-            value: dayEntry?.entries.find(entry => entry.time === time)?.value || '',
-            note: dayEntry?.entries.find(entry => entry.time === time)?.note || '',
+            value: dayEntry?.entries.find(entry => entry.time === time && entry.row === row)?.value || '',
+            note: dayEntry?.entries.find(entry => entry.time === time && entry.row === row)?.note || '',
           }
         ])
       ),
@@ -262,7 +264,7 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
         title="Add Note"
         open={noteModal.visible}
         onOk={handleNoteSubmit}
-        onCancel={() => setNoteModal({ visible: false, contractId: null, date: null, time: null, value: null })}
+        onCancel={() => setNoteModal({ visible: false, contractId: null, date: null, time: null, value: null, row: null })}
         okText="Save Note"
         cancelText="Cancel"
       >
