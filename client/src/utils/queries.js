@@ -26,6 +26,13 @@ query Me {
   image
   description
   lastOffered
+  offeredLog {
+    time
+    accepted
+  }
+  requestLog {
+    time
+  }
   templateId {
     _id
     title
@@ -197,6 +204,13 @@ query Me {
   image
   description
   lastOffered
+  offeredLog {
+    time
+    accepted
+  }
+  requestLog {
+    time
+  }
   templateId {
     _id
     title
@@ -381,6 +395,13 @@ query User($identifier: String!, $isUsername: Boolean!) {
   image
   description
   lastOffered
+  offeredLog {
+    time
+    accepted
+  }
+  requestLog {
+    time
+  }
   templateId {
     _id
     title
@@ -538,6 +559,13 @@ query User($identifier: String!, $isUsername: Boolean!) {
   image
   description
   lastOffered
+  offeredLog {
+    time
+    accepted
+  }
+  requestLog {
+    time
+  }
   templateId {
     _id
     title

@@ -2310,6 +2310,40 @@ const resolvers = {
       await accommodation.save();
       return accommodation;
     },
+    logAccommodationOffered: async (
+      parent,
+      { accommodationId, studentId, accepted, time },
+      context
+    ) => {
+      if (!context.user) {
+        throw new AuthenticationError("You must be logged in!");
+      }
+      const accommodation = await AccommodationList.findOne({ _id: accommodationId, studentId });
+      if (!accommodation) {
+        throw new UserInputError("Accommodation not found for this student");
+      }
+      const logTime = time ? new Date(time) : new Date();
+      accommodation.offeredLog.push({ time: logTime, accepted });
+      await accommodation.save();
+      return accommodation;
+    },
+    logAccommodationRequested: async (
+      parent,
+      { accommodationId, studentId, time },
+      context
+    ) => {
+      if (!context.user) {
+        throw new AuthenticationError("You must be logged in!");
+      }
+      const accommodation = await AccommodationList.findOne({ _id: accommodationId, studentId });
+      if (!accommodation) {
+        throw new UserInputError("Accommodation not found for this student");
+      }
+      const logTime = time ? new Date(time) : new Date();
+      accommodation.requestLog.push({ time: logTime });
+      await accommodation.save();
+      return accommodation;
+    },
   },
 
   AccommodationList: {

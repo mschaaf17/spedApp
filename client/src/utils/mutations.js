@@ -828,3 +828,29 @@ export const REVERT_ACCOMMODATION_LAST_OFFERED = gql`
     }
   }
 `;
+
+export const LOG_ACCOMMODATION_OFFERED = gql`
+  mutation LogAccommodationOffered($accommodationId: ID!, $studentId: ID!, $accepted: Boolean!, $time: String) {
+    logAccommodationOffered(accommodationId: $accommodationId, studentId: $studentId, accepted: $accepted, time: $time) {
+      _id
+      title
+      lastOffered
+      offeredLog {
+        time
+        accepted
+      }
+    }
+  }
+`;
+
+export const LOG_ACCOMMODATION_REQUESTED = gql`
+  mutation LogAccommodationRequested($accommodationId: ID!, $studentId: ID!, $time: String) {
+    logAccommodationRequested(accommodationId: $accommodationId, studentId: $studentId, time: $time) {
+      _id
+      title
+      requestLog {
+        time
+      }
+    }
+  }
+`;

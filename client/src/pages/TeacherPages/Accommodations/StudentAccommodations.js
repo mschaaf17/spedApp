@@ -72,6 +72,8 @@ export default function StudentAccommodations() {
         accommodations={accommodations}
         loading={loading}
         onRemoveAccommodation={handleRemoveAccommodation}
+        studentId={user?._id}
+        username={user?.username}
       />
     </div>
   );

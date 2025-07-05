@@ -60,6 +60,15 @@ const typeDefs = gql`
     updatedAt: String!
   }
 
+  type OfferedLogEntry {
+    time: String!
+    accepted: Boolean!
+  }
+
+  type RequestLogEntry {
+    time: String!
+  }
+
   type AccommodationList {
     _id: ID!
     title: String!
@@ -72,6 +81,8 @@ const typeDefs = gql`
     createdAt: String
     templateId: AccommodationList
     lastOffered: String
+    offeredLog: [OfferedLogEntry!]
+    requestLog: [RequestLogEntry!]
     updateStudentViewConfig(
       studentId: ID!
       showAccommodations: Boolean!
@@ -369,6 +380,17 @@ const typeDefs = gql`
       studentId: ID!
     ): AccommodationList
     revertAccommodationLastOffered(accommodationId: ID!, studentId: ID!, previousLastOffered: String): AccommodationList
+    logAccommodationOffered(
+      accommodationId: ID!
+      studentId: ID!
+      accepted: Boolean!
+      time: String
+    ): AccommodationList
+    logAccommodationRequested(
+      accommodationId: ID!
+      studentId: ID!
+      time: String
+    ): AccommodationList
   }
 
   input SelectedChartInput {

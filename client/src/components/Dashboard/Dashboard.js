@@ -42,6 +42,8 @@ import BreakConfigForm from '../DataTrackingMeasures/BreakConfigForm';
 
 // Import AI component
 import DashboardAI from '../../pages/Dashboard/index';
+import AccommodationOfferModal from '../Modals/AccommodationOfferModal';
+import AccommodationLogsModal from '../AccommodationLogs/AccommodationLogsModal';
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
@@ -1134,61 +1136,16 @@ const Dashboard = () => {
     });
   };
 
-  const handleOfferAccommodation = async (accommodationId, studentId) => {
-    try {
-      // Store the previous lastOffered value for undo
-      const accommodation = selectedStudentData?.user?.accommodations?.find(acc => acc._id === accommodationId);
-      let previousLastOffered = null;
-      
-      console.log('🟢 OFFER DEBUG: Found accommodation:', accommodation);
-      console.log('🟢 OFFER DEBUG: accommodation.lastOffered:', accommodation?.lastOffered);
-      console.log('🟢 OFFER DEBUG: accommodation.lastOffered type:', typeof accommodation?.lastOffered);
-      
-      if (accommodation?.lastOffered) {
-        try {
-          // Validate the date before storing it
-          let testDate;
-          if (typeof accommodation.lastOffered === 'string' && /^\d+$/.test(accommodation.lastOffered)) {
-            // If it's a timestamp string, convert to number first
-            const timestamp = parseInt(accommodation.lastOffered);
-            testDate = new Date(timestamp);
-          } else {
-            testDate = new Date(accommodation.lastOffered);
-          }
-          console.log('🟢 OFFER DEBUG: testDate:', testDate);
-          console.log('🟢 OFFER DEBUG: testDate isValid:', !isNaN(testDate.getTime()));
-          if (!isNaN(testDate.getTime())) {
-            previousLastOffered = accommodation.lastOffered;
-          }
-        } catch (error) {
-          console.log('Invalid lastOffered date, will not store for undo:', accommodation.lastOffered);
-        }
-      }
-      
-      console.log('🟢 OFFER DEBUG: Storing previous lastOffered for undo:', previousLastOffered);
-      
-      await updateAccommodationLastOffered({
-        variables: { accommodationId, studentId },
-        refetchQueries: [
-          { query: QUERY_ME },
-          { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
-        ]
-      });
-      
-      // Set recently offered state for undo functionality
-      setRecentlyOffered(prev => ({
-        ...prev,
-        [accommodationId]: {
-          previousLastOffered,
-          timestamp: Date.now()
-        }
-      }));
-      
-      message.success('Accommodation offered successfully!');
-    } catch (error) {
-      console.error('Error offering accommodation:', error);
-      message.error('Failed to offer accommodation');
-    }
+  const handleOfferAccommodation = (accommodationId, studentId) => {
+    const accommodation = selectedStudentData?.user?.accommodations?.find(acc => acc._id === accommodationId);
+    setSelectedAccommodationForModal({ ...accommodation, studentId });
+    setOfferModalVisible(true);
+  };
+
+  const handleViewLogs = (accommodationId) => {
+    const accommodation = selectedStudentData?.user?.accommodations?.find(acc => acc._id === accommodationId);
+    setSelectedAccommodationForModal(accommodation);
+    setLogsModalVisible(true);
   };
 
   const handleUndoOffer = async (accommodationId, studentId) => {
@@ -1292,6 +1249,11 @@ const Dashboard = () => {
         label: `${b.behaviorTitle} (${b.type})`,
       }));
   };
+
+  // Add modal state for accommodation offer/logs
+  const [offerModalVisible, setOfferModalVisible] = useState(false);
+  const [logsModalVisible, setLogsModalVisible] = useState(false);
+  const [selectedAccommodationForModal, setSelectedAccommodationForModal] = useState(null);
 
   return (
     <Layout className="dashboard-layout">
@@ -1857,158 +1819,100 @@ const Dashboard = () => {
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          {selectedStudentData?.user?.accommodations?.map(accommodation => (
-                            <Card 
-                              key={accommodation._id}
-                              style={{ 
-                                borderRadius: '12px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                border: '1px solid #f0f0f0'
-                              }}
-                            >
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Accommodation Name */}
-                                <div>
-                                  <h4 style={{ 
-                                    margin: 0, 
-                                    color: '#222', 
-                                    fontSize: '18px',
-                                    fontWeight: 600,
-                                    textTransform: 'capitalize'
-                                  }}>
-                                    {accommodation.title}
-                                  </h4>
-                                  {accommodation.description && (
-                                    <p style={{ 
-                                      margin: '4px 0 0 0', 
-                                      color: '#666', 
-                                      fontSize: '14px',
-                                      lineHeight: '1.4'
-                                    }}>
-                                      {accommodation.description}
-                                    </p>
-                                  )}
-                                </div>
-                                
-                                {/* Last Offered Time */}
-                                <div style={{ 
-                                  padding: '8px 12px', 
-                                  backgroundColor: '#f8f9fa', 
-                                  borderRadius: '6px',
-                                  border: '1px solid #e9ecef'
-                                }}>
-                                  <span style={{ 
-                                    fontSize: '12px', 
-                                    color: '#666', 
-                                    fontWeight: 500,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                  }}>
-                                    Last Offered:
-                                  </span>
-                                  <div style={{ 
-                                    fontSize: '14px', 
-                                    color: '#333',
-                                    marginTop: '2px'
-                                  }}>
-                                    {accommodation.lastOffered ? (
-                                      (() => {
-                                        console.log('lastOffered value:', accommodation.lastOffered, 'type:', typeof accommodation.lastOffered);
-                                        try {
-                                          let date;
-                                          // Handle different date formats
-                                          if (typeof accommodation.lastOffered === 'string') {
-                                            // If it's a timestamp string, convert to number first
-                                            if (/^\d+$/.test(accommodation.lastOffered)) {
-                                              const timestamp = parseInt(accommodation.lastOffered);
-                                              console.log('Timestamp as number:', timestamp);
-                                              console.log('Date from timestamp:', new Date(timestamp));
-                                              date = new Date(timestamp);
+                          {selectedStudentData?.user?.accommodations?.map(accommodation => {
+                            // Calculate stats
+                            const offeredLog = accommodation?.offeredLog || [];
+                            const requestLog = accommodation?.requestLog || [];
+                            const totalOffers = offeredLog.length;
+                            const acceptedOffers = offeredLog.filter(log => log.accepted).length;
+                            const acceptanceRate = totalOffers > 0 ? ((acceptedOffers / totalOffers) * 100).toFixed(1) : 0;
+                            const totalRequests = requestLog.length;
+
+                            return (
+                              <Card key={accommodation._id} style={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', border: '1px solid #f0f0f0' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                  {/* Accommodation Name */}
+                                  <div>
+                                    <h4 style={{ margin: 0, color: '#222', fontSize: '18px', fontWeight: 600, textTransform: 'capitalize' }}>{accommodation.title}</h4>
+                                    {accommodation.description && (
+                                      <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '14px', lineHeight: '1.4' }}>{accommodation.description}</p>
+                                    )}
+                                  </div>
+                                  {/* Stats Row */}
+                                  <div style={{ display: 'flex', gap: '24px', marginBottom: 4 }}>
+                                    <div><strong>Offers:</strong> {totalOffers}</div>
+                                    <div><strong>Acceptance:</strong> {acceptanceRate}%</div>
+                                    <div><strong>Requests:</strong> {totalRequests}</div>
+                                    <Button size="small" onClick={() => handleViewLogs(accommodation._id)} style={{ marginLeft: 'auto' }}>History</Button>
+                                  </div>
+                                  {/* Last Offered Time */}
+                                  <div style={{ padding: '8px 12px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                                    <span style={{ fontSize: '12px', color: '#666', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Last Offered:</span>
+                                    <div style={{ fontSize: '14px', color: '#333', marginTop: '2px' }}>
+                                      {accommodation.lastOffered ? (
+                                        (() => {
+                                          try {
+                                            let date;
+                                            if (typeof accommodation.lastOffered === 'string') {
+                                              if (/^\d+$/.test(accommodation.lastOffered)) {
+                                                date = new Date(parseInt(accommodation.lastOffered));
+                                              } else {
+                                                date = new Date(accommodation.lastOffered);
+                                              }
+                                            } else if (typeof accommodation.lastOffered === 'number') {
+                                              date = new Date(accommodation.lastOffered);
                                             } else {
                                               date = new Date(accommodation.lastOffered);
                                             }
-                                          } else if (typeof accommodation.lastOffered === 'number') {
-                                            date = new Date(accommodation.lastOffered);
-                                          } else {
-                                            date = new Date(accommodation.lastOffered);
-                                          }
-                                          
-                                          console.log('Parsed date:', date, 'isValid:', !isNaN(date.getTime()));
-                                          if (isNaN(date.getTime())) {
+                                            if (isNaN(date.getTime())) {
+                                              return <span style={{ color: '#999', fontStyle: 'italic' }}>Never offered</span>;
+                                            }
+                                            return (
+                                              <span>
+                                                {date.toLocaleDateString()} at{' '}
+                                                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                              </span>
+                                            );
+                                          } catch (error) {
                                             return <span style={{ color: '#999', fontStyle: 'italic' }}>Never offered</span>;
                                           }
-                                          return (
-                                            <span>
-                                              {date.toLocaleDateString()} at{' '}
-                                              {date.toLocaleTimeString([], { 
-                                                hour: '2-digit', 
-                                                minute: '2-digit' 
-                                              })}
-                                            </span>
-                                          );
-                                        } catch (error) {
-                                          console.error('Error parsing date:', error);
-                                          return <span style={{ color: '#999', fontStyle: 'italic' }}>Never offered</span>;
-                                        }
-                                      })()
-                                    ) : (
-                                      <span style={{ color: '#999', fontStyle: 'italic' }}>
-                                        Never offered
-                                      </span>
+                                        })()
+                                      ) : (
+                                        <span style={{ color: '#999', fontStyle: 'italic' }}>Never offered</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Offer Button and Undo */}
+                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <Button 
+                                      type="primary" 
+                                      size="large"
+                                      style={{ height: '44px', borderRadius: '8px', fontWeight: 600, fontSize: '16px', background: '#722ed1', borderColor: '#722ed1', flex: 1 }}
+                                      onClick={() => handleOfferAccommodation(accommodation._id, selectedStudent._id)}
+                                    >
+                                      Offer Accommodation
+                                    </Button>
+                                    {/* Undo Button - Only show if recently offered */}
+                                    {recentlyOffered[accommodation._id] && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <Button 
+                                          type="default" 
+                                          size="large"
+                                          style={{ height: '44px', borderRadius: '8px', fontWeight: 500, fontSize: '14px', borderColor: '#d9d9d9', color: '#666' }}
+                                          onClick={() => handleUndoOffer(accommodation._id, selectedStudent._id)}
+                                        >
+                                          Undo
+                                        </Button>
+                                        <div style={{ fontSize: '10px', color: '#999', textAlign: 'center' }}>
+                                          {(10 - Math.floor((Date.now() - recentlyOffered[accommodation._id].timestamp) / 1000))}s left
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
-                                
-                                {/* Offer Button */}
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                  <Button 
-                                    type="primary" 
-                                    size="large"
-                                    style={{ 
-                                      height: '44px',
-                                      borderRadius: '8px',
-                                      fontWeight: 600,
-                                      fontSize: '16px',
-                                      background: '#722ed1',
-                                      borderColor: '#722ed1',
-                                      flex: 1
-                                    }}
-                                    onClick={() => handleOfferAccommodation(accommodation._id, selectedStudent._id)}
-                                  >
-                                    Offer Accommodation
-                                  </Button>
-                                  
-                                  {/* Undo Button - Only show if recently offered */}
-                                  {recentlyOffered[accommodation._id] && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                      <Button 
-                                        type="default" 
-                                        size="large"
-                                        style={{ 
-                                          height: '44px',
-                                          borderRadius: '8px',
-                                          fontWeight: 500,
-                                          fontSize: '14px',
-                                          borderColor: '#d9d9d9',
-                                          color: '#666'
-                                        }}
-                                        onClick={() => handleUndoOffer(accommodation._id, selectedStudent._id)}
-                                      >
-                                        Undo
-                                      </Button>
-                                      <div style={{ 
-                                        fontSize: '10px', 
-                                        color: '#999',
-                                        textAlign: 'center'
-                                      }}>
-                                        {(10 - Math.floor((Date.now() - recentlyOffered[accommodation._id].timestamp) / 1000))}s left
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </Card>
-                          ))}
+                              </Card>
+                            );
+                          })}
                         </div>
                       </div>
                     </TabPane>
@@ -2486,6 +2390,19 @@ const Dashboard = () => {
       >
         <DashboardAI student={selectedStudent} />
       </Modal>
+      {/* Modals for offer and logs */}
+      <AccommodationOfferModal
+        visible={offerModalVisible}
+        onCancel={() => setOfferModalVisible(false)}
+        accommodation={selectedAccommodationForModal}
+        studentId={selectedAccommodationForModal?.studentId}
+        username={selectedStudent?.username}
+      />
+      <AccommodationLogsModal
+        visible={logsModalVisible}
+        onCancel={() => setLogsModalVisible(false)}
+        accommodation={selectedAccommodationForModal}
+      />
     </Layout>
   );
 };

@@ -33,6 +33,17 @@ const AccommodationListSchema = new Schema(
     },
     templateId: { type: Schema.Types.ObjectId, ref: "AccommodationList" },
     lastOffered: { type: Date },
+    offeredLog: [
+      {
+        time: { type: Date, default: Date.now },
+        accepted: { type: Boolean }
+      }
+    ],
+    requestLog: [
+      {
+        time: { type: Date, default: Date.now }
+      }
+    ],
   },
   { timestamps: true },
 );
