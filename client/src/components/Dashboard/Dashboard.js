@@ -98,7 +98,7 @@ const Dashboard = () => {
   // Note modal state
   const [showAddNote, setShowAddNote] = useState(false);
   const [noteContent, setNoteContent] = useState('');
-  const [noteType, setNoteType] = useState('general'); // 'general' or behavior ID
+  const [noteType, setNoteType] = useState(undefined); // will be set to first option when modal opens
   
   // Break Settings State
   const [breakSettings, setBreakSettings] = useState({
@@ -702,14 +702,9 @@ const Dashboard = () => {
   // Get available behavior options for notes
   const getAvailableBehaviorOptions = () => {
     if (!selectedStudent) return [];
-    
     // Use detailed student data if available (more up-to-date)
     const studentData = selectedStudentData?.user || selectedStudent;
-    
-    const options = [
-      { value: 'general', label: 'General Note' }
-    ];
-    
+    const options = [];
     // Add frequency behaviors
     (studentData.behaviorFrequencies || []).forEach(freq => {
       options.push({
@@ -717,7 +712,6 @@ const Dashboard = () => {
         label: `${freq.behaviorTitle} (Frequency)`
       });
     });
-    
     // Add duration behaviors
     (studentData.behaviorDurations || []).forEach(dur => {
       options.push({
@@ -725,7 +719,6 @@ const Dashboard = () => {
         label: `${dur.behaviorTitle} (Duration)`
       });
     });
-    
     return options;
   };
 
@@ -1198,16 +1191,17 @@ const Dashboard = () => {
       const noteData = {
         studentId: selectedStudent._id,
         content: noteContent,
-        type: noteType === 'general' ? 'general' : 'behavior',
-        behaviorId: noteType === 'general' ? null : noteType
+        type: noteType === 'select behavior' ? 'select behavior' : 'behavior',
+        behaviorId: noteType === 'select behavior' ? null : noteType
       };
       
       console.log('Adding note:', noteData);
       
       message.success('Note added successfully!');
       setShowAddNote(false);
+      
       setNoteContent('');
-      setNoteType('general');
+      setNoteType('select behavior');
     } catch (error) {
       console.error('Error adding note:', error);
       message.error('Failed to add note');
@@ -1257,6 +1251,15 @@ const Dashboard = () => {
   const [selectedAccommodationForModal, setSelectedAccommodationForModal] = useState(null);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [selectedContractForPDF, setSelectedContractForPDF] = useState(null);
+
+  // When opening Add Note modal, set default noteType to first available option
+  useEffect(() => {
+    if (showAddNote) {
+      const options = getAvailableBehaviorOptions();
+      setNoteType(options.length > 0 ? options[0].value : undefined);
+      setNoteContent('');
+    }
+  }, [showAddNote, selectedStudent, selectedStudentData]);
 
   return (
     <Layout className="dashboard-layout">
@@ -2354,7 +2357,7 @@ const Dashboard = () => {
         onCancel={() => {
           setShowAddNote(false);
           setNoteContent('');
-          setNoteType('general');
+          setNoteType(undefined);
         }}
         okText="Add Note"
         cancelText="Cancel"
@@ -2372,9 +2375,14 @@ const Dashboard = () => {
             value={noteType}
             onChange={setNoteType}
             options={getAvailableBehaviorOptions()}
+            getPopupContainer={() => document.body}
+            dropdownStyle={{ zIndex: 2000 }}
+            autoFocus
+            open={undefined} // Let antd handle open state
+            showSearch
+            filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
           />
         </div>
-        
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
             Note Content:
@@ -2385,6 +2393,7 @@ const Dashboard = () => {
             onChange={(e) => setNoteContent(e.target.value)}
             rows={4}
             style={{ width: '100%' }}
+            autoFocus={!!noteType}
           />
         </div>
       </Modal>

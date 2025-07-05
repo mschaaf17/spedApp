@@ -52,6 +52,7 @@ query Me {
         dailyCounts {
           date
           count
+          note
         }
         count
         behaviorTitle
@@ -413,6 +414,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
         dailyCounts {
           date
           count
+          note
         }
         count
         behaviorTitle
@@ -598,6 +600,7 @@ query User($identifier: String!, $isUsername: Boolean!) {
       dailyCounts {
         date
         count
+        note
       }
     }
     behaviorDurations {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'; 
-import { Button, Space, Table, Select } from 'antd';
+import { Button, Space, Table, Select, Modal } from 'antd';
 import { useQuery } from '@apollo/client';
 import { QUERY_ME, QUERY_STUDENT_LIST } from '../../utils/queries';
 import SearchIcon from '@mui/icons-material/Search';
@@ -22,6 +22,8 @@ const StudentTable = ({placeholder, isStudentAdded, getAllStudents, getMyStudent
   const [filteredInfo, setFilteredInfo] = useState({});
   const [sortedInfo, setSortedInfo] = useState({});
   const {selectCharts} = useSelectedCharts();
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [studentToRemove, setStudentToRemove] = useState(null);
 
   const handleViewGraphClick = () => {
     setSelectedForm('3');
@@ -176,7 +178,8 @@ useEffect(()=> {
             <DeleteForeverIcon 
               onClick={(e) => {
                 e.stopPropagation(); // Prevent row click event
-                removeStudent(record._id);
+                setStudentToRemove(record._id);
+                setConfirmModalVisible(true);
               }} 
               className="deleteIcon"
             />
@@ -262,6 +265,24 @@ useEffect(()=> {
           rowKey="_id"
           />
       </div>
+      <Modal
+        title="Confirm Removal"
+        open={confirmModalVisible}
+        onOk={() => {
+          if (studentToRemove) removeStudent(studentToRemove);
+          setConfirmModalVisible(false);
+          setStudentToRemove(null);
+        }}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setStudentToRemove(null);
+        }}
+        okText="Yes, Remove"
+        okType="danger"
+        cancelText="Cancel"
+      >
+        Are you sure you want to remove this student?
+      </Modal>
     </>
   );
 };

@@ -338,9 +338,21 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline, onShow
                 <b>Most frequent time:</b> {formatHour(mostFrequentHour[0])} ({mostFrequentHour[1]} times)
       </div>
             )}
-             {true && (
+             {!hasIntervention ? (
+              <Alert
+                message="Please add an intervention to this student before using AI suggestions."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            ) : notification && (
               <>
-                <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+                <Alert
+                  message="Change your intervention: 3 consecutive days above aimline"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
                 <Button type="primary" onClick={onShowAISuggestions}>
                   Get AI Intervention Suggestions
                 </Button>
@@ -350,7 +362,30 @@ const FrequencyCharts = ({ frequencies = [], interventions = [], aimline, onShow
               <XAxis dataKey="date" />
               <YAxis domain={[0, dataMax => Math.ceil(dataMax * 1.1)]} />
               <YAxis yAxisId="right" orientation="right" hide={true} />
-              <Tooltip />
+              <Tooltip 
+                formatter={(value, name, props) => {
+                  if (name === 'count') {
+                    let note = '';
+                    if (props && props.payload && props.payload.note) {
+                      note = props.payload.note;
+                    }
+                    if (note) {
+                      return [
+                        `${value} (Note: ${note})`,
+                        'count'
+                      ];
+                    }
+                    return [value, 'count'];
+                  }
+                  return [value, name];
+                }}
+                labelFormatter={(label, payload) => {
+                  if (payload && payload.length && payload[0].payload && payload[0].payload.note) {
+                    return `${label} - Note: ${payload[0].payload.note}`;
+                  }
+                  return label;
+                }}
+              />
               
               <Line
                 type="monotone"

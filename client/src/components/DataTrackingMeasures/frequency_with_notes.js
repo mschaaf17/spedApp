@@ -48,12 +48,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   const [selectedBehaviorTitleForDelete, setSelectedBehaviorTitleForDelete] = useState('');
   const [behaviorCounts, setBehaviorCounts] = useState({});
   const [noteStates, setNoteStates] = useState({});
-  
-  // Note modal state
-  const [noteModalVisible, setNoteModalVisible] = useState(false);
-  const [currentBehavior, setCurrentBehavior] = useState(null);
-  const [noteText, setNoteText] = useState('');
-  const [selectedBehaviorForNote, setSelectedBehaviorForNote] = useState(null);
 
   const [addDataMeasureToStudent, { loading: addLoading }] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   const [removeDataMeasureFromStudent, { loading: removeLoading }] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
@@ -131,86 +125,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
         setSelectedBehaviorTitles([...selectedBehaviorTitles, behaviorTitle]);
       }
     }
-  };
-
-  // Note functionality
-  const handleNoteChange = (frequencyId, note) => {
-    setNoteStates(prev => ({
-      ...prev,
-      [frequencyId]: note
-    }));
-  };
-
-  const openNoteModal = (behavior) => {
-    setCurrentBehavior(behavior);
-    setNoteText(noteStates[behavior._id] || '');
-    setNoteModalVisible(true);
-  };
-
-  const handleSaveNote = async () => {
-    if (!currentBehavior) return;
-    
-    try {
-      const currentDate = new Date().toISOString();
-      await updateFrequencyNote({
-        variables: { 
-          frequencyId: currentBehavior._id, 
-          studentId: data.user._id, 
-          date: currentDate, 
-          note: noteText 
-        },
-      });
-      await refetch();
-      
-      // Update local state
-      setNoteStates(prev => ({
-        ...prev,
-        [currentBehavior._id]: noteText
-      }));
-      
-      setNoteModalVisible(false);
-      setCurrentBehavior(null);
-      setNoteText('');
-      message.success('Note saved successfully');
-    } catch (error) {
-      console.error('Error saving note:', error);
-      message.error('Failed to save note');
-    }
-  };
-
-  const handleClearNote = async () => {
-    if (!currentBehavior) return;
-    
-    try {
-      const currentDate = new Date().toISOString();
-      await updateFrequencyNote({
-        variables: { 
-          frequencyId: currentBehavior._id, 
-          studentId: data.user._id, 
-          date: currentDate, 
-          note: null 
-        },
-      });
-      await refetch();
-      
-      // Update local state
-      setNoteStates(prev => ({
-        ...prev,
-        [currentBehavior._id]: ''
-      }));
-      
-      setNoteText('');
-      message.success('Note cleared successfully');
-    } catch (error) {
-      console.error('Error clearing note:', error);
-      message.error('Failed to clear note');
-    }
-  };
-
-  const handleCancelNote = () => {
-    setNoteModalVisible(false);
-    setCurrentBehavior(null);
-    setNoteText('');
   };
 
   const handleCancelClickForExitingDeleteMode = () => {
@@ -422,49 +336,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                               <span style={{ fontWeight: 700, fontSize: 20, color: '#0050b3', marginRight: 8 }}>{behavior.behaviorTitle}</span>
                               <span style={{ fontWeight: 700, fontSize: 20, color: '#13c2c2' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
                             </div>
-                            
-                            {/* Notes Icon */}
-                            <EditIcon
-                              style={{
-                                fontSize: 20,
-                                color: noteStates[behavior._id] ? '#52c41a' : '#8c8c8c',
-                                cursor: 'pointer',
-                                marginLeft: 12
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openNoteModal(behavior);
-                              }}
-                            />
-                            
-                            {showRedXIcons && (
-                              <span
-                                className='delete-badge'
-                                style={{
-                                  position: 'absolute',
-                                  top: 6,
-                                  right: 6,
-                                  background: '#ff4d4f',
-                                  color: 'white',
-                                  borderRadius: '50%',
-                                  width: 24,
-                                  height: 24,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 16,
-                                  cursor: 'pointer',
-                                  boxShadow: '0 2px 8px rgba(255,77,79,0.15)',
-                                  zIndex: 2
-                                }}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                                }}
-                              >
-                                &times;
-                              </span>
-                            )}
                           </Button>
                         </div>
                       );
@@ -486,50 +357,6 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                 onCancel={() => setShowDeleteConfirmation(false)}
               >
                 <p>Click "OK" to confirm deletion.</p>
-              </Modal>
-
-              {/* Note Modal */}
-              <Modal
-                title={`Add Note: ${currentBehavior?.behaviorTitle}`}
-                visible={noteModalVisible}
-                onOk={handleSaveNote}
-                onCancel={handleCancelNote}
-                okText="Save Note"
-                cancelText="Cancel"
-                width={600}
-                footer={[
-                  <Button key="clear" onClick={handleClearNote} disabled={!noteText}>
-                    Clear Note
-                  </Button>,
-                  <Button key="cancel" onClick={handleCancelNote}>
-                    Cancel
-                  </Button>,
-                  <Button key="save" type="primary" onClick={handleSaveNote} disabled={!noteText}>
-                    Save Note
-                  </Button>
-                ]}
-              >
-                <div style={{ marginBottom: 16 }}>
-                  <p style={{ color: '#666', marginBottom: 8 }}>
-                    Add a note about this behavior for today:
-                  </p>
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Enter your note here..."
-                    style={{
-                      width: '100%',
-                      minHeight: 120,
-                      padding: '12px',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: 6,
-                      fontSize: 14,
-                      resize: 'vertical',
-                      fontFamily: 'inherit'
-                    }}
-                    autoFocus
-                  />
-                </div>
               </Modal>
             </div>
           )}
