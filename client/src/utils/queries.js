@@ -734,6 +734,10 @@ query Students {
     studentSchoolId
     username
     _id
+    contractDataMeasures {
+      _id
+      name
+    }
   }
 }
 `;

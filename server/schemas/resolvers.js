@@ -2016,7 +2016,7 @@ const resolvers = {
 
         // Check if this contract measure is assigned to any students
         const studentsWithMeasure = await User.find({
-          contractDataMeasures: contractMeasureId,
+          contractDataMeasures: mongoose.Types.ObjectId(contractMeasureId),
         });
 
         if (studentsWithMeasure.length > 0) {

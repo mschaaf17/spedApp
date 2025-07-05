@@ -1,18 +1,39 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Popconfirm } from 'antd';
-import { useMutation } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { ADD_CONTRACT_MEASURE, DELETE_CONTRACT_MEASURE } from '../../../utils/mutations';
+import { QUERY_STUDENT_LIST } from '../../../utils/queries';
 
 const { Option } = Select;
 
 const ContractMeasuresAdminTable = ({ contractMeasures = [], refetchContractMeasures, contracts = [] }) => {
   const [deleteContractMeasure] = useMutation(DELETE_CONTRACT_MEASURE);
+  
+  // Query all students to check if they have contract measures assigned
+  const { data: studentsData } = useQuery(QUERY_STUDENT_LIST);
+  const allStudents = studentsData?.students || [];
 
-  // Helper: check if a measure is in use
+  // Helper: check if a measure is in use (either in contracts or assigned to students)
   const isMeasureInUse = (measureId) => {
-    return contracts && contracts.some(contract =>
+    // Debug: print all students and their contractDataMeasures
+    console.log('DEBUG: allStudents', allStudents);
+    allStudents.forEach(student => {
+      console.log('DEBUG: student', student._id, 'contractDataMeasures:', student.contractDataMeasures);
+    });
+
+    // Check if used in any contracts
+    const usedInContracts = contracts && contracts.some(contract =>
       contract.contractMeasures && contract.contractMeasures.some(m => m._id === measureId)
     );
+    
+    // Check if assigned to any student's contractDataMeasures array (handle both ObjectId and populated object)
+    const assignedToStudents = allStudents.some(student =>
+      student.contractDataMeasures && student.contractDataMeasures.some(m =>
+        (typeof m === 'object' ? m._id : m) === measureId
+      )
+    );
+    
+    return usedInContracts || assignedToStudents;
   };
 
   const handleDelete = async (record) => {
