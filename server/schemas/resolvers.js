@@ -2324,6 +2324,7 @@ const resolvers = {
       }
       const logTime = time ? new Date(time) : new Date();
       accommodation.offeredLog.push({ time: logTime, accepted });
+      accommodation.lastOffered = logTime; // logTime is the time you push to offeredLog
       await accommodation.save();
       return accommodation;
     },
