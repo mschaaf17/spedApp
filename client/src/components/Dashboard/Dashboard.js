@@ -65,6 +65,21 @@ function getInterventionColor(intervention) {
   return interventionColors[Math.abs(hash) % interventionColors.length];
 }
 
+function stripTypename(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(stripTypename);
+  } else if (obj && typeof obj === 'object') {
+    const newObj = {};
+    for (const key in obj) {
+      if (key !== '__typename') {
+        newObj[key] = stripTypename(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 const Dashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
@@ -938,7 +953,7 @@ const Dashboard = () => {
         await updateBreakSettings({
           variables: {
             studentId: selectedStudent._id,
-            settings: settingsToSend,
+            settings: stripTypename(settingsToSend)
           },
           update: (cache, { data }) => {
             // Update the cache for the admin's view (QUERY_ME)
@@ -1024,7 +1039,7 @@ const Dashboard = () => {
       await updateBreakSettings({
         variables: {
           studentId: selectedStudent._id,
-          settings: settingsToSend,
+          settings: stripTypename(settingsToSend)
         },
         update: (cache, { data }) => {
           console.log('Cache update data:', data);
@@ -1261,6 +1276,41 @@ const Dashboard = () => {
     }
   }, [showAddNote, selectedStudent, selectedStudentData]);
 
+  useEffect(() => {
+    if (selectedStudentData?.user) {
+      const hasBreaks = selectedStudentData.user.accommodations?.some(a => a.title.toLowerCase().includes('break')) ||
+        selectedStudentData.user.interventions?.some(i => i.title.toLowerCase().includes('break'));
+      if (hasBreaks && !selectedStudentData.user.breakSettings?.isEnabled) {
+        // Update breakSettings in state and backend
+        setBreakSettings(prev => ({ ...prev, isEnabled: true }));
+        // Optionally, update backend if needed
+        updateBreakSettings({
+          variables: {
+            studentId: selectedStudent._id,
+            settings: stripTypename(breakSettings)
+          },
+          refetchQueries: [
+            { query: QUERY_ME },
+            { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+          ]
+        });
+      }
+      if (!hasBreaks && selectedStudentData.user.breakSettings?.isEnabled) {
+        setBreakSettings(prev => ({ ...prev, isEnabled: false }));
+        updateBreakSettings({
+          variables: {
+            studentId: selectedStudent._id,
+            settings: stripTypename({ ...breakSettings, isEnabled: false })
+          },
+          refetchQueries: [
+            { query: QUERY_ME },
+            { query: QUERY_USER, variables: { identifier: selectedStudent.username, isUsername: true } }
+          ]
+        });
+      }
+    }
+  }, [selectedStudentData, selectedStudent]);
+
   return (
     <Layout className="dashboard-layout">
       <div className="dashboard-content">
@@ -1437,6 +1487,25 @@ const Dashboard = () => {
                         dataSource={selectedStudentData?.user?.accommodations || []}
                         pagination={false}
                         rowKey="_id"
+                        locale={{
+                          emptyText: (
+                            <div style={{ textAlign: 'center', padding: '24px' }}>
+                              <p style={{ fontSize: '16px', color: '#666', marginBottom: '8px' }}>
+                                {selectedStudent.firstName} doesn't have any accommodations assigned.
+                              </p>
+                              <p style={{ fontSize: '14px', color: '#999', marginBottom: '16px' }}>
+                                Please add an accommodation using the button above, or navigate to Admin Settings to add new accommodation templates.
+                              </p>
+                              <Button 
+                                type="primary" 
+                                onClick={() => navigate('/admin-settings')}
+                                style={{ marginRight: '8px' }}
+                              >
+                                Go to Admin Settings
+                              </Button>
+                            </div>
+                          )
+                        }}
                       />
                       
                       {/* Accommodation Charts */}
