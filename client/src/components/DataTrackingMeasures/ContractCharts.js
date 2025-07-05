@@ -136,46 +136,31 @@ const ContractCharts = ({ contract }) => {
     if (!contract || !contract.chart) return { totalPoints: 0, maxPossiblePoints: 0, percentage: 0, completedDays: 0, totalDays: 0 };
 
     let totalPoints = 0;
-    let completedDays = 0;
-    let totalDays = 0;
+    const behaviors = contract.rows || [];
+    const timeSlots = contract.times || [];
+    const maxPointsPerSlot = contract.measureType === 'smileys' ? 3 : 5;
+    const totalDays = contract.chart.length;
 
-    // Get all unique dates
-    const dates = [...new Set(contract.chart.map(day => day.date))].sort();
-    
-    dates.forEach(date => {
-      const dayEntry = contract.chart.find(day => day.date === date);
-      if (dayEntry?.entries && dayEntry.entries.length > 0) {
-        const dayPoints = dayEntry.entries.reduce((sum, entry) => {
-          return sum + smileyToNumber(entry.value);
-        }, 0);
-        
-        totalPoints += dayPoints;
-        completedDays++;
-      }
-      totalDays++;
+    contract.chart.forEach(dayEntry => {
+      behaviors.forEach(behavior => {
+        timeSlots.forEach(time => {
+          // Find the entry for this behavior and time
+          const entry = dayEntry.entries?.find(e => e.row === behavior && e.time === time);
+          if (entry) {
+            totalPoints += smileyToNumber(entry.value);
+          }
+        });
+      });
     });
 
-    // Calculate max possible points based on contract type and times
-    let maxPossiblePoints = 0;
-    if (contract.type === 'weekly') {
-      // For weekly contracts, count the number of days (Monday-Friday)
-      const weekDays = contract.times.filter(time => 
-        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time)
-      );
-      maxPossiblePoints = weekDays.length * completedDays * (contract.measureType === 'smileys' ? 3 : 5);
-    } else {
-      // For daily contracts, count the number of time slots per day
-      const timeSlots = contract.times.filter(Boolean);
-      maxPossiblePoints = timeSlots.length * completedDays * (contract.measureType === 'smileys' ? 3 : 5);
-    }
-
+    const maxPossiblePoints = totalDays * behaviors.length * timeSlots.length * maxPointsPerSlot;
     const percentage = maxPossiblePoints > 0 ? Math.round((totalPoints / maxPossiblePoints) * 100) : 0;
 
     return {
       totalPoints,
       maxPossiblePoints,
       percentage,
-      completedDays,
+      completedDays: totalDays,
       totalDays
     };
   };

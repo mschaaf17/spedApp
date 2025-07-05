@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, message, Space, Typography, Table, Select, Modal, Form, Input } from 'antd';
+import { Button, Card, message, Space, Typography, Table, Select, Modal, Form, Input, Alert, Tooltip } from 'antd';
 import { useMutation } from '@apollo/client';
 import { UPDATE_CONTRACT_ENTRY } from '../../utils/mutations';
-import { FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons';
 import ContractCharts from './ContractCharts';
 
 const { Title, Text } = Typography;
@@ -13,11 +13,18 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
   const [selectedContract, setSelectedContract] = useState(null);
   const [noteModal, setNoteModal] = useState({ visible: false, contractId: null, date: null, time: null, value: null, row: null });
   const [noteForm] = Form.useForm();
+  const [editCell, setEditCell] = useState({}); // { [row_time]: true }
+  const [overrideCell, setOverrideCell] = useState({}); // { [row_time]: true }
 
   const [updateContractEntry] = useMutation(UPDATE_CONTRACT_ENTRY);
 
   // Filter active contracts
   const activeContracts = contracts?.filter(contract => contract.isActive) || [];
+
+  // Helper: get today's day name
+  const today = new Date();
+  const todayName = today.toLocaleDateString(undefined, { weekday: 'long' });
+  const todayISO = today.toISOString().split('T')[0];
 
   const handleUpdateEntry = async (contractId, date, time, value, note = '', row) => {
     try {
@@ -35,6 +42,8 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
       });
       message.success('Contract entry updated successfully');
       if (onRefetch) onRefetch();
+      setEditCell(prev => ({ ...prev, [`${row}_${time}`]: false }));
+      setOverrideCell(prev => ({ ...prev, [`${row}_${time}`]: false }));
     } catch (error) {
       console.error('Error updating contract entry:', error);
       message.error('Failed to update contract entry');
@@ -77,13 +86,15 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
   };
 
   const renderContractTable = (contract) => {
-    const today = new Date().toISOString().split('T')[0];
-    const dayEntry = contract.chart.find(day => day.date === today);
-
-    // For weekly contracts, filter out the time from columns
+    const dayEntry = contract.chart.find(day => day.date === todayISO);
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const columnTimes = contract.type === 'weekly' 
-      ? contract.times.filter(time => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(time))
+      ? contract.times.filter(time => allDays.includes(time))
       : contract.times.filter(Boolean);
+    const scheduledDays = contract.type === 'weekly'
+      ? contract.times.filter(time => allDays.includes(time))
+      : [];
+    const isScheduledDay = scheduledDays.includes(todayName) || contract.type !== 'weekly';
 
     const columns = [
       {
@@ -99,53 +110,95 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
         dataIndex: time,
         width: 120,
         render: (_, record) => {
+          const cellKey = `${record.behavior}_${time}`;
+          // Find entry for this cell (today)
           const timeEntry = dayEntry?.entries.find(entry => entry.time === time && entry.row === record.behavior);
           const value = timeEntry?.value || '';
-          
+          const note = timeEntry?.note || '';
+          // Cell logic
+          const isToday = isScheduledDay && time === todayName;
+          const isEditable = (isToday && !value) || editCell[cellKey] || overrideCell[cellKey];
+          const isDisabled = !isEditable;
+
           return (
-            <div style={{ textAlign: 'center' }}>
-              {contract.measureType === 'smileys' ? (
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {isEditable ? (
                 <Select
                   value={value}
                   onChange={(newValue) => {
-                    if (newValue !== 'smiley') {
-                      openNoteModal(contract._id, today, time, newValue, record.behavior);
+                    if (newValue !== 'smiley' && contract.measureType === 'smileys') {
+                      openNoteModal(contract._id, todayISO, time, newValue, record.behavior);
+                    } else if (newValue !== '5' && contract.measureType !== 'smileys') {
+                      openNoteModal(contract._id, todayISO, time, newValue, record.behavior);
                     } else {
-                      handleUpdateEntry(contract._id, today, time, newValue, '', record.behavior);
+                      handleUpdateEntry(contract._id, todayISO, time, newValue, '', record.behavior);
                     }
                   }}
                   style={{ width: '100%' }}
                   placeholder="-"
+                  disabled={false}
                 >
                   <Option value="">-</Option>
-                  <Option value="smiley">😊</Option>
-                  <Option value="neutral">😐</Option>
-                  <Option value="sad">😞</Option>
+                  {contract.measureType === 'smileys' ? (
+                    <>
+                      <Option value="smiley">😊</Option>
+                      <Option value="neutral">😐</Option>
+                      <Option value="sad">😞</Option>
+                    </>
+                  ) : (
+                    <>
+                      <Option value="1">1</Option>
+                      <Option value="2">2</Option>
+                      <Option value="3">3</Option>
+                      <Option value="4">4</Option>
+                      <Option value="5">5</Option>
+                    </>
+                  )}
                 </Select>
               ) : (
-                <Select
-                  value={value}
-                  onChange={(newValue) => {
-                    if (newValue !== '5') {
-                      openNoteModal(contract._id, today, time, newValue, record.behavior);
-                    } else {
-                      handleUpdateEntry(contract._id, today, time, newValue, '', record.behavior);
-                    }
-                  }}
-                  style={{ width: '100%' }}
-                  placeholder="-"
-                >
-                  <Option value="">-</Option>
-                  <Option value="1">1</Option>
-                  <Option value="2">2</Option>
-                  <Option value="3">3</Option>
-                  <Option value="4">4</Option>
-                  <Option value="5">5</Option>
-                </Select>
+                <>
+                  <div style={{ minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 18 }}>{
+                      contract.measureType === 'smileys'
+                        ? value === 'smiley' ? '😊' : value === 'neutral' ? '😐' : value === 'sad' ? '😞' : '-'
+                        : value || '-'
+                    }</span>
+                    {value && (
+                      <Tooltip title="Edit score">
+                        <Button
+                          icon={<EditOutlined />}
+                          size="small"
+                          style={{ marginLeft: 4 }}
+                          onClick={() => setEditCell(prev => ({ ...prev, [cellKey]: true }))}
+                        />
+                      </Tooltip>
+                    )}
+                  </div>
+                  {!value && !overrideCell[cellKey] && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => setOverrideCell(prev => ({ ...prev, [cellKey]: true }))}
+                      style={{ padding: 0, fontSize: 12 }}
+                    >
+                      Override
+                    </Button>
+                  )}
+                </>
               )}
-              {timeEntry?.note && (
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                  📝 {timeEntry.note}
+              {value && (
+                <Tooltip title={note ? 'Edit note' : 'Add note'}>
+                  <Button
+                    icon={<FileAddOutlined />}
+                    size="small"
+                    style={{ marginTop: 4 }}
+                    onClick={() => openNoteModal(contract._id, todayISO, time, value, record.behavior)}
+                  />
+                </Tooltip>
+              )}
+              {note && (
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '2px', maxWidth: 80, wordBreak: 'break-word' }}>
+                  📝 {note}
                 </div>
               )}
             </div>
@@ -157,16 +210,6 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
     const dataSource = contract.rows.map(row => ({
       key: row,
       behavior: row,
-      ...Object.fromEntries(
-        columnTimes.map(time => [
-          time,
-          {
-            time,
-            value: dayEntry?.entries.find(entry => entry.time === time && entry.row === row)?.value || '',
-            note: dayEntry?.entries.find(entry => entry.time === time && entry.row === row)?.note || '',
-          }
-        ])
-      ),
     }));
 
     return (
@@ -229,6 +272,8 @@ const ContractTracking = ({ student, contracts, refetchTrigger, onRefetch }) => 
           onChange={(contractId) => {
             const contract = activeContracts.find(c => c._id === contractId);
             setSelectedContract(contract);
+            setEditCell({});
+            setOverrideCell({});
           }}
         >
           {activeContracts.map(contract => (

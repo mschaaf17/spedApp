@@ -44,6 +44,7 @@ import BreakConfigForm from '../DataTrackingMeasures/BreakConfigForm';
 import DashboardAI from '../../pages/Dashboard/index';
 import AccommodationOfferModal from '../Modals/AccommodationOfferModal';
 import AccommodationLogsModal from '../AccommodationLogs/AccommodationLogsModal';
+import ContractPDFModal from '../Contracts/ContractPDFModal';
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
@@ -1254,6 +1255,8 @@ const Dashboard = () => {
   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [logsModalVisible, setLogsModalVisible] = useState(false);
   const [selectedAccommodationForModal, setSelectedAccommodationForModal] = useState(null);
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [selectedContractForPDF, setSelectedContractForPDF] = useState(null);
 
   return (
     <Layout className="dashboard-layout">
@@ -1653,7 +1656,12 @@ const Dashboard = () => {
                                 { title: 'Status', dataIndex: 'isActive', key: 'isActive', render: (active) => <span style={{ color: active ? 'green' : 'red' }}>{active ? 'active' : 'inactive'}</span> },
                                 { title: 'Measure Type', dataIndex: 'measureType', key: 'measureType' },
                                 { title: 'Data Measure(s)', dataIndex: 'contractMeasures', key: 'contractMeasures', render: (measures) => measures && measures.length ? measures.map(m => m.name).join(', ') : '—' },
-                                { title: 'Action', key: 'action', render: (_, record) => <Button danger size="small" onClick={() => handleRemoveContract(record._id)}>remove</Button> },
+                                { title: 'Action', key: 'action', render: (_, record) => (
+                                  <span>
+                                    <Button size="small" onClick={() => { setSelectedContractForPDF(record); setPdfModalVisible(true); }}>View/Export</Button>
+                                    <Button danger size="small" style={{ marginLeft: 8 }} onClick={() => handleRemoveContract(record._id)}>remove</Button>
+                                  </span>
+                                ) },
                               ]}
                               dataSource={selectedStudentData?.user?.contracts || []}
                               rowKey="_id"
@@ -2402,6 +2410,13 @@ const Dashboard = () => {
         visible={logsModalVisible}
         onCancel={() => setLogsModalVisible(false)}
         accommodation={selectedAccommodationForModal}
+      />
+      <ContractPDFModal
+        visible={pdfModalVisible}
+        onClose={() => setPdfModalVisible(false)}
+        contract={selectedContractForPDF}
+        student={selectedStudent}
+        teacher={meData?.me}
       />
     </Layout>
   );
