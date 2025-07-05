@@ -137,6 +137,15 @@ query Me {
         endTime
         duration
       }
+      contractDataMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+        createdAt
+        updatedAt
+      }
       contracts {
       _id
       title
@@ -183,19 +192,6 @@ query Me {
       isActive
       createdAt
       updatedAt
-    }
-    contractDataMeasures {
-      _id
-      name
-      description
-      category
-      isActive
-      createdBy {
-        _id
-        username
-        firstName
-        lastName
-      }
     }
     }
     accommodations {
@@ -303,6 +299,15 @@ query Me {
       endTime
       duration
     }
+    contractDataMeasures {
+      _id
+      name
+      description
+      category
+      isActive
+      createdAt
+      updatedAt
+    }
     contracts {
       _id
       title
@@ -349,19 +354,6 @@ query Me {
       isActive
       createdAt
       updatedAt
-    }
-    contractDataMeasures {
-      _id
-      name
-      description
-      category
-      isActive
-      createdBy {
-        _id
-        username
-        firstName
-        lastName
-      }
     }
   }
 }
@@ -512,6 +504,15 @@ query User($identifier: String!, $isUsername: Boolean!) {
         startTime
         endTime
         duration
+      }
+      contractDataMeasures {
+        _id
+        name
+        description
+        category
+        isActive
+        createdAt
+        updatedAt
       }
       contracts {
         _id
@@ -664,6 +665,15 @@ query User($identifier: String!, $isUsername: Boolean!) {
       endTime
       duration
     }
+    contractDataMeasures {
+      _id
+      name
+      description
+      category
+      isActive
+      createdAt
+      updatedAt
+    }
     contracts {
       _id
       title
@@ -710,19 +720,6 @@ query User($identifier: String!, $isUsername: Boolean!) {
       isActive
       createdAt
       updatedAt
-    }
-    contractDataMeasures {
-      _id
-      name
-      description
-      category
-      isActive
-      createdBy {
-        _id
-        username
-        firstName
-        lastName
-      }
     }
   }
 }

@@ -298,24 +298,39 @@ const DurationCharts = ({ durations = [], interventions = [], onShowAISuggestion
           .sort((a, b) => b[1] - a[1])[0];
 
         // 8. Create pie chart data (duration vs school hours)
-        const schoolHoursMinutes = 6 * 60; // 6 hours = 360 minutes
+        const dailyTotals = {};
+        (chartDataWithInterventions || []).forEach(entry => {
+          const date = entry.date; // e.g., "2025-06-10"
+          const totalForDay = (entry.sessions || []).reduce((sum, session) => sum + (session.duration || 0), 0);
+          if (!isNaN(totalForDay)) {
+            dailyTotals[date] = (dailyTotals[date] || 0) + totalForDay;
+          }
+        });
+
+        // Use filledChartData (from fillMissingDatesWithZeros) which has all days in the range
+        const totalDurationAllDays = filledChartData.reduce((sum, d) => sum + (d.minutes / 60), 0); // convert seconds to minutes
+        const daysInRange = filledChartData.length;
+        const avgDailyDuration = daysInRange > 0 ? totalDurationAllDays / daysInRange : 0;
+
+        // 3. Pie chart data
+        const schoolHoursMinutes = 6 * 60;
         const pieChartData = [
           {
             name: 'Duration Time',
-            value: totalDurationMinutes,
+            value: avgDailyDuration,
             color: '#8884d8',
             key: `${duration._id}-duration`
           },
           {
             name: 'Remaining School Time',
-            value: Math.max(0, schoolHoursMinutes - totalDurationMinutes),
+            value: Math.max(0, schoolHoursMinutes - avgDailyDuration),
             color: '#82ca9d',
             key: `${duration._id}-remaining`
           }
         ];
 
         // Calculate percentage of school day spent on behavior
-        const percentageOfSchoolDay = ((totalDurationMinutes / schoolHoursMinutes) * 100).toFixed(1);
+        const percentageOfSchoolDay = ((avgDailyDuration / schoolHoursMinutes) * 100).toFixed(1);
 
         // Format last start time
         const formatLastStartTime = (date) => {
@@ -378,9 +393,21 @@ const DurationCharts = ({ durations = [], interventions = [], onShowAISuggestion
             </div>
 
             {/* Intervention Alert */}
-            {notification && (
+            {!hasIntervention ? (
+              <Alert
+                message="Please add an intervention to this student before using AI suggestions."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            ) : notification && (
               <>
-                <Alert message="Change your intervention: 3 consecutive days above aimline" type="warning" showIcon style={{ marginBottom: 16 }} />
+                <Alert
+                  message="Change your intervention: 3 consecutive days above aimline"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
                 <Button type="primary" onClick={onShowAISuggestions}>
                   Get AI Intervention Suggestions
                 </Button>

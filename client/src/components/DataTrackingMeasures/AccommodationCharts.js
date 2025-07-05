@@ -327,10 +327,39 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
     };
   };
 
+  // Compute per-accommodation stats for analytics and chart
+  const computeAccommodationStats = () => {
+    if (!accommodations || accommodations.length === 0) return [];
+    return accommodations.map(acc => {
+      const offeredLog = acc.offeredLog || [];
+      const requestLog = acc.requestLog || [];
+      const totalOffers = offeredLog.length;
+      const acceptedOffers = offeredLog.filter(log => log.accepted).length;
+      const acceptanceRate = totalOffers > 0 ? ((acceptedOffers / totalOffers) * 100).toFixed(1) : 0;
+      const totalRequests = requestLog.length;
+      return {
+        title: acc.title,
+        totalOffers,
+        acceptedOffers,
+        acceptanceRate: Number(acceptanceRate),
+        totalRequests,
+      };
+    });
+  };
+
   const { assignmentData, lastOfferedData } = processAccommodationData();
   const distributionData = processDistributionData();
   const timeDistributionData = processTimeDistributionData();
   const stats = calculateStats();
+  const accommodationStats = computeAccommodationStats();
+
+  // Add Usage Stats chart data
+  const usageStatsChartData = accommodationStats.map(stat => ({
+    title: stat.title,
+    Offers: stat.totalOffers,
+    Accepted: stat.acceptedOffers,
+    Requests: stat.totalRequests,
+  }));
 
   // Color palette for charts
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#00ff00', '#0000ff'];
@@ -393,6 +422,21 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
             <Tooltip />
             <Legend />
             <Bar dataKey="count" fill="#82ca9d" name="Times Assigned" />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    } else if (chartType === 'usageStats') {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={usageStatsChartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="title" angle={-45} textAnchor="end" height={80} />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="Offers" fill="#8884d8" name="Total Offers" />
+            <Bar dataKey="Accepted" fill="#52c41a" name="Accepted" />
+            <Bar dataKey="Requests" fill="#722ed1" name="Student Requests" />
           </BarChart>
         </ResponsiveContainer>
       );
@@ -470,16 +514,35 @@ const AccommodationCharts = ({ accommodations = [], studentData }) => {
             </Col>
           </Row>
           
+          {/* New: Per-accommodation stats summary table */}
+          {accommodationStats.length > 0 && (
+            <Table
+              dataSource={accommodationStats}
+              columns={[
+                { title: 'Accommodation', dataIndex: 'title', key: 'title', render: text => <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{text}</span> },
+                { title: 'Total Offers', dataIndex: 'totalOffers', key: 'totalOffers', render: v => <span style={{ color: '#8884d8' }}>{v}</span> },
+                { title: 'Accepted', dataIndex: 'acceptedOffers', key: 'acceptedOffers', render: v => <span style={{ color: '#52c41a' }}>{v}</span> },
+                { title: 'Acceptance Rate', dataIndex: 'acceptanceRate', key: 'acceptanceRate', render: v => <span style={{ color: '#52c41a' }}>{v}%</span> },
+                { title: 'Student Requests', dataIndex: 'totalRequests', key: 'totalRequests', render: v => <span style={{ color: '#722ed1' }}>{v}</span> },
+              ]}
+              pagination={false}
+              size="small"
+              style={{ marginBottom: 24, marginTop: 8 }}
+              rowKey={row => row.title}
+            />
+          )}
+          
           <div style={{ marginBottom: 16 }}>
             <Select
               value={chartType}
               onChange={setChartType}
-              style={{ width: 200 }}
+              style={{ width: 220 }}
             >
               <Option value="assignment">Assignment Trends</Option>
               <Option value="lastOffered">Last Offered Trends</Option>
               <Option value="distribution">Distribution</Option>
               <Option value="timeDistribution">Time Distribution</Option>
+              <Option value="usageStats">Usage Stats</Option>
             </Select>
           </div>
         </div>

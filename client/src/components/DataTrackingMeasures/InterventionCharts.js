@@ -101,7 +101,19 @@ const InterventionCharts = ({ interventions = [], studentData }) => {
     }
 
     const totalInterventions = interventions.length;
-    const uniqueBehaviors = new Set(interventions.map(i => i.behaviorTitle || i.behaviorId?.behaviorTitle)).size;
+    const allBehaviors = [];
+    interventions.forEach(i => {
+      // For contracts, behaviorTitle may be a comma-separated string
+      let titles = [];
+      if (i.behaviorTitle) {
+        // Split by comma and trim
+        titles = i.behaviorTitle.split(',').map(b => b.trim());
+      } else if (i.behaviorId?.behaviorTitle) {
+        titles = [i.behaviorId.behaviorTitle];
+      }
+      allBehaviors.push(...titles);
+    });
+    const uniqueBehaviors = new Set(allBehaviors.filter(Boolean)).size;
     
     // Calculate average duration (days since assignment) with proper date parsing
     const now = new Date();

@@ -435,43 +435,13 @@ async function seed() {
   const completeAssignedWork = createdContractMeasures.find(m => m.name === "Complete assigned work");
   const followDirections = createdContractMeasures.find(m => m.name === "Follow directions");
 
-  const contractChart = [
-    {
-      date: "2025-06-09", // Monday
-      entries: [
-        { time: "14:30", value: "smiley", note: "Great start to the week!", row: "Complete assigned work" },
-        { time: "14:30", value: "smiley", note: "Followed all directions", row: "Follow directions" }
-      ]
-    },
-    {
-      date: "2025-06-10", // Tuesday
-      entries: [
-        { time: "14:30", value: "neutral", note: "Needed a reminder", row: "Complete assigned work" },
-        { time: "14:30", value: "smiley", note: "", row: "Follow directions" }
-      ]
-    },
-    {
-      date: "2025-06-11", // Wednesday
-      entries: [
-        { time: "14:30", value: "sad", note: "Did not finish work", row: "Complete assigned work" },
-        { time: "14:30", value: "neutral", note: "Needed 2 reminders", row: "Follow directions" }
-      ]
-    },
-    {
-      date: "2025-06-12", // Thursday
-      entries: [
-        { time: "14:30", value: "smiley", note: "Excellent effort", row: "Complete assigned work" },
-        { time: "14:30", value: "smiley", note: "No reminders needed", row: "Follow directions" }
-      ]
-    },
-    {
-      date: "2025-06-13", // Friday
-      entries: [
-        { time: "14:30", value: "neutral", note: "", row: "Complete assigned work" },
-        { time: "14:30", value: "sad", note: "Off task at end of day", row: "Follow directions" }
-      ]
-    }
+  // Assign contract data measures to student
+  student.contractDataMeasures = [
+    ...(student.contractDataMeasures || []),
+    completeAssignedWork._id,
+    followDirections._id
   ];
+  await student.save();
 
   // Create the contract for Student One
   const contract = await Contract.create({
@@ -480,10 +450,10 @@ async function seed() {
     student: student._id,
     contractMeasures: [completeAssignedWork._id, followDirections._id],
     type: "weekly",
-    times: ["14:30"],
+    times: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "14:30"],
     measureType: "smileys",
-    rows: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    chart: contractChart,
+    rows: ["Complete assigned work", "Follow directions"],
+    chart: [],
     notes: [],
     isActive: true,
   });
