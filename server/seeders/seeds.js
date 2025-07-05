@@ -5,6 +5,7 @@ const InterventionList = require('../models/InterventionList');
 const AccommodationList = require('../models/AccommodationList');
 const Duration = require('../models/Duration');
 const ContractMeasure = require('../models/ContractMeasure');
+const Contract = require('../models/Contract');
 
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/inclusion-student-app';
@@ -430,6 +431,66 @@ async function seed() {
 
   const createdContractMeasures = await ContractMeasure.insertMany(contractMeasures);
   console.log(`Created ${createdContractMeasures.length} contract measures`);
+
+  const completeAssignedWork = createdContractMeasures.find(m => m.name === "Complete assigned work");
+  const followDirections = createdContractMeasures.find(m => m.name === "Follow directions");
+
+  const contractChart = [
+    {
+      date: "2025-06-09", // Monday
+      entries: [
+        { time: "14:30", value: "smiley", note: "Great start to the week!", row: "Complete assigned work" },
+        { time: "14:30", value: "smiley", note: "Followed all directions", row: "Follow directions" }
+      ]
+    },
+    {
+      date: "2025-06-10", // Tuesday
+      entries: [
+        { time: "14:30", value: "neutral", note: "Needed a reminder", row: "Complete assigned work" },
+        { time: "14:30", value: "smiley", note: "", row: "Follow directions" }
+      ]
+    },
+    {
+      date: "2025-06-11", // Wednesday
+      entries: [
+        { time: "14:30", value: "sad", note: "Did not finish work", row: "Complete assigned work" },
+        { time: "14:30", value: "neutral", note: "Needed 2 reminders", row: "Follow directions" }
+      ]
+    },
+    {
+      date: "2025-06-12", // Thursday
+      entries: [
+        { time: "14:30", value: "smiley", note: "Excellent effort", row: "Complete assigned work" },
+        { time: "14:30", value: "smiley", note: "No reminders needed", row: "Follow directions" }
+      ]
+    },
+    {
+      date: "2025-06-13", // Friday
+      entries: [
+        { time: "14:30", value: "neutral", note: "", row: "Complete assigned work" },
+        { time: "14:30", value: "sad", note: "Off task at end of day", row: "Follow directions" }
+      ]
+    }
+  ];
+
+  // Create the contract for Student One
+  const contract = await Contract.create({
+    title: "Focus",
+    assignedBy: admin._id,
+    student: student._id,
+    contractMeasures: [completeAssignedWork._id, followDirections._id],
+    type: "weekly",
+    times: ["14:30"],
+    measureType: "smileys",
+    rows: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    chart: contractChart,
+    notes: [],
+    isActive: true,
+  });
+
+  // Add contract to student's contracts array
+  student.contracts.push(contract._id);
+  await student.save();
 
   console.log('freq._id:', frequency._id, 'userInterventions:', student.interventions);
   console.log('assignedIntervention:', assignedIntervention, 'interventionDate:', assignedIntervention.createdAt);

@@ -220,7 +220,9 @@ const ContractPDFModal = ({ visible, onCancel, contract, student, teacher }) => 
       onCancel={onCancel}
       footer={null}
       width={900}
-      className="contract-pdf-modal"
+      style={{ top: 40 }}
+      bodyStyle={{ padding: 0 }}
+      destroyOnClose
     >
       <div ref={printRef} className="contract-pdf-print-area" style={{ background: 'white', padding: 24 }}>
         <Title level={3} style={{ textAlign: 'center', marginBottom: 16 }}>{contract?.title || 'Contract'}</Title>

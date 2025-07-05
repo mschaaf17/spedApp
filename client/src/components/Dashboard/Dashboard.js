@@ -2413,7 +2413,7 @@ const Dashboard = () => {
       />
       <ContractPDFModal
         visible={pdfModalVisible}
-        onClose={() => setPdfModalVisible(false)}
+        onCancel={() => setPdfModalVisible(false)}
         contract={selectedContractForPDF}
         student={selectedStudent}
         teacher={meData?.me}
