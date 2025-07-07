@@ -1,0 +1,185 @@
+/* Material Design 3 Card Styles */
+.md-card {
+  background-color: var(--md-surface);
+  border-radius: var(--md-radius-lg);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Card Variants */
+.md-card-elevated {
+  box-shadow: var(--md-elevation-1);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.md-card-elevated:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+.md-card-outlined {
+  border: 1px solid var(--md-outline);
+  box-shadow: none;
+}
+
+.md-card-outlined:hover {
+  border-color: var(--md-outline-variant);
+}
+
+.md-card-filled {
+  background-color: var(--md-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: none;
+}
+
+.md-card-filled:hover {
+  background-color: var(--md-neutral-variant-80);
+}
+
+/* Card Padding */
+.md-card-padding-none {
+  padding: 0;
+}
+
+.md-card-padding-small {
+  padding: var(--md-spacing-md);
+}
+
+.md-card-padding-medium {
+  padding: var(--md-spacing-lg);
+}
+
+.md-card-padding-large {
+  padding: var(--md-spacing-xl);
+}
+
+/* Clickable Card */
+.md-card-clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.md-card-clickable:active {
+  transform: scale(0.98);
+}
+
+/* Focus States */
+.md-card:focus-visible {
+  outline: 2px solid var(--md-primary-50);
+  outline-offset: 2px;
+}
+
+/* Card Content Areas */
+.md-card-header {
+  padding: var(--md-spacing-lg);
+  padding-bottom: var(--md-spacing-md);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.md-card-content {
+  padding: var(--md-spacing-lg);
+}
+
+.md-card-actions {
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  display: flex;
+  gap: var(--md-spacing-sm);
+  justify-content: flex-end;
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+/* Card Media */
+.md-card-media {
+  width: 100%;
+  height: 200px;
+  background-color: var(--md-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.md-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Card Title */
+.md-card-title {
+  font-size: var(--md-typography-title-large);
+  font-weight: 400;
+  color: var(--md-on-surface);
+  margin: 0 0 var(--md-spacing-xs) 0;
+  line-height: 28px;
+}
+
+/* Card Subtitle */
+.md-card-subtitle {
+  font-size: var(--md-typography-body-medium);
+  color: var(--md-on-surface-variant);
+  margin: 0;
+  line-height: 20px;
+}
+
+/* Card Text */
+.md-card-text {
+  font-size: var(--md-typography-body-medium);
+  color: var(--md-on-surface);
+  line-height: 20px;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .md-card-padding-medium {
+    padding: var(--md-spacing-md);
+  }
+  
+  .md-card-padding-large {
+    padding: var(--md-spacing-lg);
+  }
+  
+  .md-card-header {
+    padding: var(--md-spacing-md);
+    padding-bottom: var(--md-spacing-sm);
+  }
+  
+  .md-card-content {
+    padding: var(--md-spacing-md);
+  }
+  
+  .md-card-actions {
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+  }
+  
+  .md-card-title {
+    font-size: var(--md-typography-title-medium);
+    line-height: 24px;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .md-card {
+    border: 2px solid var(--md-outline);
+  }
+  
+  .md-card-outlined {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .md-card {
+    transition: none;
+  }
+  
+  .md-card-clickable:active {
+    transform: none;
+  }
+} 

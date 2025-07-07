@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import { ADD_DATA_MEASURE_TO_STUDENT, REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, INCREMENT_FREQUENCY, UPDATE_FREQUENCY_NOTE } from '../../utils/mutations';
 import Auth from '../../utils/auth';
+import { Button as MUIButton } from '@mui/material';
 
 const { confirm } = Modal;
 
@@ -303,26 +304,25 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                     {activeFrequencies.map((behavior) => {
                       return (
                         <div key={behavior._id} style={{ position: 'relative', marginBottom: 12, width: '100%' }}>
-                          <Button
-                            className={`frequency-pill-btn ${selectedBehaviorIds.includes(behavior._id) ? 'selectedForDelete' : ''}`}
-                            style={{
-                              borderRadius: 32,
-                              boxShadow: '0 2px 8px rgba(24,144,255,0.08)',
-                              background: '#f0f7ff',
-                              color: '#1890ff',
-                              fontWeight: 600,
-                              fontSize: 18,
-                              padding: '18px 32px',
-                              minWidth: 180,
-                              minHeight: 56,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              position: 'relative',
-                              border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #ff4d4f' : 'none',
-                              transition: 'all 0.2s',
-                              width: '100%',
-                              marginBottom: 8
+                          <MUIButton
+                            variant="contained"
+                            disableElevation
+                            fullWidth
+                            sx={{
+                              borderRadius: 999,
+                              bgcolor: selectedBehaviorIds.includes(behavior._id) ? '#ffcccc' : '#7c4dff',
+                              color: selectedBehaviorIds.includes(behavior._id) ? '#b71c1c' : '#fff',
+                              fontWeight: 700,
+                              fontSize: 20,
+                              px: 4,
+                              py: 2,
+                              mb: 2,
+                              boxShadow: '0 2px 8px rgba(124,77,255,0.08)',
+                              transition: 'background 0.2s',
+                              '&:hover': {
+                                bgcolor: selectedBehaviorIds.includes(behavior._id) ? '#ffb3b3' : '#651fff',
+                              },
+                              border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #b71c1c' : 'none',
                             }}
                             onClick={() => {
                               if (deleteMode) {
@@ -332,11 +332,10 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                               }
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 700, fontSize: 20, color: '#0050b3', marginRight: 8 }}>{behavior.behaviorTitle}</span>
-                              <span style={{ fontWeight: 700, fontSize: 20, color: '#13c2c2' }}>({getTodayCount(behavior.dailyCounts || [])})</span>
-                            </div>
-                          </Button>
+                            <span>
+                              {behavior.behaviorTitle} <b>({getTodayCount(behavior.dailyCounts || [])})</b>
+                            </span>
+                          </MUIButton>
                         </div>
                       );
                     })}

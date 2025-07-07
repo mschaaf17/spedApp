@@ -1,0 +1,560 @@
+/* Material Design 3 Global Styles */
+:root {
+  /* Primary Colors */
+  --md-primary-0: #000000;
+  --md-primary-10: #001F24;
+  --md-primary-20: #003640;
+  --md-primary-30: #004E5D;
+  --md-primary-40: #006782;
+  --md-primary-50: #0082A3;
+  --md-primary-60: #009EC5;
+  --md-primary-70: #4FB8E8;
+  --md-primary-80: #8DD4F8;
+  --md-primary-90: #C8E8FF;
+  --md-primary-95: #E4F3FF;
+  --md-primary-99: #FDFCFF;
+  --md-primary-100: #FFFFFF;
+
+  /* Secondary Colors */
+  --md-secondary-0: #000000;
+  --md-secondary-10: #1A1C00;
+  --md-secondary-20: #2F3100;
+  --md-secondary-30: #454700;
+  --md-secondary-40: #5C5F00;
+  --md-secondary-50: #747700;
+  --md-secondary-60: #8E9100;
+  --md-secondary-70: #A8AC00;
+  --md-secondary-80: #C3C700;
+  --md-secondary-90: #DFE300;
+  --md-secondary-95: #EDF100;
+  --md-secondary-99: #FDFCFF;
+  --md-secondary-100: #FFFFFF;
+
+  /* Tertiary Colors */
+  --md-tertiary-0: #000000;
+  --md-tertiary-10: #2B1700;
+  --md-tertiary-20: #422B00;
+  --md-tertiary-30: #5B4100;
+  --md-tertiary-40: #755800;
+  --md-tertiary-50: #8F7000;
+  --md-tertiary-60: #AA8900;
+  --md-tertiary-70: #C6A300;
+  --md-tertiary-80: #E2BE00;
+  --md-tertiary-90: #FFD95A;
+  --md-tertiary-95: #FFEDB8;
+  --md-tertiary-99: #FDFCFF;
+  --md-tertiary-100: #FFFFFF;
+
+  /* Error Colors */
+  --md-error-0: #000000;
+  --md-error-10: #410002;
+  --md-error-20: #690005;
+  --md-error-30: #93000A;
+  --md-error-40: #BA1A1A;
+  --md-error-50: #DE3730;
+  --md-error-60: #FF5449;
+  --md-error-70: #FF897D;
+  --md-error-80: #FFB4AB;
+  --md-error-90: #FFDAD6;
+  --md-error-95: #FFEDEA;
+  --md-error-99: #FDFCFF;
+  --md-error-100: #FFFFFF;
+
+  /* Neutral Colors */
+  --md-neutral-0: #000000;
+  --md-neutral-10: #191C20;
+  --md-neutral-20: #2E3132;
+  --md-neutral-30: #444748;
+  --md-neutral-40: #5C5F60;
+  --md-neutral-50: #757779;
+  --md-neutral-60: #8E9192;
+  --md-neutral-70: #A9ABAC;
+  --md-neutral-80: #C4C7C8;
+  --md-neutral-90: #E0E3E3;
+  --md-neutral-95: #EFF1F1;
+  --md-neutral-99: #FDFCFF;
+  --md-neutral-100: #FFFFFF;
+
+  /* Neutral Variant Colors */
+  --md-neutral-variant-0: #000000;
+  --md-neutral-variant-10: #151D20;
+  --md-neutral-variant-20: #2A3235;
+  --md-neutral-variant-30: #40484B;
+  --md-neutral-variant-40: #586063;
+  --md-neutral-variant-50: #71797C;
+  --md-neutral-variant-60: #8B9396;
+  --md-neutral-variant-70: #A6AEB1;
+  --md-neutral-variant-80: #C2CACC;
+  --md-neutral-variant-90: #DEE6E9;
+  --md-neutral-variant-95: #ECF4F7;
+  --md-neutral-variant-99: #FDFCFF;
+  --md-neutral-variant-100: #FFFFFF;
+
+  /* Semantic Color Tokens */
+  --md-surface: var(--md-neutral-99);
+  --md-surface-variant: var(--md-neutral-variant-90);
+  --md-background: var(--md-neutral-99);
+  --md-on-surface: var(--md-neutral-10);
+  --md-on-surface-variant: var(--md-neutral-variant-30);
+  --md-on-primary: var(--md-primary-99);
+  --md-on-secondary: var(--md-secondary-99);
+  --md-on-tertiary: var(--md-tertiary-99);
+  --md-on-error: var(--md-error-99);
+  --md-outline: var(--md-neutral-variant-50);
+  --md-outline-variant: var(--md-neutral-variant-80);
+
+  /* Spacing */
+  --md-spacing-xs: 4px;
+  --md-spacing-sm: 8px;
+  --md-spacing-md: 16px;
+  --md-spacing-lg: 24px;
+  --md-spacing-xl: 32px;
+  --md-spacing-xxl: 48px;
+  --md-spacing-xxxl: 64px;
+
+  /* Border Radius */
+  --md-radius-none: 0px;
+  --md-radius-xs: 4px;
+  --md-radius-sm: 8px;
+  --md-radius-md: 12px;
+  --md-radius-lg: 16px;
+  --md-radius-xl: 28px;
+  --md-radius-full: 9999px;
+
+  /* Elevation */
+  --md-elevation-0: none;
+  --md-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-4: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 4px 0px rgba(0, 0, 0, 0.30);
+  --md-elevation-5: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 6px 0px rgba(0, 0, 0, 0.30);
+
+  /* Typography Scale */
+  --md-typography-display-large: 57px;
+  --md-typography-display-medium: 45px;
+  --md-typography-display-small: 36px;
+  --md-typography-headline-large: 32px;
+  --md-typography-headline-medium: 28px;
+  --md-typography-headline-small: 24px;
+  --md-typography-title-large: 22px;
+  --md-typography-title-medium: 16px;
+  --md-typography-title-small: 14px;
+  --md-typography-label-large: 14px;
+  --md-typography-label-medium: 12px;
+  --md-typography-label-small: 11px;
+  --md-typography-body-large: 16px;
+  --md-typography-body-medium: 14px;
+  --md-typography-body-small: 12px;
+}
+
+/* M3 Typography Classes */
+.md-display-large {
+  font-size: var(--md-typography-display-large);
+  line-height: 64px;
+  font-weight: 400;
+  letter-spacing: -0.25px;
+}
+
+.md-display-medium {
+  font-size: var(--md-typography-display-medium);
+  line-height: 52px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-display-small {
+  font-size: var(--md-typography-display-small);
+  line-height: 44px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-headline-large {
+  font-size: var(--md-typography-headline-large);
+  line-height: 40px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-headline-medium {
+  font-size: var(--md-typography-headline-medium);
+  line-height: 36px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-headline-small {
+  font-size: var(--md-typography-headline-small);
+  line-height: 32px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-title-large {
+  font-size: var(--md-typography-title-large);
+  line-height: 28px;
+  font-weight: 400;
+  letter-spacing: 0px;
+}
+
+.md-title-medium {
+  font-size: var(--md-typography-title-medium);
+  line-height: 24px;
+  font-weight: 500;
+  letter-spacing: 0.15px;
+}
+
+.md-title-small {
+  font-size: var(--md-typography-title-small);
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.md-label-large {
+  font-size: var(--md-typography-label-large);
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.md-label-medium {
+  font-size: var(--md-typography-label-medium);
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.md-label-small {
+  font-size: var(--md-typography-label-small);
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.md-body-large {
+  font-size: var(--md-typography-body-large);
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.md-body-medium {
+  font-size: var(--md-typography-body-medium);
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.25px;
+}
+
+.md-body-small {
+  font-size: var(--md-typography-body-small);
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+}
+
+/* M3 Spacing Utility Classes */
+.md-p-xs { padding: var(--md-spacing-xs); }
+.md-p-sm { padding: var(--md-spacing-sm); }
+.md-p-md { padding: var(--md-spacing-md); }
+.md-p-lg { padding: var(--md-spacing-lg); }
+.md-p-xl { padding: var(--md-spacing-xl); }
+.md-p-xxl { padding: var(--md-spacing-xxl); }
+.md-p-xxxl { padding: var(--md-spacing-xxxl); }
+
+.md-m-xs { margin: var(--md-spacing-xs); }
+.md-m-sm { margin: var(--md-spacing-sm); }
+.md-m-md { margin: var(--md-spacing-md); }
+.md-m-lg { margin: var(--md-spacing-lg); }
+.md-m-xl { margin: var(--md-spacing-xl); }
+.md-m-xxl { margin: var(--md-spacing-xxl); }
+.md-m-xxxl { margin: var(--md-spacing-xxxl); }
+
+/* M3 Border Radius Classes */
+.md-radius-none { border-radius: var(--md-radius-none); }
+.md-radius-xs { border-radius: var(--md-radius-xs); }
+.md-radius-sm { border-radius: var(--md-radius-sm); }
+.md-radius-md { border-radius: var(--md-radius-md); }
+.md-radius-lg { border-radius: var(--md-radius-lg); }
+.md-radius-xl { border-radius: var(--md-radius-xl); }
+.md-radius-full { border-radius: var(--md-radius-full); }
+
+/* M3 Elevation Classes */
+.md-elevation-0 { box-shadow: var(--md-elevation-0); }
+.md-elevation-1 { box-shadow: var(--md-elevation-1); }
+.md-elevation-2 { box-shadow: var(--md-elevation-2); }
+.md-elevation-3 { box-shadow: var(--md-elevation-3); }
+.md-elevation-4 { box-shadow: var(--md-elevation-4); }
+.md-elevation-5 { box-shadow: var(--md-elevation-5); }
+
+/* M3 Surface Classes */
+.md-surface {
+  background-color: var(--md-surface);
+  color: var(--md-on-surface);
+}
+
+.md-surface-variant {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+}
+
+.md-primary {
+  background-color: var(--md-primary-50);
+  color: var(--md-on-primary);
+}
+
+.md-secondary {
+  background-color: var(--md-secondary-50);
+  color: var(--md-on-secondary);
+}
+
+.md-tertiary {
+  background-color: var(--md-tertiary-50);
+  color: var(--md-on-tertiary);
+}
+
+.md-error {
+  background-color: var(--md-error-50);
+  color: var(--md-on-error);
+}
+
+/* M3 Component Base Styles */
+.md-card {
+  background-color: var(--md-surface);
+  border-radius: var(--md-radius-md);
+  box-shadow: var(--md-elevation-1);
+  padding: var(--md-spacing-lg);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.md-button {
+  border-radius: var(--md-radius-full);
+  padding: var(--md-spacing-sm) var(--md-spacing-lg);
+  font-family: inherit;
+  font-size: var(--md-typography-label-large);
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-spacing-sm);
+  min-height: 40px;
+}
+
+.md-button-primary {
+  background-color: var(--md-primary-50);
+  color: var(--md-on-primary);
+}
+
+.md-button-primary:hover {
+  background-color: var(--md-primary-60);
+  box-shadow: var(--md-elevation-2);
+}
+
+.md-button-secondary {
+  background-color: var(--md-secondary-50);
+  color: var(--md-on-secondary);
+}
+
+.md-button-secondary:hover {
+  background-color: var(--md-secondary-60);
+  box-shadow: var(--md-elevation-2);
+}
+
+.md-button-outlined {
+  background-color: transparent;
+  color: var(--md-primary-50);
+  border: 1px solid var(--md-outline);
+}
+
+.md-button-outlined:hover {
+  background-color: var(--md-primary-95);
+  border-color: var(--md-primary-50);
+}
+
+.md-button-text {
+  background-color: transparent;
+  color: var(--md-primary-50);
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+}
+
+.md-button-text:hover {
+  background-color: var(--md-primary-95);
+}
+
+/* M3 Input Styles */
+.md-input {
+  background-color: var(--md-surface);
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-radius-sm);
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+  font-size: var(--md-typography-body-large);
+  color: var(--md-on-surface);
+  transition: border-color 0.2s ease;
+}
+
+.md-input:focus {
+  outline: none;
+  border-color: var(--md-primary-50);
+  box-shadow: 0 0 0 2px var(--md-primary-95);
+}
+
+.md-input::placeholder {
+  color: var(--md-on-surface-variant);
+}
+
+/* M3 Chip Styles */
+.md-chip {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  border-radius: var(--md-radius-full);
+  padding: var(--md-spacing-xs) var(--md-spacing-md);
+  font-size: var(--md-typography-label-medium);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-spacing-xs);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.md-chip:hover {
+  background-color: var(--md-neutral-variant-80);
+}
+
+.md-chip-selected {
+  background-color: var(--md-primary-95);
+  color: var(--md-primary-50);
+}
+
+/* M3 Divider */
+.md-divider {
+  height: 1px;
+  background-color: var(--md-outline-variant);
+  margin: var(--md-spacing-md) 0;
+}
+
+/* M3 Icon Button */
+.md-icon-button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-radius-full);
+  border: none;
+  background-color: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.md-icon-button:hover {
+  background-color: var(--md-neutral-variant-80);
+  color: var(--md-on-surface);
+}
+
+.md-icon-button:active {
+  background-color: var(--md-neutral-variant-70);
+}
+
+/* M3 FAB (Floating Action Button) */
+.md-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--md-radius-full);
+  border: none;
+  background-color: var(--md-primary-50);
+  color: var(--md-on-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--md-elevation-3);
+  transition: all 0.2s ease;
+  position: fixed;
+  bottom: var(--md-spacing-lg);
+  right: var(--md-spacing-lg);
+  z-index: 1000;
+}
+
+.md-fab:hover {
+  background-color: var(--md-primary-60);
+  box-shadow: var(--md-elevation-4);
+}
+
+.md-fab:active {
+  box-shadow: var(--md-elevation-5);
+}
+
+/* M3 Navigation */
+.md-nav-item {
+  padding: var(--md-spacing-md);
+  border-radius: var(--md-radius-md);
+  color: var(--md-on-surface-variant);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-md);
+  transition: all 0.2s ease;
+  font-size: var(--md-typography-label-large);
+  font-weight: 500;
+}
+
+.md-nav-item:hover {
+  background-color: var(--md-neutral-variant-80);
+  color: var(--md-on-surface);
+}
+
+.md-nav-item.active {
+  background-color: var(--md-primary-95);
+  color: var(--md-primary-50);
+}
+
+/* M3 List */
+.md-list {
+  background-color: var(--md-surface);
+  border-radius: var(--md-radius-md);
+  overflow: hidden;
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-list-item {
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  border-bottom: 1px solid var(--md-outline-variant);
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-md);
+  transition: background-color 0.2s ease;
+}
+
+.md-list-item:last-child {
+  border-bottom: none;
+}
+
+.md-list-item:hover {
+  background-color: var(--md-neutral-variant-80);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .md-card {
+    padding: var(--md-spacing-md);
+  }
+  
+  .md-button {
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    font-size: var(--md-typography-label-medium);
+  }
+  
+  .md-fab {
+    width: 48px;
+    height: 48px;
+    bottom: var(--md-spacing-md);
+    right: var(--md-spacing-md);
+  }
+} 

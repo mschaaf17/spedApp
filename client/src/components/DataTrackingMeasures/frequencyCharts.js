@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react'
+ import React, {useState, useEffect} from 'react'
 // import MenuSideBar from '../../../components/MenuSideBar/MenuSideBar';
-import { Link, useParams } from 'react-router-dom'
+ import { Link, useParams } from 'react-router-dom'
 // import Duration from '../../../components/DataTrackingMeasures/duration'
 // import ABC from '../../../components/DataTrackingMeasures/ABC'
 // import Frequency from '../../../components/DataTrackingMeasures/frequency'

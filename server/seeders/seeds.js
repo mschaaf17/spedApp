@@ -45,7 +45,7 @@ async function seed() {
     isAdmin: false,
     username: 'student2',
     firstName: 'Student2',
-    lastName: 'One',
+    lastName: 'Two',
     password: 'password',
     studentSchoolId: 'S002'
   });

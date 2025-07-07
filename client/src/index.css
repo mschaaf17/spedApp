@@ -1,3 +1,6 @@
+/* Import Material Design 3 Global Styles */
+@import './styles/m3-global.css';
+
 :root {
   --blue-color: rgb(7, 154, 162);
   --gray-color: rgb(125, 128, 130);

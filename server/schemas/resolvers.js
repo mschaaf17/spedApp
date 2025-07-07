@@ -252,13 +252,13 @@ const resolvers = {
       if (context.user) {
         console.log("Context user found:", context.user);
         try {
-          const userData = await User.findOne({ _id: context.user._id })
-            .select("-__v -password")
-            .populate("students")
-            .populate("accommodations")
-            .populate("behaviorFrequencies")
-            .populate("behaviorDurations")
-            .populate("interventions");
+        const userData = await User.findOne({ _id: context.user._id })
+          .select("-__v -password")
+          .populate("students")
+          .populate("accommodations")
+          .populate("behaviorFrequencies")
+          .populate("behaviorDurations")
+          .populate("interventions");
 
           if (!userData) {
             console.error(
@@ -278,7 +278,7 @@ const resolvers = {
             firstName: userData.firstName,
             lastName: userData.lastName,
           });
-          return userData;
+        return userData;
         } catch (err) {
           console.error("Error fetching user data in ME resolver:", err);
           throw new ApolloError("Error fetching user data.");
@@ -306,7 +306,7 @@ const resolvers = {
         throw new Error("Error fetching user data");
       }
     },
-
+    
     admins: async () => {
       try {
         const adminUsers = await User.find({ isAdmin: true });
@@ -539,10 +539,10 @@ const resolvers = {
           { $addToSet: { students: studentId } },
           { new: true },
         ).populate("students");
-
+    
         return updatedUser;
       }
-
+    
       throw new AuthenticationError("You need to be logged in as an admin!");
     },
     removeStudentFromTeacherList: async (parent, { studentId }, context) => {
@@ -552,10 +552,10 @@ const resolvers = {
           { $pull: { students: studentId } },
           { new: true },
         ).populate("students");
-
+    
         return updatedUser;
       }
-
+    
       throw new AuthenticationError("You need to be logged in as an admin!");
     },
 
@@ -603,11 +603,11 @@ const resolvers = {
       { behaviorTitle, operationalDefinition },
       context,
     ) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
-      }
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError(
+            "You must be logged in as an administrator!",
+          );
+        }
       const frequency = await Frequency.create({
         behaviorTitle,
         operationalDefinition,
@@ -619,55 +619,55 @@ const resolvers = {
         dailyCounts: [],
         log: [],
       });
-      return frequency;
-    },
-    removeFrequencyTitleFromList: async (parent, args, context) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError("You need to be logged in as an admin");
-      }
-      try {
-        const frequency = await Frequency.findByIdAndDelete(args._id);
-        if (!frequency) {
-          throw new Error("Frequency card not found");
-        }
-        console.log(frequency);
         return frequency;
-      } catch (error) {
-        throw new ApolloError(
-          "Failed to delete frequency title",
-          "DELETE_FREQUENCY_TITLE_ERROR",
+      },
+      removeFrequencyTitleFromList: async (parent, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You need to be logged in as an admin");
+        }
+        try {
+        const frequency = await Frequency.findByIdAndDelete(args._id);
+          if (!frequency) {
+          throw new Error("Frequency card not found");
+          }
+          console.log(frequency);
+          return frequency;
+        } catch (error) {
+          throw new ApolloError(
+            "Failed to delete frequency title",
+            "DELETE_FREQUENCY_TITLE_ERROR",
           { originalError: error },
         );
-      }
-    },
-    addDurationTitleToList: async (_, args, context) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError(
-          "You must be logged in as an administrator!",
-        );
-      }
-      args.createdBy = context.user._id;
+        }
+      },
+      addDurationTitleToList: async (_, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+          throw new AuthenticationError(
+            "You must be logged in as an administrator!",
+          );
+        }
+        args.createdBy = context.user._id;
       args.isTemplate = true;
       args.templateId = null;
 
-      const duration = await Duration.create(args);
-      return duration;
-    },
-    removeDurationTitleFromList: async (parent, args, context) => {
-      if (!context.user || !context.user.isAdmin) {
-        throw new AuthenticationError("You need to be logged in as an admin");
-      }
-      try {
-        const duration = await Duration.findByIdAndDelete(args._id);
-        if (!duration) {
-          throw new Error("duration card not found");
-        }
-        console.log(duration);
+        const duration = await Duration.create(args);
         return duration;
-      } catch (error) {
-        throw new ApolloError(
-          "Failed to delete duration title",
-          "DELETE_DURATION_TITLE_ERROR",
+      },
+      removeDurationTitleFromList: async (parent, args, context) => {
+        if (!context.user || !context.user.isAdmin) {
+        throw new AuthenticationError("You need to be logged in as an admin");
+        }
+        try {
+        const duration = await Duration.findByIdAndDelete(args._id);
+          if (!duration) {
+          throw new Error("duration card not found");
+          }
+          console.log(duration);
+          return duration;
+        } catch (error) {
+          throw new ApolloError(
+            "Failed to delete duration title",
+            "DELETE_DURATION_TITLE_ERROR",
           { originalError: error },
         );
       }
@@ -708,7 +708,7 @@ const resolvers = {
           );
 
           return updatedUser;
-        } catch (error) {
+      } catch (error) {
           console.error("Error in addAccommodationForStudent:", error);
           throw new Error("Failed to add accommodation for student");
         }
@@ -752,7 +752,7 @@ const resolvers = {
           { originalError: error },
         );
       }
-    },
+    }, 
 
     removeFrequencyBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
@@ -793,7 +793,7 @@ const resolvers = {
         );
       }
     },
-
+    
     removeDurationBeingTrackedForStudent: async (parent, args, context) => {
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError("You need to be logged in as an admin!");
@@ -844,16 +844,16 @@ const resolvers = {
         "and studentId:",
         studentId,
       );
-
+  
       if (!context.user || !context.user.isAdmin) {
         throw new AuthenticationError(
           "You must be logged in as an administrator!",
         );
       }
-
+      
       try {
         let frequency, duration;
-
+    
         // Check if dataMeasureId matches a frequency
         try {
           frequency = await Frequency.findById(dataMeasureId);
@@ -871,8 +871,8 @@ const resolvers = {
             console.error("Error finding duration:", durationError);
             throw new Error("Data measure not found or does not exist");
           }
-        }
-
+          }
+    
         // Proceed based on whether frequency or duration was found
         if (frequency) {
           console.log("Adding frequency to track for student:", frequency);
@@ -998,23 +998,23 @@ const resolvers = {
       { frequencyId, studentId, date, note },
       { user },
     ) => {
-      if (!user) {
+    if (!user) {
         throw new AuthenticationError("You must be logged in!");
-      }
+    }
 
       const frequency = await Frequency.findOne({
         _id: mongoose.Types.ObjectId(frequencyId),
         studentId: mongoose.Types.ObjectId(studentId),
       });
 
-      if (!frequency) {
+    if (!frequency) {
         throw new UserInputError(
           "Frequency not found for the specified behavior and student",
         );
-      }
+    }
 
-      // Ensure count is valid and increment it
-      frequency.count = (frequency.count || 0) + 1;
+    // Ensure count is valid and increment it
+    frequency.count = (frequency.count || 0) + 1;
 
       // Use the passed date if valid, otherwise use the current date
       let dateToUse = date ? new Date(date) : new Date();
@@ -1028,10 +1028,10 @@ const resolvers = {
       // Also add to log array for consistency
       frequency.log.push({ time: dateToUse });
 
-      await frequency.save();
+    await frequency.save();
 
-      return frequency;
-    },
+    return frequency;
+  },
 
     updateFrequencyNote: async (
       _,
@@ -1312,7 +1312,7 @@ const resolvers = {
         const index = user.interventions.indexOf(interventionId);
         if (index !== -1) {
           user.interventions.splice(index, 1);
-          await user.save();
+        await user.save();
         }
 
         // 2. SOFT DELETE: Set isActive to false

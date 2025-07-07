@@ -1,0 +1,252 @@
+/* Material Design 3 Button Styles */
+.md-button {
+  border-radius: var(--md-radius-full);
+  padding: var(--md-spacing-sm) var(--md-spacing-lg);
+  font-family: inherit;
+  font-size: var(--md-typography-label-large);
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-spacing-sm);
+  min-height: 40px;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Button Sizes */
+.md-button-small {
+  min-height: 32px;
+  padding: var(--md-spacing-xs) var(--md-spacing-md);
+  font-size: var(--md-typography-label-medium);
+}
+
+.md-button-medium {
+  min-height: 40px;
+  padding: var(--md-spacing-sm) var(--md-spacing-lg);
+  font-size: var(--md-typography-label-large);
+}
+
+.md-button-large {
+  min-height: 48px;
+  padding: var(--md-spacing-md) var(--md-spacing-xl);
+  font-size: var(--md-typography-title-small);
+}
+
+/* Button Variants */
+.md-button-filled {
+  background-color: var(--md-primary-50);
+  color: var(--md-on-primary);
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-button-filled:hover {
+  background-color: var(--md-primary-60);
+  box-shadow: var(--md-elevation-2);
+}
+
+.md-button-filled:active {
+  background-color: var(--md-primary-70);
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-button-outlined {
+  background-color: transparent;
+  color: var(--md-primary-50);
+  border: 1px solid var(--md-outline);
+}
+
+.md-button-outlined:hover {
+  background-color: var(--md-primary-95);
+  border-color: var(--md-primary-50);
+}
+
+.md-button-outlined:active {
+  background-color: var(--md-primary-90);
+}
+
+.md-button-text {
+  background-color: transparent;
+  color: var(--md-primary-50);
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+}
+
+.md-button-text:hover {
+  background-color: var(--md-primary-95);
+}
+
+.md-button-text:active {
+  background-color: var(--md-primary-90);
+}
+
+.md-button-elevated {
+  background-color: var(--md-surface);
+  color: var(--md-primary-50);
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-button-elevated:hover {
+  background-color: var(--md-surface);
+  color: var(--md-primary-50);
+  box-shadow: var(--md-elevation-2);
+}
+
+.md-button-elevated:active {
+  background-color: var(--md-surface);
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-button-tonal {
+  background-color: var(--md-secondary-90);
+  color: var(--md-on-secondary);
+}
+
+.md-button-tonal:hover {
+  background-color: var(--md-secondary-80);
+  box-shadow: var(--md-elevation-1);
+}
+
+.md-button-tonal:active {
+  background-color: var(--md-secondary-70);
+}
+
+/* Disabled State */
+.md-button-disabled {
+  background-color: var(--md-neutral-90);
+  color: var(--md-neutral-50);
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.md-button-disabled:hover {
+  background-color: var(--md-neutral-90);
+  color: var(--md-neutral-50);
+  box-shadow: none;
+}
+
+/* Full Width */
+.md-button-full-width {
+  width: 100%;
+}
+
+/* Button Content */
+.md-button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-spacing-xs);
+}
+
+/* Button Icons */
+.md-button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.md-button-icon-start {
+  margin-right: var(--md-spacing-xs);
+}
+
+.md-button-icon-end {
+  margin-left: var(--md-spacing-xs);
+}
+
+/* Small button icon adjustments */
+.md-button-small .md-button-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Large button icon adjustments */
+.md-button-large .md-button-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Focus States */
+.md-button:focus-visible {
+  outline: 2px solid var(--md-primary-50);
+  outline-offset: 2px;
+}
+
+/* Ripple Effect (simplified) */
+.md-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.12;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.md-button:active::before {
+  width: 100px;
+  height: 100px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .md-button {
+    min-height: 36px;
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    font-size: var(--md-typography-label-medium);
+  }
+  
+  .md-button-large {
+    min-height: 44px;
+    padding: var(--md-spacing-sm) var(--md-spacing-lg);
+  }
+  
+  .md-button-small {
+    min-height: 28px;
+    padding: var(--md-spacing-xs) var(--md-spacing-sm);
+    font-size: var(--md-typography-label-small);
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .md-button {
+    border: 1px solid currentColor;
+  }
+  
+  .md-button-filled {
+    border-color: var(--md-on-primary);
+  }
+  
+  .md-button-outlined {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .md-button {
+    transition: none;
+  }
+  
+  .md-button::before {
+    transition: none;
+  }
+} 

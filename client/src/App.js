@@ -8,6 +8,11 @@ import {
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 
+//main tracking view
+import MainTrackingView from './pages/mainTrackingView'
+import SelectStudentToTrackPage from './pages/SelectStudentToTrackPage'
+
+
 import Home from './pages/Home/'
 import NoMatch from './pages/NoMatch';
 import LoadingPage from './pages/LoadingPage'
@@ -20,6 +25,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+
 
 // teacher pages: general
 import StudentList from "./pages/TeacherPages/StudentsAssignedToTeacher/StudentsTab";
@@ -123,6 +129,8 @@ function App() {
       <Router>
         <Header />
         <Routes>
+          <Route path="/mainTrackingView" element={<MainTrackingView />} />
+          <Route path="/selectStudentToTrack" element={<SelectStudentToTrackPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin-settings" element={<AdminSettings />} />
           <Route path ="/" element = {<Home/>} />
