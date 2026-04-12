@@ -9,6 +9,7 @@ import {
 import { setContext } from "@apollo/client/link/context";
 
 //main tracking view
+import MainDashboard from './pages/MainDashboard'
 import MainTrackingView from './pages/mainTrackingView'
 import SelectStudentToTrackPage from './pages/SelectStudentToTrackPage'
 
@@ -129,8 +130,11 @@ function App() {
       <Router>
         <Header />
         <Routes>
+          <Route path="/mainDashboard" element={<MainDashboard />} />
           <Route path="/mainTrackingView" element={<MainTrackingView />} />
           <Route path="/selectStudentToTrack" element={<SelectStudentToTrackPage />} />
+      
+
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin-settings" element={<AdminSettings />} />
           <Route path ="/" element = {<Home/>} />
@@ -167,7 +171,7 @@ function App() {
           <Route path="/studentContracts" element={<StudentContracts/>} />
          
         </Routes>
-        <Footer />
+        {/* <Footer /> */}
       </Router>
     </ApolloProvider>
   );
