@@ -100,7 +100,6 @@ app.post("/interventions", async (req, res) => {
   try {
     const prompt =
       req.body.prompt || "Write a one-sentence bedtime story about a unicorn.";
-
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -148,6 +147,17 @@ if (process.env.NODE_ENV === "production") {
 async function startServer() {
   await mongoose.connect(MONGODB_URI);
   console.log("🟢 Connected to MongoDB");
+
+  // Drop legacy indexes not declared on current schemas (e.g. unique on
+  // userInterventions.title left on `users`, or title_1 on interventions).
+  try {
+    const User = require("./models/User");
+    const InterventionList = require("./models/InterventionList");
+    await User.syncIndexes();
+    await InterventionList.syncIndexes();
+  } catch (err) {
+    console.warn("MongoDB index sync:", err.message);
+  }
 
   const server = new ApolloServer({
     typeDefs,

@@ -2,17 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { QUERY_FREQUENCY_LIST, QUERY_ME, QUERY_USER, QUERY_FREQUENCY_TEMPLATES } from '../../utils/queries';
 import { useParams } from 'react-router-dom';
-import { Button, Select, message, Modal } from 'antd';
+import { Button, Select, message, Modal, Switch } from 'antd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import EditIcon from '@mui/icons-material/Edit';
 import { ADD_DATA_MEASURE_TO_STUDENT, REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT, INCREMENT_FREQUENCY, UPDATE_FREQUENCY_NOTE } from '../../utils/mutations';
 import Auth from '../../utils/auth';
 import { Button as MUIButton } from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import HandednessRow from '../HandednessRow.js';
+import { Paper } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import { IconButton } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 
 const { confirm } = Modal;
 
-const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
+const Frequency = ({ studentId: propStudentId, refetchTrigger, isLeftHanded }) => {
   const { username: usernameFromUrl } = useParams();
   
   // Use propStudentId if provided, otherwise get from URL
@@ -49,6 +58,8 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
   const [selectedBehaviorTitleForDelete, setSelectedBehaviorTitleForDelete] = useState('');
   const [behaviorCounts, setBehaviorCounts] = useState({});
   const [noteStates, setNoteStates] = useState({});
+  const [addedIds, setAddedIds] = useState([]); // Track which have been added in this session
+
 
   const [addDataMeasureToStudent, { loading: addLoading }] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   const [removeDataMeasureFromStudent, { loading: removeLoading }] = useMutation(REMOVE_FREQUENCY_BEING_TRACKED_FOR_STUDENT);
@@ -96,13 +107,12 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
     setShowDeleteIcons(false);
   };
 
-  const handleAdd = async (dataMeasureId) => {
+  const handleAddDataMeasure = async (dataMeasureId) => {
+    // Call your mutation or add logic here
     await addDataMeasureToStudent({
-      variables: { dataMeasureId, studentId },
+      variables: { dataMeasureId, studentId: user._id },
     });
-    await refetch();
-    setShowSelect(false);
-    setSelectedBehaviorTitles([]);
+    // Optionally refetch or update state
   };
 
   const toggleRedXIcons = () => {
@@ -246,6 +256,36 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
 
   const activeFrequencies = (frequencyData?.frequency || []).filter(b => b.isActive && !b.isTemplate);
 
+  const columns = [
+    { field: 'behaviorTitle', headerName: 'Behavior Title', flex: 1 },
+    { field: 'type', headerName: 'Type', width: 120, valueFormatter: ({ value }) => value.charAt(0).toUpperCase() + value.slice(1) },
+    {
+      field: 'add',
+      headerName: 'Add',
+      width: 80,
+      sortable: false,
+      renderCell: (params) => {
+        const isAdded = addedIds.includes(params.row.id);
+        return (
+          <IconButton
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (!isAdded) {
+                // Call your add logic here
+                await handleAddDataMeasure(params.row.id);
+                setAddedIds(prev => [...prev, params.row.id]);
+              }
+            }}
+            color={isAdded ? "primary" : "default"}
+          >
+            {isAdded ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+          </IconButton>
+        );
+      }
+    }
+  ];
+
+
   return (
     <>
       <div className='centerBody'>
@@ -256,37 +296,33 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
               <div className='dataContainer'>
                 <Button onClick={handleClickForAddingDataMeasure}>Add Data Measure For Student</Button>
                 {showSelect && (
-                  <>
-                    {templatesLoading ? <div>Loading templates...</div> : (
-                      <Select
-                        mode='multiple'
-                        style={{ width: '100%' }}
-                        placeholder='Select behavior titles'
-                        onChange={handleSelectChange}
-                      >
-                        {availableTemplates?.map((template) => (
-                          <Select.Option key={template._id} value={template._id}>
-                            {template.behaviorTitle}
-                          </Select.Option>
-                        ))}
-                      </Select>
+                  <div style={{ width: 500, background: "#fff", borderRadius: 12, padding: 16, margin: "0 auto" }}>
+                    {templatesLoading ? (
+                      <div>Loading templates...</div>
+                    ) : (
+                      <DataGrid
+                        rows={availableTemplates?.map(t => ({
+                          id: t._id,
+                          behaviorTitle: t.behaviorTitle,
+                          type: t.type,
+                        })) || []}
+                        columns={columns}
+                        autoHeight
+                        pageSize={5}
+                        disableSelectionOnClick
+                        hideFooterSelectedRowCount
+                      />
                     )}
-                    <Button
-                      type='primary'
-                      onClick={async () => {
-                        await Promise.all(
-                          selectedBehaviorTitles.map((dataMeasureId) =>
-                            handleAdd(dataMeasureId)
-                          )
-                        );
-                        setShowSelect(false);
-                        setSelectedBehaviorTitles([]);
-                      }}
-                      disabled={selectedBehaviorTitles.length === 0}
-                    >
-                      Save
-                    </Button>
-                  </>
+                    <div style={{ marginTop: 12, textAlign: "center" }}>
+                      <Button
+                        type='link'
+                        onClick={() => {/* logic to open add new data measure modal */}}
+                        style={{ color: "#1976d2" }}
+                      >
+                        + ADD NEW DATA MEASURE
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </>
@@ -294,51 +330,155 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
             <div>
               <div className='container'>
                 <div className='tooltip'>
-                  <DeleteForeverIcon danger className='deleteIcon' onClick={handleDeleteIconClick} />
+                  <DeleteForeverIcon color="error" className='deleteIcon' onClick={handleDeleteIconClick} />
                   <span className='tooltipText'>Remove Data Measure</span>
                 </div>
               </div>
               <div style={{ maxWidth: 600, margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div className='dataContainer' style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: 24 }}>
-                    {activeFrequencies.map((behavior) => {
-                      return (
-                        <div key={behavior._id} style={{ position: 'relative', marginBottom: 12, width: '100%' }}>
-                          <MUIButton
-                            variant="contained"
-                            disableElevation
-                            fullWidth
-                            sx={{
-                              borderRadius: 999,
-                              bgcolor: selectedBehaviorIds.includes(behavior._id) ? '#ffcccc' : '#7c4dff',
-                              color: selectedBehaviorIds.includes(behavior._id) ? '#b71c1c' : '#fff',
-                              fontWeight: 700,
-                              fontSize: 20,
-                              px: 4,
-                              py: 2,
-                              mb: 2,
-                              boxShadow: '0 2px 8px rgba(124,77,255,0.08)',
-                              transition: 'background 0.2s',
-                              '&:hover': {
-                                bgcolor: selectedBehaviorIds.includes(behavior._id) ? '#ffb3b3' : '#651fff',
-                              },
-                              border: selectedBehaviorIds.includes(behavior._id) ? '2px solid #b71c1c' : 'none',
-                            }}
-                            onClick={() => {
-                              if (deleteMode) {
-                                handleSpecificSelectedButtonToDeleteClick(behavior._id, behavior.behaviorTitle);
-                              } else {
-                                handleIncrementFrequency(behavior._id);
-                              }
-                            }}
-                          >
-                            <span>
-                              {behavior.behaviorTitle} <b>({getTodayCount(behavior.dailyCounts || [])})</b>
-                            </span>
-                          </MUIButton>
-                        </div>
-                      );
-                    })}
+                  <div
+                    className='dataContainer'
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '24px',
+                      marginTop: 24,
+                      justifyContent: 'center',
+                    }}
+                  >
+                  
+
+                    {activeFrequencies.map((behavior) => (
+  <Paper
+    key={behavior._id}
+    elevation={2}
+    sx={{
+      display: 'flex',
+      alignItems: 'stretch', // Make buttons fill the height
+      justifyContent: 'space-between',
+      borderRadius: 4,
+      border: '1.5px solid #e0d7f6',
+      bgcolor: '#faf8ff',
+      px: 0,
+      py: 0,
+      mb: 2,
+      width: '100%',
+      // maxWidth: 500,
+      minHeight: '100%',
+    // Ensures a fixed height for the row
+      mx: 'auto',
+      boxShadow: '0 2px 8px 0 #f3eaff',
+    }}
+  >
+    {isLeftHanded ? (
+      <>
+        {/* Plus Button (left) */}
+        <Box sx={{ flex: '0 0 72px', height: '100%' }}>
+          <Button
+            sx={{
+              width: '100%',
+              height: '100%',
+              minWidth: 0,
+              minHeight: 0,
+              p: 0,
+              borderRadius: '0 4px 4px 0',
+              color: '#fff',
+              bgcolor: '#5e35b1',
+              fontSize: 36,
+              boxShadow: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              '&:hover': { bgcolor: '#7c43bd' },
+            }}
+            onClick={() => handleIncrementFrequency(behavior._id)}
+          >
+            <AddIcon sx={{ fontSize: 36 }} />
+          </Button>
+        </Box>
+        {/* Center Label */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Typography sx={{ fontWeight: 600, textAlign: 'center', fontSize: 20 }}>
+            {behavior.behaviorTitle}: ({getTodayCount(behavior.dailyCounts || [])})
+          </Typography>
+        </Box>
+        {/* Minus Button (right) */}
+        <Box sx={{ flex: '0 0 72px', display: 'flex', height: '100%' }}>
+          <Button
+            sx={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+              borderRadius: '0 4px 4px 0',
+              color: '#bdbdbd',
+              bgcolor: '#f3eaff',
+              border: 'none',
+              fontSize: 36,
+              minWidth: 0,
+              p: 0,
+              boxShadow: 0,
+            }}
+            disabled
+          >
+            <RemoveIcon sx={{ fontSize: 36 }} />
+          </Button>
+        </Box>
+      </>
+    ) : (
+      <>
+        {/* Minus Button (left) */}
+        <Box sx={{ flex: '0 0 72px', display: 'flex', height: '100%' }}>
+          <Button
+            sx={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+              borderRadius: '4px 0 0 4px',
+              color: '#bdbdbd',
+              bgcolor: '#f3eaff',
+              border: 'none',
+              fontSize: 36,
+              minWidth: 0,
+              p: 0,
+              boxShadow: 0,
+            }}
+            disabled
+          >
+            <RemoveIcon sx={{ fontSize: 36 }} />
+          </Button>
+        </Box>
+        {/* Center Label */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Typography sx={{ fontWeight: 600, textAlign: 'center', fontSize: 20 }}>
+            {behavior.behaviorTitle}: ({getTodayCount(behavior.dailyCounts || [])})
+          </Typography>
+        </Box>
+        {/* Plus Button (right) */}
+        <Box sx={{ flex: '0 0 72px', display: 'flex', height: '100%' }}>
+          <Button
+            sx={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '0 4px 4px 0',
+              color: '#fff',
+              bgcolor: '#5e35b1',
+              fontSize: 36,
+              minWidth: 0,
+              p: 0,
+              boxShadow: 0,
+              '&:hover': { bgcolor: '#7c43bd' },
+            }}
+            onClick={() => handleIncrementFrequency(behavior._id)}
+          >
+            <AddIcon sx={{ fontSize: 36 }} />
+          </Button>
+        </Box>
+      </>
+    )}
+  </Paper>
+))}
                   </div>
                 </div>
               </div>
@@ -351,7 +491,7 @@ const Frequency = ({ studentId: propStudentId, refetchTrigger }) => {
                     ? selectedBehaviorTitles.join(' and ')
                     : selectedBehaviorTitles.slice(0, -1).join(', ') + ', and ' + selectedBehaviorTitles[selectedBehaviorTitles.length - 1]
                 }?`}
-                visible={showDeleteConfirmation}
+                open={showDeleteConfirmation}
                 onOk={handleConfirmDelete}
                 onCancel={() => setShowDeleteConfirmation(false)}
               >

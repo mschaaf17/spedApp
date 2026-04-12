@@ -12,7 +12,8 @@ export default function SelectStudentToTrackPage() {
 
   // Handle student selection - navigate to tracking view
   const handleSelectStudent = (student) => {
-    navigate('/mainTrackingView', { 
+    // navigate('/mainTrackingView', { 
+        navigate('/mainDashboard', { 
       state: { selectedStudent: student } 
     });
   };

@@ -7,7 +7,7 @@ import Auth from "../../utils/auth";
 
 const Header = () => {
   const [activeLink, setActiveLink] = useState("");
-  const { loading, data } = useQuery(QUERY_ME);
+  const { loading, data } = useQuery(QUERY_ME, { skip: !Auth.loggedIn() });
   const admin = data?.me ? data.me.isAdmin : false; // Check if data.me exists before accessing isAdmin
   const location = useLocation();
 

@@ -1,7 +1,6 @@
-import React, {useState, userParam} from 'react'
+import React, { useState } from 'react'
 import {Link} from 'react-router-dom'
-import {useMutation, useQuery} from '@apollo/client'
-import {QUERY_ME} from '../../utils/queries'
+import {useMutation} from '@apollo/client'
 import { LOGIN_USER } from '../../utils/mutations'
 import Auth from '../../utils/auth'
 import './index.css'
@@ -10,13 +9,6 @@ const Login = props => {
   // const { username: userParam } = useParams()
     const [formState, setFormState] = useState({ username: '', password: ''})
     const [login, {error}] = useMutation(LOGIN_USER)
-    const {loading, data} = useQuery(QUERY_ME)
-    const admin = data?.me.isAdmin
-    console.log(data)
-  
-    if (loading) {
-      return <div className='loader'>Loading...</div>;
-    }
 
     // update state based on form input changes
     const handleChange = event => {

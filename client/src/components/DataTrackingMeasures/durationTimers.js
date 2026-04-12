@@ -1,7 +1,7 @@
 //TODO: fix the modal issues when more than duration is opened
 
 import React, {useState, useEffect} from 'react'
-import { Modal, Button, Select, message } from "antd"
+import { Modal,Select, message } from "antd"
 import "./index.css"
 import { useQuery, useMutation } from '@apollo/client';
 import {
@@ -19,15 +19,18 @@ import {
 } from '../../utils/mutations';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AddIcon from '@mui/icons-material/Add';
+import HandednessRow from '../HandednessRow';
+import { Box, Typography, Button, Switch } from '@mui/material';
 
 // Timer controls component moved outside to prevent recreation
-const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => {
+const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch, isLeftHanded }) => {
   const durationId = duration._id;
   const timers = duration.timers || [];
   const runningTimer = timers.find(t => t.status === 'running');
 
   // Local timer state for this specific duration
   const [timerState, setTimerState] = useState({ time: 0, timerOn: false, pendingStop: false });
+
 
   // Mutations
   const [startTimer] = useMutation(START_DURATION_TIMER, {
@@ -148,133 +151,53 @@ const TimerControls = ({ duration, studentId, onRemoveDuration, onRefetch }) => 
   };
 
   return (
-    <div
-      style={{
-        // padding: '18px 24px',
-        // background: '#fff',
-        // marginBottom: 16,
-        // boxShadow: '0 2px 8px #e0e0e0',
-        maxWidth: 400,
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start'
-      }}
-    >
-    
-   
-      <div
-        style={{
+    <Box sx={{ width: '100%', maxWidth: 600, margin: '0 auto', mb: 2 }}>
+      <HandednessRow
+        left={
+          <Typography sx={{ fontWeight: 600, ml: 1 }}>
+            {duration.behaviorTitle}
+          </Typography>
+        }
+        center={
+          <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 24 }}>
+            {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
+            {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
+            {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
+          </Typography>
+        }
+        right={
+          <Box>
+            {!timerState.timerOn && timerState.time === 0 && (
+              <Button variant="contained" size="small" onClick={handleStart}>Start</Button>
+            )}
+            {timerState.timerOn && (
+              <Button variant="contained" color="error" size="small" onClick={handleStop}>Stop</Button>
+            )}
+            {!timerState.timerOn && timerState.time !== 0 && (
+              <>
+                <Button variant="contained" size="small" onClick={handleResume}>Resume</Button>
+                <Button variant="outlined" size="small" color="warning" onClick={handleReset} sx={{ ml: 1 }}>Reset</Button>
+              </>
+            )}
+          </Box>
+        }
+        leftHanded={isLeftHanded}
+        sx={{
+          border: '1.5px solid #e0d7f6',
+          borderRadius: 4,
+          bgcolor: '#faf8ff',
+          px: 2,           // <--- Add this for horizontal padding (theme spacing, e.g. 16px)
+          py: 0,
+          minHeight: 64,
           width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
+          boxShadow: '0 2px 8px 0 #f3eaff',
         }}
-      >
-        
-        <div
-          style={{
-            fontFamily: 'Roboto Mono, monospace',
-            fontSize: 44,
-            color: '#52c41a',
-            background: '#eaffea',
-            borderRadius: 10,
-            padding: '8px 24px',
-            fontWeight: 700,
-            letterSpacing: 2,
-            marginBottom: 12,
-            boxShadow: '0 1px 4px #e0e0e0'
-          }}
-        >
-             <span style={{ width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center', fontWeight: 600, fontSize: 18, color: '#222' }}>
-        {duration.behaviorTitle}
-      </span>
-          {String(Math.floor((timerState.time / 3600000) % 60)).padStart(2, '0')}:
-          {String(Math.floor((timerState.time / 60000) % 60)).padStart(2, '0')}:
-          {String(Math.floor((timerState.time / 1000) % 60)).padStart(2, '0')}
-
-          <div style={{ display: 'flex', justifyContent: 'center'}}>
-          
-          {!timerState.timerOn && timerState.time === 0 && (
-            <Button
-              type="primary"
-              style={{
-                borderRadius: 8,
-                fontWeight: 500,
-                fontSize: 18,
-                width: 120,
-                height: 40,
-                background: '#52c41a',
-                borderColor: '#52c41a'
-              }}
-              onClick={handleStart}
-            >
-              Start
-            </Button>
-          )}
-          {timerState.timerOn && (
-            <Button
-              danger
-              style={{
-                borderRadius: 8,
-                fontWeight: 500,
-                fontSize: 18,
-                width: 120,
-                height: 40
-              }}
-              onClick={handleStop}
-            >
-              Stop
-            </Button>
-          )}
-          {!timerState.timerOn && timerState.time !== 0 && (
-            <>
-              <Button
-                type="primary"
-                style={{
-                  borderRadius: 8,
-                  fontWeight: 500,
-                  fontSize: 18,
-                  width: 120,
-                  height: 40,
-                  background: '#52c41a',
-                  borderColor: '#52c41a'
-                }}
-                onClick={handleResume}
-              >
-                Resume
-              </Button>
-              <Button
-                style={{
-                  borderRadius: 8,
-                  fontWeight: 500,
-                  fontSize: 18,
-                  width: 120,
-                  height: 40,
-                  background: '#fffbe6',
-                  color: '#faad14',
-                  borderColor: '#ffe58f'
-                }}
-                onClick={handleReset}
-              >
-                Reset
-              </Button>
-            </>
-          )}
-        </div>
-
-
-        </div>
-     
-      </div>
-    </div>
+      />
+    </Box>
   );
 };
 
-export default function DurationTimers({ studentId, refetchTrigger }) {
+export default function DurationTimers({ studentId, refetchTrigger, isLeftHanded }) {
   const [showSelect, setShowSelect] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [selectedBehaviorIds, setSelectedBehaviorIds] = useState([]);
@@ -345,16 +268,18 @@ export default function DurationTimers({ studentId, refetchTrigger }) {
 
   return (
     <div style={{ width: '100%' }}>
+
       <div>
         {durations.length === 0 && <div>No durations found for this student.</div>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32 }}>
           {durations.map(duration => (
-            <div key={duration._id} style={{ flex: '1 1 350px', minWidth: 350, maxWidth: 500 }}>
+            <div key={duration._id} style={{ width: '100%', maxWidth: 600, margin: '0 auto' }}>
               <TimerControls 
                 duration={duration} 
                 studentId={studentId}
                 onRemoveDuration={handleRemoveDuration}
                 onRefetch={durationRefetch}
+                isLeftHanded={isLeftHanded}
               />
             </div>
           ))}

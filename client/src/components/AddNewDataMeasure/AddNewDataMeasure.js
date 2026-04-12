@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { ADD_FREQUENCY_TITLE, ADD_DURATION_TITLE } from '../../utils/mutations';
+import { ADD_FREQUENCY_TITLE, ADD_DURATION_TITLE, ADD_DATA_MEASURE_TO_STUDENT } from '../../utils/mutations';
 import { Input, Checkbox, Form, Select, Upload, Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { QUERY_FREQUENCY_TEMPLATES } from '../../utils/queries';
@@ -17,7 +17,7 @@ const normFile = (e) => {
 };
 
 
-const AddNewDataMeasure = ({onClose, updateMergedData, mergedData}) => {
+const AddNewDataMeasure = ({ onClose, updateMergedData, mergedData, studentId }) => {
 
   const { data, loading, error, refetch } = useQuery(QUERY_FREQUENCY_TEMPLATES);
   const { refetch: refetchDurationTemplates } = useQuery(require('../../utils/queries').QUERY_DURATION_TEMPLATES);
@@ -25,6 +25,7 @@ const AddNewDataMeasure = ({onClose, updateMergedData, mergedData}) => {
   const [componentDisabled, setComponentDisabled] = useState(false);
   const [addFrequencyTitle] = useMutation(ADD_FREQUENCY_TITLE)
   const [addDurationTitle] = useMutation(ADD_DURATION_TITLE)
+  const [addDataMeasureToStudent] = useMutation(ADD_DATA_MEASURE_TO_STUDENT);
   
   const [form] = Form.useForm();
   const [tableData, setTableData] = useState([])
@@ -45,38 +46,48 @@ useEffect(() => {
 
   const handleSubmit = async (values) => {
     const { behaviorTitle, dataType, operationalDefinition } = values;
+    let newTemplateId = null;
+
     if (dataType === "frequency") {
       try {
-        await addFrequencyTitle({
-          variables: {
-            behaviorTitle,
-            operationalDefinition
-          }
+        const { data } = await addFrequencyTitle({
+          variables: { behaviorTitle, operationalDefinition }
         });
-        refetch(); // refetch frequency templates
+        // Get the new template's ID
+        newTemplateId = data?.addFrequencyTitle?._id;
+        await refetch();
         showMessage(behaviorTitle);
-        setTableData([...tableData, { behaviorTitle, dataType, operationalDefinition }]);
-        updateMergedData([...mergedData, { behaviorTitle, dataType, operationalDefinition }]);
+
+        // If studentId is provided, assign to student
+        if (studentId && newTemplateId) {
+          await addDataMeasureToStudent({
+            variables: { dataMeasureId: newTemplateId, studentId }
+          });
+        }
+
         onClose();
       } catch (error) {
         console.error('Error saving frequency template: ', error);
       }
     } else if (dataType === 'duration') {
       try {
-        await addDurationTitle({
-          variables: {
-            behaviorTitle: behaviorTitle,
-            operationalDefinition: operationalDefinition
-          }
+        const { data } = await addDurationTitle({
+          variables: { behaviorTitle, operationalDefinition }
         });
-        await refetchDurationTemplates(); // refetch duration templates
+        newTemplateId = data?.addDurationTitle?._id;
+        await refetchDurationTemplates();
         showMessage(behaviorTitle);
-        // Do NOT updateMergedData here; let parent useEffect update mergedData from backend
+
+        if (studentId && newTemplateId) {
+          await addDataMeasureToStudent({
+            variables: { dataMeasureId: newTemplateId, studentId }
+          });
+        }
+
         onClose();
-      } catch(error) {
+      } catch (error) {
         console.error('Error saving duration data measure: ', error)
       }
-    
     }
   }
 

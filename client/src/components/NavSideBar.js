@@ -3,18 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { M3Button, M3Card } from '../components/M3Components';
 import { StarFilled, MenuOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
 
-const SidebarNav = () => {
+const NavSideBar = ({setSection}) => {
   const [configOpen, setConfigOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
     <>
-   
-       
       {/* Top Menu Icon */}
       <button className="md-icon-button" 
-        style={{ position: 'fixed', top: 16, left: 16, zIndex: 2000 }}
+        style={{ position: 'fixed', top: 80, left: 16, zIndex: 2000 }}
         onClick={() => setSidebarOpen((open) => !open)}
         aria-label="Open navigation"
         >
@@ -40,6 +38,7 @@ const SidebarNav = () => {
         variant="filled"
         size="large"
         style={{
+            top: 20,
           background: 'var(--md-primary-95)',
           color: 'var(--md-primary-40)',
           fontWeight: 600,
@@ -47,7 +46,11 @@ const SidebarNav = () => {
           marginBottom: 'var(--md-spacing-lg)',
         }}
         fullWidth
-        onClick={() => navigate('/selectStudentToTrack')}
+        onClick={() => {
+        //   navigate('/selectStudentToTrack');
+          setSection('tracking');
+          setSidebarOpen(false);
+        }}
       >
         Track Data
       </M3Button>
@@ -77,10 +80,18 @@ const SidebarNav = () => {
           <M3Button variant="text" style={{ color: 'var(--md-on-surface)' }} fullWidth>
             Contracts
           </M3Button>
-          <M3Button variant="text" style={{ color: 'var(--md-on-surface)' }} fullWidth>
+          <M3Button variant="text" style={{ color: 'var(--md-on-surface)' }} fullWidth
+          onClick={() => {
+            setSection('breaks');
+            setSidebarOpen(false);
+          }}>
             Breaks
           </M3Button>
-          <M3Button variant="text" style={{ color: 'var(--md-on-surface)' }} fullWidth>
+          <M3Button variant="text" style={{ color: 'var(--md-on-surface)' }} fullWidth
+          onClick={() => {
+            setSection('studentView');
+            setSidebarOpen(false);
+          }}>
             Student View
           </M3Button>
         </div>
@@ -95,7 +106,10 @@ const SidebarNav = () => {
           marginTop: 'var(--md-spacing-lg)',
         }}
         fullWidth
-        onClick={() => navigate('/dashboard')}
+        onClick={() => {
+            setSection('analyzeData');
+            setSidebarOpen(false);
+        }}
       >
         Analyze Data For Student 1
       </M3Button>
@@ -106,4 +120,4 @@ const SidebarNav = () => {
   );
 };
 
-export default SidebarNav;
+export default NavSideBar;
