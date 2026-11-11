@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>My classroom supports</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="icon-128.png" alt="" width="29" height="29" />
+      <div>
+        <strong>inclusion</strong><span>Your supports. Your voice.</span>
+      </div>
+    </header>
+    <main>
+      <p id="status" role="status">Opening your supports…</p>
+      <form id="connect" hidden>
+        <h1>A little help, privately.</h1>
+        <p>Use the app address and account your school gave you.</p>
+        <label
+          >School app address<input
+            id="origin"
+            type="url"
+            required
+            placeholder="https://your-school-app.example" /></label
+        ><label
+          >Username<input
+            id="username"
+            autocomplete="username"
+            required /></label
+        ><label
+          >Password<input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            required /></label
+        ><button id="login" type="submit">Connect my supports</button>
+      </form>
+      <section id="supports" hidden>
+        <h1 id="greeting"></h1>
+        <label>Send my request to<select id="teacher"></select></label>
+        <div id="cards"></div>
+        <p class="footnote">For urgent help, tell a trusted adult directly.</p>
+        <button class="secondary" id="refresh">Refresh request status</button
+        ><button class="text" id="signout">Sign out</button>
+      </section>
+    </main>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

@@ -1,37 +1,31 @@
 {
-  "name": "accom-app",
-  "version": "1.0.0",
-  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
-  "main": "index.js",
+  "name": "inclusion",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Mobile classroom support and student self-advocacy",
   "engines": {
-    "node": "16.x"
+    "node": ">=22.16.0"
   },
+  "workspaces": [
+    "mobile",
+    "api"
+  ],
   "scripts": {
-    "start": "node server/server.js",
-    "develop": "concurrently \"cd server && npm run watch\" \"cd client && npm start\"",
-    "install": "cd server && npm i && cd ../client && npm i",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cd client && npm run build",
-    "seed": "node server/seeders/seeds.js"
+    "start": "npm run start --workspace=inclusion-api",
+    "dev": "concurrently -k -n api,web \"npm run dev --workspace=inclusion-api\" \"npm run dev --workspace=inclusion-mobile\"",
+    "dev:demo": "npm run dev --workspace=inclusion-mobile",
+    "build": "npm run build --workspace=inclusion-mobile",
+    "test": "node --test shared/test/*.test.mjs api/test/*.test.mjs",
+    "bootstrap": "npm run bootstrap --workspace=inclusion-api",
+    "migrate:legacy": "node --env-file-if-exists=.env api/scripts/migrate-legacy.mjs",
+    "legacy:start": "node server/server.js"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "@babel/core": "^7.22.5",
-    "@babel/node": "^7.22.5",
-    "concurrently": "^5.1.0",
-    "prettier": "3.0.3",
-    "puppeteer": "^20.7.2"
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mschaaf17/spedApp"
-  },
-  "dependencies": {
-    "date-fns": "^2.30.0",
-    "graphql-scalars": "^1.22.2",
-    "moment": "^2.29.4",
-    "mongodb": "^5.6.0",
-    "mongoose": "^7.1.1"
   }
 }
