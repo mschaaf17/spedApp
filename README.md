@@ -81,3 +81,21 @@ Tests cover scoped access, request transitions, quiet hours and daylight saving 
 | `client/`, `server/` | Preserved original source                                       |
 
 This is a reviewable modernization foundation with one active measurable goal per student. Multiple simultaneous goals, team-approved intervention phase scheduling, district SSO, roster synchronization, and physical-device testing are subsequent enhancements.
+
+## Request conversations and discreet confirmations
+
+A successful student request briefly displays a thumbs-up, then settles into a small corner indicator. Opening it shows the saved request, teacher status history, and a short shared conversation. Students can use picture replies (Help or Thanks) and optional spoken messages; no automatic audio or large persistent request overlay is used. The school-team view records the request and replies without the student animation. A receipt is separate from acknowledged, offered, and provided support.
+
+The app and Chromebook popup use the same request IDs, status history, messages, and API authorization. The popup declares its request channel for reporting. Authenticated server-sent invalidations refresh open views, with a five-second polling fallback. Tokens are sent in headers. The current live-update bus is process-local; a multi-instance deployment needs a shared broker for immediate cross-instance updates, while polling still reconciles records. No background tab access or student browsing data is added. The extension receives live updates while its popup is open; the saved request persists on the school backend after closing it.
+
+## Reports, interventions, and plan reviews
+
+**Reports & review** lets educators choose a date period, student, behavior, audience, and (for administrators) educator caseload. It summarizes support requests, recorded behavior frequency/duration, anonymous peer comparisons, and educator contributions. It records team-approved intervention phase start dates and places educator/student reflections and proposed IEP, 504, or BIP review topics below the timeline. A proposal does not apply a plan change; guided 504 review drafts are also available in Plans & drafts.
+
+Use **Present summary** for an on-screen four-section presentation, **Export presentation** for a self-contained HTML report, or **Print / PDF** for the browser print workflow. This export is HTML, not a PowerPoint file. Demo exports and presentations are labeled fictional.
+
+The detailed school-team view includes student/phase context. The aggregate board view omits student names and IDs, teacher names, conversations, free-text behavior labels, phase details, and individual proposals. Groups and metrics with fewer than five contributing students are withheld, including complementary channel counts. This formatting is not a compliance certification or a guarantee against every possible inference.
+
+Reports query the authorized date range directly, rather than using the workspace's 90-day/2,000-entry preview window. Oversized queries fail explicitly. Support completion counts use recorded delivery timestamps within the chosen period and requests created in that period. Frequency gaps are missing data, not invented zeroes. Phase comparisons describe entered records and do not establish causation.
+
+Review screenshots: [student corner receipt](docs/phone-receipt.jpg), [intervention timeline](docs/team-review.jpg), and [board presentation](docs/board-summary.jpg). Tests cover scoped live updates, thread access, board projection, exported markup, date boundaries, and phase records alongside the original checks.

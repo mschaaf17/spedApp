@@ -25,6 +25,9 @@ import {
   X,
 } from "lucide-react";
 import { api, getSession, setSession } from "./api.js";
+import { watchWorkspace } from "../../shared/live.mjs";
+import { StudentReceipt, RequestConversation } from "./RequestReceipt.jsx";
+import Reports from "./Reports.jsx";
 import {
   readDemo,
   saveDemo,
@@ -68,6 +71,7 @@ const navigation = [
   ["track", "Quick tracking", Activity],
   ["progress", "Progress", TrendingUp],
   ["plans", "Plans & drafts", ClipboardList],
+  ["reports", "Reports & review", ClipboardList],
 ];
 const EMPTY_WORKSPACE = {
   students: [],
@@ -86,6 +90,7 @@ const titleMap = {
   progress: "Make their growth visible.",
   plans: "Thoughtful support starts with a plan.",
   settings: "Make Inclusion work for your day.",
+  reports: "Bring the classroom story to the table.",
 };
 
 export default function App() {
@@ -105,6 +110,7 @@ function Workspace() {
   );
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
+  const [receipt, setReceipt] = useState(null);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [error, setError] = useState("");
@@ -161,8 +167,22 @@ function Workspace() {
     if (!session) return;
     const id = setInterval(() => {
       if (!document.hidden && !pending.current.size) refresh();
-    }, 15000);
-    return () => clearInterval(id);
+    }, 5000);
+    const stop = watchWorkspace({
+      token: session.token,
+      onChange: () => {
+        if (!document.hidden && !pending.current.size) refresh();
+      },
+    });
+    const visible = () => {
+      if (!document.hidden) refresh();
+    };
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      clearInterval(id);
+      stop();
+      document.removeEventListener("visibilitychange", visible);
+    };
   }, [session, refresh]);
   useEffect(() => {
     const on = () => setOffline(!navigator.onLine);
@@ -243,6 +263,7 @@ function Workspace() {
             title: accommodation.title,
             accommodationId: accommodation.id,
             status: "requested",
+            source: "web",
             createdAt: new Date().toISOString(),
             history: [{ status: "requested", at: new Date().toISOString() }],
           }
@@ -256,6 +277,38 @@ function Workspace() {
           });
       update((d) => ({ ...d, requests: [result, ...d.requests] }));
       return result;
+    });
+  const sendMessage = (request, message) =>
+    run(`message-${request.id}`, async () => {
+      const phrases = {
+        still_need_help: "I still need help.",
+        thanks: "Thank you.",
+        on_my_way: "I am on my way.",
+        please_wait: "I have your request. Please wait a moment.",
+      };
+      const updated = demo
+        ? {
+            ...request,
+            messages: [
+              ...(request.messages || []),
+              {
+                id: crypto.randomUUID(),
+                role: user.role,
+                text: phrases[message.kind] || message.text,
+                kind: message.kind,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }
+        : await api(`/requests/${request.id}/messages`, {
+            method: "POST",
+            body: message,
+          });
+      update((d) => ({
+        ...d,
+        requests: d.requests.map((r) => (r.id === request.id ? updated : r)),
+      }));
+      return updated;
     });
   const logEvent = (entry) =>
     run(
@@ -691,6 +744,7 @@ function Workspace() {
                   view={view}
                   requests={activeRequests}
                   requestSupport={requestSupport}
+                  onSent={setReceipt}
                   advance={advance}
                   onProgress={() => setModal({ type: "progress" })}
                 />
@@ -965,15 +1019,12 @@ function Workspace() {
                                   busy={busy[r.id]}
                                 />
                                 <details className="request-history">
-                                  <summary>Request history</summary>
-                                  <ol>
-                                    {r.history.map((h, i) => (
-                                      <li key={i}>
-                                        {h.status} ·{" "}
-                                        {new Date(h.at).toLocaleString()}
-                                      </li>
-                                    ))}
-                                  </ol>
+                                  <summary>Conversation & history</summary>
+                                  <RequestConversation
+                                    request={r}
+                                    onMessage={sendMessage}
+                                    busy={busy[`message-${r.id}`]}
+                                  />
                                 </details>
                               </div>
                             ))
@@ -1044,6 +1095,14 @@ function Workspace() {
                       onEdit={() => setModal({ type: "edit", student })}
                     />
                   )}
+                  {view === "reports" && (
+                    <Reports
+                      data={data}
+                      demo={demo}
+                      user={user}
+                      onUpdate={update}
+                    />
+                  )}
                   {view === "settings" && (
                     <Settings
                       {...common}
@@ -1097,6 +1156,16 @@ function Workspace() {
           </button>
         ))}
       </nav>
+      {studentMode && (
+        <StudentReceipt
+          requests={data.requests.filter((r) => r.studentId === user.id)}
+          student={student}
+          receipt={receipt}
+          onMessage={sendMessage}
+          busy={busy}
+          onCancel={(r) => advance(r, "cancelled")}
+        />
+      )}
       {toast && (
         <div className="toast" role="status">
           <Icon icon={Check} size={18} />

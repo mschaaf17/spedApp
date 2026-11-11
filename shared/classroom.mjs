@@ -159,6 +159,9 @@ export function familyProjection(student, events) {
 export function guidedDraft(student, type = "IEP goal") {
   const goal = student.goal || {};
   const behavior = student.behavior || {};
+  if (type === "504 review")
+    return `Draft for school-team review\n\nCurrent assigned accommodations:\n${(student.accommodations || []).map((a) => "- " + a.title + ": " + a.description).join("\n")}\n\nEvidence to review: [Use request frequency, delivery history, classroom observations, and student/family input.]\nWhat is working: [Describe recorded observations.]\nProposed change for discussion: [Describe the support and the evidence behind the proposal.]\nReview date and responsible team: [Complete together.]\n\nRequest counts alone do not establish effectiveness, eligibility, or a need to change a plan. This draft does not update an approved 504 plan.`;
+
   if (type === "Operational definition")
     return `Draft for educator review\n\nBehavior: ${behavior.name || "Name the behavior"}\n\nObservable definition: ${behavior.definition || "[Describe exactly what an observer can see or hear. Include examples and non-examples.]"}\n\nMeasurement: [Frequency, duration, or interval recording]\nStart: [Observable start criterion]\nEnd: [Observable stop criterion]\nExclude: [Non-examples and appropriate use of approved accommodations]\n\nConfirm that two observers can apply this definition consistently before using it.`;
   if (type === "BIP")

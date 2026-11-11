@@ -1,6 +1,12 @@
 import { pictureFor } from "./pictures.mjs";
+import { watchWorkspace } from "./live.mjs";
 const $ = (id) => document.getElementById(id);
-let session, workspace;
+let session,
+  workspace,
+  stopUpdates,
+  refreshTimer,
+  receiptId,
+  receiptIntroUntil = 0;
 const activeStatuses = ["requested", "acknowledged", "offered"];
 const statusLabel = {
   requested: "Request sent",
@@ -26,6 +32,8 @@ async function call(path, options = {}) {
     if (response.status === 401) {
       await chrome.storage.session.remove("inclusionSession");
       session.token = null;
+      stopUpdates?.();
+      clearInterval(refreshTimer);
       $("connect").hidden = false;
       $("supports").hidden = true;
     }
@@ -64,7 +72,7 @@ function renderCards() {
         r.teacherId === teacherId &&
         activeStatuses.includes(r.status),
     );
-    button.textContent = active ? `✓ ${statusLabel[active.status]}` : "☝ Ask";
+    button.textContent = "☝ Ask";
     button.setAttribute(
       "aria-label",
       `${support.title}. ${active ? statusLabel[active.status] : "Ask my teacher"}`,
@@ -81,14 +89,22 @@ function renderCards() {
       retries[key] = clientRequestId;
       await chrome.storage.session.set({ inclusionRetries: retries });
       try {
-        await call("/requests", {
+        const saved = await call("/requests", {
           method: "POST",
-          body: { accommodationId: support.id, teacherId, clientRequestId },
+          body: {
+            accommodationId: support.id,
+            teacherId,
+            clientRequestId,
+            source: "extension",
+          },
         });
         delete retries[key];
         await chrome.storage.session.set({ inclusionRetries: retries });
-        show("Your teacher has received your request.");
+        receiptId = saved.id;
+        await chrome.storage.session.set({ inclusionReceipt: receiptId });
+        show("");
         await load();
+        renderReceipt(true);
       } catch (e) {
         show(
           e.message ||
@@ -142,6 +158,7 @@ async function load() {
   $("connect").hidden = true;
   $("supports").hidden = false;
   renderCards();
+  renderReceipt();
 }
 $("connect").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -179,6 +196,7 @@ $("connect").addEventListener("submit", async (e) => {
     await chrome.storage.local.set({ inclusionOrigin: origin });
     show("Your supports are private. Choose what you need.");
     await load();
+    startUpdates();
   } catch (e) {
     show(e.message || "Could not connect to the school app.");
   } finally {
@@ -193,6 +211,9 @@ $("refresh").addEventListener("click", () =>
 );
 $("signout").addEventListener("click", async () => {
   await chrome.storage.session.remove(["inclusionSession", "inclusionRetries"]);
+  stopUpdates?.();
+  clearInterval(refreshTimer);
+  document.getElementById("receipt")?.remove();
   session = null;
   $("supports").hidden = true;
   $("connect").hidden = false;
@@ -203,9 +224,12 @@ async function start() {
     .inclusionSession;
   $("origin").value =
     (await chrome.storage.local.get("inclusionOrigin")).inclusionOrigin || "";
+  receiptId = (await chrome.storage.session.get("inclusionReceipt"))
+    .inclusionReceipt;
   if (session?.token) {
     try {
       await load();
+      startUpdates();
       show("Your supports are private. Choose what you need.");
       return;
     } catch (e) {
@@ -222,3 +246,105 @@ async function start() {
 start().catch(() =>
   show("The extension could not open. Close it and try again."),
 );
+
+function startUpdates() {
+  stopUpdates?.();
+  clearInterval(refreshTimer);
+  stopUpdates = watchWorkspace({
+    origin: session.origin,
+    token: session.token,
+    onChange: () => load().catch((e) => show(e.message)),
+  });
+  refreshTimer = setInterval(() => {
+    if (session?.token) load().catch(() => {});
+  }, 5000);
+}
+window.addEventListener("unload", () => {
+  stopUpdates?.();
+  clearInterval(refreshTimer);
+});
+function renderReceipt(intro = false) {
+  const request =
+    workspace?.requests.find((r) => r.id === receiptId) ||
+    workspace?.requests.find((r) => activeStatuses.includes(r.status));
+  if (!request) return;
+  let root = $("receipt");
+  if (!root) {
+    root = document.createElement("aside");
+    root.id = "receipt";
+    const panel = document.createElement("section");
+    panel.id = "receipt-panel";
+    panel.hidden = true;
+    panel.setAttribute("aria-label", "My request conversation");
+    const chip = document.createElement("button");
+    chip.id = "receipt-chip";
+    chip.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+      chip.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+    root.append(panel, chip);
+    document.body.append(root);
+  }
+  const chip = $("receipt-chip"),
+    panel = $("receipt-panel");
+  if (intro) receiptIntroUntil = Date.now() + 2200;
+  chip.className = Date.now() < receiptIntroUntil ? "arriving" : "";
+  chip.setAttribute(
+    "aria-label",
+    `${statusLabel[request.status] || request.status}. Open my request conversation.`,
+  );
+  chip.textContent = "";
+  const thumb = document.createElement("img");
+  thumb.src = "thumb.svg";
+  thumb.alt = "";
+  chip.append(thumb);
+  panel.replaceChildren();
+  const heading = document.createElement("strong");
+  heading.textContent = request.title;
+  const status = document.createElement("p");
+  status.textContent = statusLabel[request.status] || request.status;
+  panel.append(heading, status);
+  const log = document.createElement("div");
+  log.setAttribute("role", "log");
+  log.setAttribute("aria-label", "Request messages");
+  for (const m of request.messages || []) {
+    const row = document.createElement("p");
+    row.textContent = m.text;
+    log.append(row);
+    if ("speechSynthesis" in window) {
+      const listen = document.createElement("button");
+      listen.className = "text";
+      listen.textContent = "🔊";
+      listen.setAttribute("aria-label", `Listen: ${m.text}`);
+      listen.addEventListener("click", () => {
+        speechSynthesis.cancel();
+        speechSynthesis.speak(new SpeechSynthesisUtterance(m.text));
+      });
+      log.append(listen);
+    }
+  }
+  panel.append(log);
+  if (activeStatuses.includes(request.status))
+    for (const [kind, label] of [
+      ["still_need_help", "☝ Help"],
+      ["thanks", "👍 Thanks"],
+    ]) {
+      const reply = document.createElement("button");
+      reply.className = "secondary";
+      reply.textContent = label;
+      reply.addEventListener("click", async () => {
+        reply.disabled = true;
+        try {
+          await call(`/requests/${request.id}/messages`, {
+            method: "POST",
+            body: { kind },
+          });
+          await load();
+        } catch (e) {
+          show(e.message);
+          reply.disabled = false;
+        }
+      });
+      panel.append(reply);
+    }
+}

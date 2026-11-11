@@ -22,6 +22,9 @@ import {
 import { draftPlan } from "./ai.mjs";
 import { pictureFor } from "../../shared/pictures.mjs";
 
+import { createUpdateBus } from "./updates.mjs";
+import { addReportRoutes } from "./report-routes.mjs";
+
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const route = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -41,6 +44,7 @@ export function createApp({
   secret,
   isReady = () => mongoose.connection.readyState === 1,
   env = process.env,
+  updates = createUpdateBus(),
 } = {}) {
   if (!secret || secret.length < 32)
     throw new Error("JWT_SECRET must contain at least 32 characters.");
@@ -173,12 +177,49 @@ export function createApp({
         req.user = await db.User.findById(claims.uid);
         if (!req.user) throw new Error();
         req.role = roleFor(req.user);
+        req.sessionExpiresAt = claims.exp * 1000;
       } catch {
         throw fail(401, "Please sign in again.");
       }
+      req.notifyUsers = new Set();
+      res.on("finish", () => {
+        if (
+          res.statusCode < 300 &&
+          ["POST", "PATCH", "PUT", "DELETE"].includes(req.method) &&
+          req.notifyUsers.size
+        )
+          updates.publish([...req.notifyUsers]);
+      });
       next();
     }),
   );
+  app.get("/api/v2/updates", (req, res) => {
+    res.set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-store",
+      "X-Accel-Buffering": "no",
+    });
+    res.flushHeaders();
+    res.write("event: ready\ndata: {}\n\n");
+    const unsubscribe = updates.subscribe(
+      { id: String(req.user._id), role: req.role },
+      () => {
+        if (!res.destroyed) res.write("event: changed\ndata: {}\n\n");
+      },
+    );
+    const heartbeat = setInterval(() => {
+      if (!res.destroyed) res.write(": heartbeat\n\n");
+    }, 15000);
+    const expiry = setTimeout(
+      () => res.end(),
+      Math.max(0, req.sessionExpiresAt - Date.now()),
+    );
+    res.on("close", () => {
+      clearInterval(heartbeat);
+      clearTimeout(expiry);
+      unsubscribe();
+    });
+  });
   const staff = (req, res, next) =>
     STAFF_ROLES.includes(req.role)
       ? next()
@@ -194,8 +235,11 @@ export function createApp({
     );
     if (req.role !== "admin" && !(req.role === "student" ? self : assigned))
       throw fail(403, "You do not have access to this student.");
+    req.notifyUsers?.add(String(studentId));
+    for (const id of profile.teacherIds) req.notifyUsers?.add(String(id));
     return profile;
   }
+  addReportRoutes(app, { db, staff, profileFor });
   app.get(
     "/api/v2/workspace",
     route(async (req, res) => {
@@ -442,6 +486,7 @@ export function createApp({
         accommodationId: accommodation.id,
         title: accommodation.title,
         clientRequestId: req.body.clientRequestId,
+        source: req.body.source === "extension" ? "extension" : "web",
         history: [
           { status: "requested", at: new Date(), actorId: req.user._id },
         ],
@@ -467,6 +512,7 @@ export function createApp({
             String(request.teacherId) !== String(req.user._id)
       )
         throw fail(403, "You cannot change this request.");
+      await profileFor(req, String(request.studentId));
       if (!canTransition(request.status, req.body.status, req.role))
         throw fail(409, "Refresh the request before changing its status.");
       const updated = await db.Request.findOneAndUpdate(
@@ -486,6 +532,70 @@ export function createApp({
       if (!updated)
         throw fail(409, "This request was updated elsewhere. Please refresh.");
       res.json(serialize(updated));
+    }),
+  );
+  app.post(
+    "/api/v2/requests/:id/messages",
+    route(async (req, res) => {
+      if (!mongoose.isValidObjectId(req.params.id))
+        throw fail(404, "Request not found.");
+      const request = await db.Request.findById(req.params.id);
+      if (!request) throw fail(404, "Request not found.");
+      if (
+        req.role === "student"
+          ? String(request.studentId) !== String(req.user._id)
+          : req.role !== "admin" &&
+            String(request.teacherId) !== String(req.user._id)
+      )
+        throw fail(403, "You cannot join this request conversation.");
+      await profileFor(req, String(request.studentId));
+      if (["provided", "cancelled"].includes(request.status))
+        throw fail(
+          409,
+          "This request is closed. Send a new request if support is still needed.",
+        );
+      const phrases = {
+        still_need_help: "I still need help.",
+        thanks: "Thank you.",
+        on_my_way: "I am on my way.",
+        please_wait: "I have your request. Please wait a moment.",
+      };
+      const kind = req.body.kind;
+      if (
+        req.role === "student" &&
+        !["still_need_help", "thanks"].includes(kind)
+      )
+        throw fail(400, "Choose a student picture reply.");
+      const messageText =
+        phrases[kind] ||
+        (req.role !== "student" && kind === "text"
+          ? text(req.body.text, 500)
+          : "");
+      if (!messageText)
+        throw fail(400, "Choose a reply or enter a short message.");
+      const message = {
+        id: randomUUID(),
+        kind,
+        text: messageText,
+        role: req.role,
+        actorId: req.user._id,
+        createdAt: new Date(),
+      };
+      const result = await db.Request.findOneAndUpdate(
+        {
+          _id: request._id,
+          status: request.status,
+          "messages.99": { $exists: false },
+        },
+        { $push: { messages: message } },
+        { new: true, runValidators: true },
+      );
+      if (!result)
+        throw fail(
+          409,
+          "Refresh this conversation; it changed or reached its message limit.",
+        );
+      res.status(201).json(serialize(result));
     }),
   );
   app.post(
@@ -558,6 +668,7 @@ export function createApp({
         { $set: settings },
         { upsert: true, new: true },
       );
+      req.notifyUsers.add(String(req.user._id));
       res.json(settings);
     }),
   );
@@ -566,9 +677,12 @@ export function createApp({
     staff,
     route(async (req, res) => {
       const profile = await profileFor(req, req.params.id);
-      const type = ["IEP goal", "BIP", "Operational definition"].includes(
-        req.body.type,
-      )
+      const type = [
+        "IEP goal",
+        "504 review",
+        "BIP",
+        "Operational definition",
+      ].includes(req.body.type)
         ? req.body.type
         : "IEP goal";
       if (profile.drafts.length >= 100)
@@ -732,16 +846,14 @@ export function createApp({
           ? 400
           : 500);
     if (status >= 500) console.error("API operation failed:", error.name);
-    res
-      .status(status)
-      .json({
-        error:
-          status >= 500 && !error.status
-            ? "The request could not be completed. Please try again."
-            : error.code === 11000
-              ? "This record already exists."
-              : error.message,
-      });
+    res.status(status).json({
+      error:
+        status >= 500 && !error.status
+          ? "The request could not be completed. Please try again."
+          : error.code === 11000
+            ? "This record already exists."
+            : error.message,
+    });
   });
   return app;
 }

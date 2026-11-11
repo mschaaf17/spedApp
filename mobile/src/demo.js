@@ -166,11 +166,111 @@ export function seedDemo() {
       ],
     },
   ];
+  const dateOnly = (days) =>
+    new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const phases = students.flatMap((student) => [
+    {
+      id: `${student.id}-baseline`,
+      studentId: student.id,
+      name: "Baseline observation",
+      description:
+        "Record the existing classroom routine while preserving approved accommodations.",
+      startsOn: dateOnly(28),
+      teamConfirmed: true,
+    },
+    {
+      id: `${student.id}-prompts`,
+      studentId: student.id,
+      name: "Visual task prompts",
+      description:
+        "Model the first task step and use the agreed picture prompts alongside approved supports.",
+      startsOn: dateOnly(14),
+      teamConfirmed: true,
+    },
+  ]);
+  for (const [index, student] of students.entries()) {
+    for (const [week, count] of [4, 3, 2, 1].entries()) {
+      const days = 24 - week * 7;
+      for (let i = 0; i < count; i++)
+        events.push({
+          id: `${student.id}-frequency-${week}-${i}`,
+          studentId: student.id,
+          actorId: index > 2 ? "teacher-taylor" : "teacher-demo",
+          type: "frequency",
+          behavior: student.behavior.name,
+          createdAt: ago(days, i * 4),
+        });
+      events.push({
+        id: `${student.id}-duration-${week}`,
+        studentId: student.id,
+        actorId: "teacher-demo",
+        type: "duration",
+        seconds: 180 - week * 35,
+        behavior: student.behavior.name,
+        createdAt: ago(days, 10),
+      });
+      events.push({
+        id: `${student.id}-observation-${week}`,
+        studentId: student.id,
+        actorId: "teacher-demo",
+        type: "observation",
+        targetOnTask: week > 0,
+        peerOnTask: true,
+        createdAt: ago(days, 15),
+      });
+    }
+    student.accommodations = student.accommodations.map((a) => ({
+      ...a,
+      picture: {
+        quiet: "quiet",
+        break: "break",
+        instructions: "directions",
+        time: "time",
+      }[a.id],
+    }));
+    if (index > 2) student.teacherIds.push("teacher-taylor");
+    requests.push({
+      id: `${student.id}-past-support`,
+      studentId: student.id,
+      teacherId: "teacher-demo",
+      accommodationId: "break",
+      title: "A movement break",
+      source: "web",
+      status: "provided",
+      createdAt: ago(3),
+      history: [
+        { status: "requested", at: ago(3, 5) },
+        { status: "acknowledged", at: ago(3, 4) },
+        { status: "offered", at: ago(3, 3) },
+        { status: "provided", at: ago(3, 2) },
+      ],
+      messages: [],
+    });
+  }
+  requests[1].source = "extension";
+  const reviewNotes = [
+    {
+      id: "review-demo",
+      studentId: "jordan",
+      reflection:
+        "The student reported that a quieter setting helped with getting started. Compare this reflection with additional observations.",
+      proposal:
+        "Discuss whether the current 504 classroom summary explains when and how to offer the quieter setting consistently across teachers.",
+      planType: "504",
+      status: "proposed",
+      createdAt: ago(1),
+    },
+  ];
   return {
     students,
+    phases,
+    reviewNotes,
     events,
     requests,
-    teachers: [{ id: "teacher-demo", name: "Madison Schaaf", role: "teacher" }],
+    teachers: [
+      { id: "teacher-taylor", name: "Taylor Reed", role: "teacher" },
+      { id: "teacher-demo", name: "Madison Schaaf", role: "teacher" },
+    ],
     settings: { ...DEFAULT_SETTINGS },
     aiEnabled: false,
     pushEnabled: false,
@@ -179,7 +279,7 @@ export function seedDemo() {
 export function readDemo() {
   try {
     return (
-      JSON.parse(sessionStorage.getItem("inclusion.demo.v2")) || seedDemo()
+      JSON.parse(sessionStorage.getItem("inclusion.demo.v3")) || seedDemo()
     );
   } catch {
     return seedDemo();
@@ -187,7 +287,7 @@ export function readDemo() {
 }
 export function saveDemo(data) {
   try {
-    sessionStorage.setItem("inclusion.demo.v2", JSON.stringify(data));
+    sessionStorage.setItem("inclusion.demo.v3", JSON.stringify(data));
   } catch {
     /* Demo remains usable in memory. */
   }

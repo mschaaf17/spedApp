@@ -13,3 +13,17 @@
 ![Student support pictures at phone size](student-phone.jpg)
 
 For the live device frame locally, open `/device-preview.html` after starting the demo.
+
+## Follow-up: request receipts and reports
+
+- All 39 automated checks passed; the production build passed.
+- Verified a picture request leaves a small corner thumbs-up rather than a blocking confirmation. The corner control reopens the request and shared status history.
+- Verified a student picture reply appears in the teacher's conversation history.
+- Verified report date/student/audience controls, phase comparisons, reflections below the timeline, and the four-section presentation.
+- Downloaded the board HTML export and verified it is labeled fictional and excludes sample student/teacher names and IDs.
+- Verified the receipt at a 390-pixel phone viewport. Physical devices and managed Chrome installation remain untested.
+- Live SSE was exercised against an authenticated local test server; persistence tests use controlled model doubles rather than a configured school MongoDB instance.
+
+![Discreet student receipt](phone-receipt.jpg)
+![Intervention timeline and proposed review](team-review.jpg)
+![Board presentation](board-summary.jpg)

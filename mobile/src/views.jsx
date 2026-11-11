@@ -436,6 +436,7 @@ export function StudentSpace({
   busy,
   go,
   onProgress,
+  onSent,
 }) {
   const [teacherId, setTeacherId] = useState("");
   const [confirmation, setConfirmation] = useState(null);
@@ -531,7 +532,7 @@ export function StudentSpace({
           );
           return (
             <article
-              className={`picture-support-card picture-${picture} ${active ? "request-active" : ""}`}
+              className={`picture-support-card picture-${picture}`}
               key={a.id}
             >
               <button
@@ -542,11 +543,8 @@ export function StudentSpace({
                 }
                 onClick={async () => {
                   const result = await requestSupport(a, selectedTeacher.id);
-                  setConfirmation({
-                    support: a,
-                    label,
-                    success: Boolean(result),
-                  });
+                  if (result) onSent(result);
+                  else setConfirmation({ support: a, label, success: false });
                 }}
               >
                 <div className="support-picture-wrap">
@@ -555,26 +553,11 @@ export function StudentSpace({
                     src={`/pictures/${picture}.svg`}
                     alt=""
                   />
-                  {active && (
-                    <span className="picture-sent-mark">
-                      <Icon icon={Check} size={30} />
-                    </span>
-                  )}
                 </div>
                 <strong>{label}</strong>
                 <span className="picture-action">
-                  <Icon icon={active ? Clock3 : Hand} size={25} />
-                  <span>
-                    {active
-                      ? active.status === "acknowledged"
-                        ? "Teacher knows"
-                        : active.status === "offered"
-                          ? "Ready for help"
-                          : "Sent!"
-                      : busy[`support-${a.id}`]
-                        ? "Sending…"
-                        : "Ask"}
-                  </span>
+                  <Icon icon={Hand} size={25} />
+                  <span>{busy[`support-${a.id}`] ? "Sending…" : "Ask"}</span>
                 </span>
               </button>
               {"speechSynthesis" in window && (
@@ -595,48 +578,6 @@ export function StudentSpace({
         <Empty icon={BookOpen} title="Your pictures will appear here">
           Your teacher can add your supports.
         </Empty>
-      )}
-      {requests.length > 0 && (
-        <section className="panel picture-request-inbox">
-          <Heading
-            icon={Bell}
-            title="My requests"
-            detail="Your teacher can see these."
-          />
-          <div className="panel-body">
-            {requests.map((r) => (
-              <article className="picture-request-status" key={r.id}>
-                <img
-                  src={`/pictures/${pictureFor(student.accommodations.find((a) => a.id === r.accommodationId) || { title: r.title })}.svg`}
-                  alt=""
-                />
-                <div>
-                  <strong>{r.title}</strong>
-                  <span>
-                    <Icon
-                      icon={r.status === "requested" ? Clock3 : Check}
-                      size={22}
-                    />
-                    {r.status === "requested"
-                      ? "Sent to teacher"
-                      : r.status === "acknowledged"
-                        ? "Teacher knows"
-                        : "Support offered"}
-                  </span>
-                </div>
-                <button
-                  className="picture-cancel"
-                  aria-label={`Cancel request for ${r.title}`}
-                  disabled={busy[r.id]}
-                  onClick={() => advance(r, "cancelled")}
-                >
-                  <Icon icon={Trash2} size={25} />
-                  <span>Cancel</span>
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
       )}
       <section className="panel student-progress">
         <Heading
@@ -1189,6 +1130,7 @@ export function Plans({
             What are you working on?
             <select value={type} onChange={(e) => setType(e.target.value)}>
               <option>IEP goal</option>
+              <option>504 review</option>
               <option>BIP</option>
               <option>Operational definition</option>
             </select>

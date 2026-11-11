@@ -88,6 +88,17 @@ const requestSchema = new Schema(
       default: "requested",
     },
     clientRequestId: { type: String, required: true },
+    source: { type: String, enum: ["web", "extension"], default: "web" },
+    messages: [
+      {
+        id: String,
+        kind: String,
+        text: String,
+        role: String,
+        actorId: ref,
+        createdAt: Date,
+      },
+    ],
     history: [{ status: String, at: Date, actorId: ref }],
   },
   { timestamps: true },
@@ -112,7 +123,36 @@ const shareSchema = new Schema(
   },
   { timestamps: true },
 );
+const phaseSchema = new Schema(
+  {
+    studentId: { ...ref, required: true, index: true },
+    name: String,
+    description: String,
+    startsOn: { type: String, required: true },
+    createdBy: ref,
+    teamConfirmed: Boolean,
+  },
+  { timestamps: true },
+);
+phaseSchema.index({ studentId: 1, startsOn: 1 }, { unique: true });
+const reviewSchema = new Schema(
+  {
+    studentId: { ...ref, required: true, index: true },
+    reflection: String,
+    proposal: String,
+    planType: { type: String, enum: ["IEP", "504", "BIP"] },
+    status: { type: String, default: "proposed" },
+    createdBy: ref,
+  },
+  { timestamps: true },
+);
 export const models = {
+  Phase:
+    mongoose.models.InterventionPhase ||
+    mongoose.model("InterventionPhase", phaseSchema),
+  ReviewNote:
+    mongoose.models.PlanReviewNote ||
+    mongoose.model("PlanReviewNote", reviewSchema),
   User: mongoose.models.ModernUser || mongoose.model("ModernUser", userSchema),
   Profile:
     mongoose.models.ClassroomProfile ||
@@ -133,7 +173,9 @@ export function serialize(document) {
   if (!document) return null;
   const value = document.toObject ? document.toObject() : { ...document };
   value.id = String(
-    value.studentId && value.name ? value.studentId : value._id,
+    value.studentId && Array.isArray(value.teacherIds)
+      ? value.studentId
+      : value._id,
   );
   for (const key of ["studentId", "teacherId", "actorId", "createdBy"])
     if (value[key]) value[key] = String(value[key]);

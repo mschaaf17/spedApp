@@ -21,3 +21,7 @@ For school rollout, use the district’s extension management process or Chrome 
 - Student requests are classroom support requests, not an emergency communication channel.
 
 References: [Manifest V3](https://developer.chrome.com/docs/extensions/reference/manifest), [optional host permissions](https://developer.chrome.com/docs/extensions/develop/concepts/declare-permissions).
+
+## Shared conversation and receipt
+
+A saved request briefly shows a thumbs-up and then a small corner button. The corner opens the same server-side request conversation used by the app, with student Help/Thanks replies and optional spoken teacher messages. The popup refreshes through a bearer-authenticated event stream with a five-second fallback. Updates run while the popup is open; requests remain saved when it closes. No background content script or browser-history permission is added. `live.mjs` is the bundled copy of `shared/live.mjs`.
